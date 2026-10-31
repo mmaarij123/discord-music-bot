@@ -1,0 +1,67 @@
+import path from 'node:path';
+import { pathToFileURL } from 'node:url';
+import { root } from '../config/config.js';
+import { Semaphore } from '../utils/async.js';
+import { UserError } from '../utils/errors.js';
+import { SpotifyResolver } from './SpotifyResolver.js';
+import { SpotifyApi } from './SpotifyApi.js';
+import { YouTubeResolver } from './YouTubeResolver.js';
+import { LocalMediaResolver } from './LocalMediaResolver.js';
+import { AudioManager } from './AudioManager.js';
+import { AutoplayManager } from './AutoplayManager.js';
+import { DiscoveryService } from './DiscoveryService.js';
+import { GuildPlayer } from './GuildPlayer.js';
+import { PlayerPresenter } from '../components/PlayerPresenter.js';
+async function adapter(file,method) {
+  if (!file) return null;
+  const module=await import(pathToFileURL(path.resolve(root,file)).href);
+  if (typeof module[method]!=='function') throw new UserError(`Configured adapter must export ${method}().`);
+  return module;
+}
+export class MusicManager {
+  static async create(config,logger) {
+    const [search,recommendations,lyrics]=await Promise.all([adapter(config.adapters.spotify,'search'),adapter(config.adapters.recommendations,'recommend'),adapter(config.adapters.lyrics,'lookup')]);
+    const credentials=config.spotify??{};
+    const official=credentials.clientId&&credentials.clientSecret ? new SpotifyApi({...credentials,cacheMs:config.cacheMs}) : null;
+    if(Boolean(credentials.clientId)!==Boolean(credentials.clientSecret))logger.warn('spotify_api_credentials_incomplete',{message:'Set both Spotify Client ID and Client Secret to enable optional official metadata search.'});
+    const semaphore=new Semaphore(config.concurrency), youtube=new YouTubeResolver(config,semaphore), spotify=new SpotifyResolver(config,semaphore,search??official), local=new LocalMediaResolver(config);
+    return new MusicManager(config,logger,{discovery:new DiscoveryService(spotify,youtube,local,config),audio:new AudioManager(config,youtube,local),autoplay:new AutoplayManager(youtube,recommendations),lyrics});
+  }
+  constructor(config,logger,services) { Object.assign(this,{config,logger,...services}); this.players=new Map(); this.presenters=new Map(); this.imports=new Map(); this.closing=false; }
+  get(guild,create=false) {
+    let player=this.players.get(guild.id);
+    if (!player && create) {
+      if (this.closing) throw new UserError('The bot is shutting down. Try again after it restarts.');
+      for(const stale of this.players.values()){
+        if(!this.imports.has(stale.guild.id)&&!stale.idleHolds&&!stale.voice.channelId&&!stale.current&&!stale.queue.length)this.release(stale);
+      }
+      if (this.players.size>=this.config.maxPlayers) throw new UserError('The bot has reached its configured server session limit. Try again later.');
+      player=new GuildPlayer(guild,this.config,{audio:this.audio,autoplay:this.autoplay,logger:this.logger,onRelease:p=>this.release(p)});
+      this.players.set(guild.id,player); this.presenters.set(guild.id,new PlayerPresenter(player,this.logger));
+    }
+    return player;
+  }
+  release(player) {
+    if (this.players.get(player.guild.id)!==player) return;
+    this.players.delete(player.guild.id);
+    const presenter=this.presenters.get(player.guild.id); this.presenters.delete(player.guild.id);
+    // Release runs inside the player's mutex. Cleanup queues behind that operation.
+    Promise.all([player.destroy(),presenter?.dispose()]).catch(error=>this.logger.warn('session_release_failed',{error}));
+  }
+  cancelImport(guildId) { this.imports.get(guildId)?.abort(); }
+  async import(guildId,fn) {
+    if (this.imports.has(guildId)) throw new UserError(`A discovery/import request is already running in this server. Wait or use ${this.config.prefix ?? '>'}stop to cancel it.`);
+    if (this.closing) throw new UserError('The bot is shutting down.');
+    if (this.imports.size>=this.config.maxPlayers*2) throw new UserError('The discovery service is busy. Try again shortly.');
+    const controller=new AbortController(); this.imports.set(guildId,controller);
+    const timeout=setTimeout(()=>controller.abort(),120000); timeout.unref();
+    try { return await fn(controller.signal); }
+    finally { clearTimeout(timeout); this.imports.delete(guildId); }
+  }
+  async destroy() {
+    this.closing=true; for(const controller of this.imports.values())controller.abort();
+    await Promise.allSettled([...this.players.values()].map(p=>p.destroy()));
+    await Promise.allSettled([...this.presenters.values()].map(p=>p.dispose()));
+    this.audio.dispose(); this.players.clear(); this.presenters.clear();
+  }
+}

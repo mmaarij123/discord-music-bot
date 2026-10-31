@@ -1,0 +1,1 @@
+module.exports={apps:[{name:'music-bot',script:'src/index.js',cwd:__dirname,instances:1,exec_mode:'fork',autorestart:true,max_memory_restart:'512M',restart_delay:5000,kill_timeout:12000,time:true,env:{NODE_ENV:'production'}}]};

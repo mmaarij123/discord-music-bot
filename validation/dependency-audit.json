@@ -1,0 +1,81 @@
+{
+  "checkedAt": "2026-10-31T22:56:03.374Z",
+  "vulnerabilities": {
+    "info": 0,
+    "low": 0,
+    "moderate": 7,
+    "high": 0,
+    "critical": 0,
+    "total": 7
+  },
+  "findings": [
+    {
+      "name": "@discordjs/node-pre-gyp",
+      "severity": "moderate",
+      "isDirect": false,
+      "fixAvailable": false,
+      "via": [
+        "rimraf"
+      ]
+    },
+    {
+      "name": "@discordjs/opus",
+      "severity": "moderate",
+      "isDirect": true,
+      "fixAvailable": false,
+      "via": [
+        "@discordjs/node-pre-gyp"
+      ]
+    },
+    {
+      "name": "@discordjs/voice",
+      "severity": "moderate",
+      "isDirect": true,
+      "fixAvailable": false,
+      "via": [
+        "prism-media"
+      ]
+    },
+    {
+      "name": "glob",
+      "severity": "moderate",
+      "isDirect": false,
+      "fixAvailable": false,
+      "via": [
+        "minimatch"
+      ]
+    },
+    {
+      "name": "minimatch",
+      "severity": "moderate",
+      "isDirect": false,
+      "fixAvailable": false,
+      "via": [
+        {
+          "name": "minimatch",
+          "title": "minimatch has potential denial of service via globparts amplification",
+          "url": "https://github.com/advisories/GHSA-g3hv-75wg-m249",
+          "range": "<11.0.1"
+        }
+      ]
+    },
+    {
+      "name": "prism-media",
+      "severity": "moderate",
+      "isDirect": false,
+      "fixAvailable": false,
+      "via": [
+        "@discordjs/opus"
+      ]
+    },
+    {
+      "name": "rimraf",
+      "severity": "moderate",
+      "isDirect": false,
+      "fixAvailable": false,
+      "via": [
+        "glob"
+      ]
+    }
+  ]
+}
