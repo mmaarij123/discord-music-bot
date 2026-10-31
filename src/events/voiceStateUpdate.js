@@ -2,11 +2,14 @@ export function voiceStateHandler(manager,client,logger){
   return (oldState,newState)=>{
     if(newState.id!==client.user.id)return;
     const player=manager.players.get(newState.guild.id);
-    if(!player)return;
+    if(!player||player.closed)return;
     if(oldState.channelId&&!newState.channelId){
       logger.info('voice_removed',{guildId:newState.guild.id});
-      // @discordjs/voice owns its bounded recovery; this event only refreshes UI.
-      player.changed();
+      // A gateway channel=null update is authoritative removal, not a brief
+      // audio-network outage. Respect it even when 24/7 mode was enabled.
+      manager.cancelImport(newState.guild.id);
+      player.stop(true).catch(error=>logger.warn('voice_removal_cleanup_failed',{guildId:newState.guild.id,error}));
+      return;
     }
     if(newState.channelId&&newState.serverMute)player.notify('The bot is server-muted. A moderator must unmute it for audio to be heard.');
   };

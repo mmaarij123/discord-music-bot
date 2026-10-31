@@ -9,6 +9,7 @@
     "start": "node src/index.js",
     "dev": "node --watch src/index.js",
     "doctor": "node scripts/doctor.js",
+    "cookies:import": "node scripts/import-cookies.js",
     "test": "node --test",
     "test:audio": "node scripts/audio-smoke.js",
     "test:playback": "node scripts/playback-smoke.js",

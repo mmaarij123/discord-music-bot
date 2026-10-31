@@ -14,6 +14,7 @@ export class GuildPlayer extends EventEmitter {
     this.player=audioPlayer ?? createAudioPlayer({behaviors:playbackBehaviors(config)});
     this.voice=voiceFactory ? voiceFactory(()=>this.connectionLost()) : new VoiceSession(guild,this.player,()=>this.connectionLost(),logger);
     this.volume=config.volume; this.persistent=config.persistent; this.autoplayEnabled=config.autoplay;
+    this.ownerId=null;
     this.state='idle'; this.current=null; this.handle=null; this.generation=0; this.offset=0; this.controller=null; this.closed=false; this.recoveryAttempts=0;this.idleHolds=0;this.consecutiveFailures=0;
     this.sourcePrefetcher=typeof audio.prefetch==='function'?new SourcePrefetcher(audio,config,logger,guild.id):null;
     this.player.on('stateChange',(oldState,newState)=>{
@@ -43,6 +44,7 @@ export class GuildPlayer extends EventEmitter {
   safe(fn) { Promise.resolve().then(fn).catch(error=>this.logger.error('player_event_failed',{guildId:this.guild.id,error})); }
   changed() { this.emit('change'); }
   notify(message) { this.emit('notice',message); }
+  claimHost(userId){if(!this.ownerId&&typeof userId==='string'&&userId)this.ownerId=userId;}
   get progress() { return this.offset + (this.handle?.resource.playbackDuration ?? 0)/1000; }
   async join(channel,{signal}={}) {
     return this.lock.run(async()=>{
@@ -57,8 +59,10 @@ export class GuildPlayer extends EventEmitter {
       if (this.closed) throw new UserError(`This session was released. Run ${this.config.prefix ?? '>'}play again.`);
       await this.voice.join(channel);
       signal?.throwIfAborted();
+      if(this.closed)throw new UserError('This session was disconnected. Start a new play request.');
       const result=this.queue.add(tracks);
       if (!result.added) throw new UserError('The queue is full. Remove some upcoming tracks first.');
+      this.claimHost(tracks[0]?.requestedBy?.id);
       clearTimeout(this.idleTimer);
       if (!this.current) {this.consecutiveFailures=0;await this.startNext();}
       this.schedulePrefetch();this.changed(); return result;
@@ -184,9 +188,12 @@ export class GuildPlayer extends EventEmitter {
   }
   stop(leave=false) {
     this.controller?.abort();
+    // Destroy immediately, before the mutex, so pending recovery cannot rejoin
+    // while a source/voice preparation is being cancelled.
+    if(leave){this.closed=true;this.voice.destroy();}
     return this.lock.run(async()=>{
       this.generation++; this.releaseAudio(); this.current=null; this.queue.clear(); this.state='idle';this.consecutiveFailures=0;
-      if (leave) { this.voice.destroy(); this.state='disconnected'; this.persistent=false; this.onRelease(this); }
+      if (leave) {this.state='disconnected';this.persistent=false;this.ownerId=null;this.onRelease(this);}
       else this.scheduleIdle();
       this.changed();
     });
@@ -233,8 +240,10 @@ export class GuildPlayer extends EventEmitter {
     }
   }
   connectionLost() {
+    if(this.closed)return;
     this.controller?.abort();
     this.safe(()=>this.lock.run(()=>{
+      if(this.closed)return;
       this.logger.warn('voice_session_lost',{guildId:this.guild.id});
       this.generation++; this.releaseAudio(); this.current=null; this.state='disconnected';
       this.voice.destroy();

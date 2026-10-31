@@ -30,7 +30,7 @@ export async function execute(interaction,manager,action=interaction.commandName
   if (!interaction.inGuild()) throw new UserError('Music commands are available in servers only.');
   const prefix=interaction.commandPrefix ?? manager.config?.prefix ?? '>';
   let player=manager.get(interaction.guild), access;
-  if (!readOnly.has(action)) access=await voiceAccess(interaction,player);
+  if (!readOnly.has(action)&&!['stop','leave'].includes(action)) access=await voiceAccess(interaction,player);
   const option=interaction.options;
   const reply=content=>interaction.editReply(typeof content==='string' ? {content,allowedMentions:{parse:[]}} : content);
   if (action==='help') {
@@ -46,6 +46,7 @@ export async function execute(interaction,manager,action=interaction.commandName
       const started=performance.now(),preparation=new AbortController();
       const prepareSignal=AbortSignal.any([signal,preparation.signal]);
       player=manager.get(interaction.guild,true);
+      player.claimHost(interaction.user.id);
       const releaseIdle=player.holdIdleTimeout();
       const wasConnected=Boolean(player.voice.channelId),wasPlaying=Boolean(player.current);
       // Voice handshake and discovery run together; the first chat reply is
@@ -94,12 +95,16 @@ export async function execute(interaction,manager,action=interaction.commandName
   if(action==='join'){
     textAccess(interaction);
     player=manager.get(interaction.guild,true); manager.presenters.get(interaction.guildId)?.bind(interaction.channel);
-    await player.join(access.channel); return reply('Connected to your voice channel.');
+    await player.join(access.channel);player.claimHost(interaction.user.id);return reply('Connected to your voice channel.');
   }
   if(action==='stop'||action==='leave') {
+    if(player&&player.ownerId!==interaction.user.id){
+      const member=await interaction.guild.members.fetch(interaction.user.id);
+      if(!member.permissions.has(PermissionFlagsBits.ManageGuild))throw new UserError('Only the session host or a Manage Server moderator can stop or disconnect this session. The host can stop from outside voice.');
+    }
     manager.cancelImport(interaction.guildId);
-    if(player)await player.stop(action==='leave');
-    return reply(action==='leave'?'Disconnected and cleared the queue.':'Stopped playback, cleared the queue, and cancelled pending discovery.');
+    if(player)await player.stop(true);
+    return reply('Stopped playback, cleared the queue, cancelled pending discovery, and left voice.');
   }
   if(action==='247'||action==='autoplay'){
     admin(access.member);

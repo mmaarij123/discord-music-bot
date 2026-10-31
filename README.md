@@ -44,7 +44,7 @@ yt-dlp needs its EJS component and a supported JavaScript runtime for current Yo
 5. Under **OAuth2 → URL Generator**, select the **bot** scope (application-command scope is not required for prefix commands). Grant **View Channels**, **Send Messages**, **Embed Links**, **Connect**, and **Speak**. If using threads, also grant **Send Messages in Threads**. Enable **Message Content Intent** under **Bot → Privileged Gateway Intents**. Administrator, Server Members and Presence privileged intents are unnecessary.
 6. Open the generated invite URL, select your server, and authorize it. You must have permission to add applications. Check channel permission overrides too.
 
-The runtime requests Guilds, GuildVoiceStates, GuildMessages and MessageContent intents. All commands are server-only. Message Content Intent must also be enabled in the Developer Portal. Prefix command replies are ordinary channel messages, not ephemeral replies. Playback controls require a regular voice channel matching the active bot session. Stage channels are explicitly unsupported. A full voice channel must have room for the bot; Move Members is optional if you want it to enter full channels.
+The runtime requests Guilds, GuildVoiceStates, GuildMessages and MessageContent intents. All commands are server-only. Message Content Intent must also be enabled in the Developer Portal. Prefix command replies are ordinary channel messages, not ephemeral replies. Playback controls require a regular voice channel matching the active bot session, except stop/leave: only the session host or a Manage Server moderator may use these, including from outside voice. Stage channels are explicitly unsupported. A full voice channel must have room for the bot; Move Members is optional if you want it to enter full channels.
 
 ## 2. Windows development
 
@@ -194,7 +194,7 @@ Copy `.env.example` to `.env`. Never commit `.env`, tokens, private media, or pr
 
 Boolean variables accept exactly `true` or `false`. Paths for media and adapters resolve relative to the project root. Executable settings are not shell commands: do not append flags, `python -m`, or quotes within the path value. For a Python yt-dlp installation, point to its generated `yt-dlp` / `yt-dlp.exe` launcher.
 
-`>247` and `>autoplay` require Manage Server permission and change only the current guild session. `>leave` overrides 24/7 and explicitly disconnects. Idle cleanup releases a session and its settings; use environment defaults to set behavior for newly created sessions. Application restarts always reset queues/settings.
+`>247` and `>autoplay` require Manage Server permission and change only the current guild session. Both `>stop` and `>leave` override 24/7, clear the queue and disconnect. The first play/join requester owns that session; adding tracks does not transfer ownership. The host and Manage Server moderators can stop even after changing/leaving voice. Idle cleanup releases a session and its settings; use environment defaults to set behavior for newly created sessions. Application restarts always reset queues/settings.
 
 ### Optional YouTube cookie file
 
@@ -204,6 +204,8 @@ Keep cookies on the host; never paste or upload them to chat, Discord, an issue,
 2. Set `YOUTUBE_COOKIES_FILE=./secrets/youtube.cookies.txt` in the local `.env`.
 3. Run `npm run doctor`. It validates file format and expiry without printing any cookie values or logging into YouTube. A valid format does not establish that the account session is still accepted.
 4. Restart the bot. Test a permitted public source with `npm run test:source -- VIDEO_URL` and then test live voice yourself. Clear the environment setting and restart to disable cookies.
+
+For a JSON export, save your YouTube-only cookie array (or an object with a `cookies` array) as `secrets/youtube.cookies.json`, then run `npm run cookies:import`. The command validates and atomically converts it to Netscape format and enables the output path in your local `.env`; it prints counts only. Restart afterwards. An empty `[]` template is not a usable account export. Invalid JSON/fields leave the previous valid Netscape file untouched. To retire an old account, stop the bot, clear YOUTUBE_COOKIES_FILE, remove the old exports and temporary cookie directories, and restart; this also clears in-memory source caches. Local cleanup does not revoke browser sessions remotely.
 
 The source export remains untouched. Every extractor request receives a private temporary copy under `secrets`, deleted when the tool finishes, fails or is cancelled. Concurrent requests cannot overwrite each other's cookie jars. Files outside the secrets directory, oversized/invalid exports, non-YouTube cookies and expired-only exports are rejected with safe messages. Cookie files and temporary copies are excluded from Git and release ZIPs. A hard host/process crash can leave a temporary directory under `secrets`; remove stale `.yt-cookies-*` directories only while the bot is stopped.
 
@@ -232,7 +234,7 @@ When started, logs should include `ready`. Join a voice channel and use `>play l
 | >resume | Resume paused audio. |
 | >skip | Advance once; explicit skips ignore track repeat. |
 | >previous | Replay history; return current to the front of the upcoming queue. A full queue must have space first. |
-| >stop | Stop audio, clear upcoming entries, cancel pending discovery; apply idle/24/7 behavior. |
+| >stop | Host/moderator only; stop audio, clear the queue, cancel discovery and leave voice, even in 24/7 mode. Works outside voice. |
 | >queue page | Upcoming tracks, ten per page, one-based positions. |
 | >nowplaying | Snapshot of the current compact player. |
 | >volume level | 0–100, applied live without restarting audio. |
@@ -244,7 +246,7 @@ When started, logs should include `ready`. Join a voice channel and use `>play l
 | >jump position | Discard earlier upcoming entries and start this one. |
 | >move from to | Reorder upcoming entries. |
 | >join | Join your regular voice channel. |
-| >leave | Clear/stop and disconnect, including 24/7 mode. |
+| >leave | Same host/moderator authorization as stop; clear and disconnect, overriding 24/7. |
 | >247 on/off | Manage Server: retain voice connection while running and idle. |
 | >autoplay on/off | Manage Server: enable/disable conservative recommendations. Default off. |
 | >lyrics | Lawful configured adapter or an informative unavailable response. |
@@ -253,6 +255,8 @@ When started, logs should include `ready`. Join a voice channel and use `>play l
 Buttons: Previous, Pause/Resume, Skip, Stop, Loop, Shuffle. They use the same authorization and queue methods as prefix commands. Old session controls expire. Read-only queue, nowplaying, lyrics and help do not require voice membership. Playback and settings controls do. Volume/control changes are available to listeners in the session channel; restrict channel access for stricter listener control. Discord application-command permissions do not apply to text prefix commands.
 
 Only one discovery/import runs per guild at a time, with a two-minute deadline. Playback controls and queue changes use a separate per-guild mutex. Stop/skip interrupt pending source preparation. Five consecutive track failures, whether at startup or during playback, stop further automatic attempts and preserve remaining entries. Completing a track or explicitly resuming via play/skip resets that failure budget. Temporary voice disconnections get a grace period and at most two rejoin attempts; persistent failures require a fresh `>join` or `>play` and never spin indefinitely.
+
+An authoritative gateway voice removal terminates the session immediately and cancels its pending import; the bot respects a manual disconnect, including in 24/7 mode. Voice close 4014 permits only passive library-managed recovery for a possible channel move and never sends explicit rejoin attempts. Other temporary network failures retain bounded recovery, whose waiters are cancelled when the session is stopped.
 
 Short media-buffer underruns are tolerated for up to AUDIO_STALL_TIMEOUT_SECONDS rather than ending a track after the voice library's five-frame default. A bounded PCM buffer absorbs small source jitter. FFmpeg retries transient network/HTTP 5xx failures with a small reconnect-delay ceiling; it does not retry authentication denials or reconnect at normal EOF. If a known-duration track ends more than two seconds early, the player re-resolves its source and resumes from the amount of audio actually played, up to PLAYBACK_RETRY_LIMIT times. Genuine completion still advances the queue once. Unknown-duration sources, access restrictions and exhausted retries stop or advance with an explanation. A voice session stuck without a usable subscription is cleared after a deadline, allowing fresh play requests.
 

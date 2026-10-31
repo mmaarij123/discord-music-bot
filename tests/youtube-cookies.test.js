@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import path from 'node:path';
 import { tmpdir } from 'node:os';
 import { mkdtemp,mkdir,writeFile,readFile,readdir,rm,symlink,stat } from 'node:fs/promises';
-import { validateYouTubeCookies,inspectYouTubeCookies,withYouTubeCookies } from '../src/utils/youtubeCookies.js';
+import { validateYouTubeCookies,inspectYouTubeCookies,withYouTubeCookies,convertYouTubeCookieJson,importYouTubeCookieJson } from '../src/utils/youtubeCookies.js';
 import { loadConfig } from '../src/config/config.js';
 import { YouTubeResolver } from '../src/music/YouTubeResolver.js';
 import { Semaphore } from '../src/utils/async.js';
@@ -83,4 +83,23 @@ process.stdout.write(JSON.stringify({cookieFlag:process.argv.includes('--cookies
   const {data}=await resolver.json(['--dump-single-json']);
   assert.deepEqual(data,{cookieFlag:true,validJar:true});
   assert.deepEqual(await readdir(settings.cookiesRoot),['youtube.cookies.txt']);
+});
+const jsonCookie={domain:'.youtube.com',name:'SID',value:'synthetic-replacement-cookie',path:'/',secure:true,httpOnly:true,hostOnly:false,session:true};
+test('JSON conversion preserves session, domain and HttpOnly flags',()=>{
+  const result=convertYouTubeCookieJson([jsonCookie]);assert.equal(result.count,1);assert.ok(result.text.includes('#HttpOnly_.youtube.com\tTRUE\t/\tTRUE\t0\tSID\t'));
+  assert.equal(convertYouTubeCookieJson({cookies:[jsonCookie]}).usable,1);
+});
+test('JSON conversion rejects empty templates, non-YouTube exports and malformed fields',()=>{
+  for(const raw of [[],{},[null],[{...jsonCookie,domain:'.google.com'}],[{...jsonCookie,value:42}],[{...jsonCookie,value:'bad\nvalue'}],[{...jsonCookie,session:false,expirationDate:-1}]])assert.throws(()=>convertYouTubeCookieJson(raw),{code:'COOKIE_CONFIG'});
+});
+test('local JSON import atomically replaces Netscape output and preserves its input',async t=>{
+  const config=await setup(t),input=path.join(config.cookiesRoot,'youtube.cookies.json'),raw=JSON.stringify([jsonCookie]);await writeFile(input,raw);
+  assert.deepEqual(await importYouTubeCookieJson(config),{count:1,usable:1});
+  assert.equal(await readFile(input,'utf8'),raw);assert.ok((await readFile(config.youtubeCookiesFile,'utf8')).includes('synthetic-replacement-cookie'));
+  assert.deepEqual((await readdir(config.cookiesRoot)).sort(),['youtube.cookies.json','youtube.cookies.txt']);
+});
+test('malformed local JSON leaves the previous valid cookie output untouched',async t=>{
+  const config=await setup(t);await writeFile(path.join(config.cookiesRoot,'youtube.cookies.json'),'invalid synthetic-replacement-cookie');
+  await assert.rejects(importYouTubeCookieJson(config),error=>error.code==='COOKIE_CONFIG'&&!error.message.includes('synthetic-replacement-cookie'));
+  assert.equal(await readFile(config.youtubeCookiesFile,'utf8'),body);
 });

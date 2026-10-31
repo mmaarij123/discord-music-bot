@@ -1,5 +1,5 @@
 import path from 'node:path';
-import { open,realpath,mkdtemp,writeFile,rm,chmod } from 'node:fs/promises';
+import { open,realpath,mkdtemp,writeFile,rm,chmod,rename } from 'node:fs/promises';
 import { UserError } from './errors.js';
 
 const MAX_BYTES=1024*1024;
@@ -28,11 +28,10 @@ export function validateYouTubeCookies(text,now=Date.now()) {
   return {count,usable};
 }
 
-async function readCookies(config) {
-  if(!config.youtubeCookiesFile)return null;
+async function readCookieText(config,filePath) {
   let file;
   try{
-    const [root,project,target]=await Promise.all([realpath(config.cookiesRoot),realpath(config.projectRoot),realpath(config.youtubeCookiesFile)]);
+    const [root,project,target]=await Promise.all([realpath(config.cookiesRoot),realpath(config.projectRoot),realpath(filePath)]);
     if(!inside(project,root)||!inside(root,target))throw invalid();
     file=await open(target,'r');
     const stats=await file.stat();
@@ -41,11 +40,45 @@ async function readCookies(config) {
     const bytes=Buffer.alloc(MAX_BYTES+1),{bytesRead}=await file.read(bytes,0,bytes.length,0);
     if(bytesRead>MAX_BYTES)throw invalid();
     const text=bytes.subarray(0,bytesRead).toString('utf8').replace(/^\uFEFF/,'');
-    return {text,root,...validateYouTubeCookies(text)};
+    return {text,root};
   }catch(error){
     if(error instanceof UserError)throw error;
     throw new UserError('The configured YouTube cookie file cannot be read. Save the export inside the project secrets folder and check its permissions.','COOKIE_CONFIG');
   }finally{await file?.close();}
+}
+
+async function readCookies(config){
+  if(!config.youtubeCookiesFile)return null;
+  const value=await readCookieText(config,config.youtubeCookiesFile);
+  return {...value,...validateYouTubeCookies(value.text)};
+}
+
+export function convertYouTubeCookieJson(raw){
+  const rows=Array.isArray(raw)?raw:raw?.cookies;
+  if(!Array.isArray(rows)||!rows.length)throw new UserError('The JSON cookie export is empty or unsupported. Save your YouTube cookie array in secrets/youtube.cookies.json.','COOKIE_CONFIG');
+  const lines=rows.map(cookie=>{
+    if(!cookie||typeof cookie.domain!=='string'||typeof cookie.name!=='string'||typeof cookie.value!=='string')throw invalid();
+    const expiry=cookie.session===true?0:Number(cookie.expirationDate??cookie.expires??cookie.expiry??0);
+    if(!Number.isFinite(expiry)||expiry<0)throw invalid();
+    return [(cookie.httpOnly?'#HttpOnly_':'')+cookie.domain,cookie.hostOnly===true?'FALSE':cookie.domain.startsWith('.')?'TRUE':'FALSE',cookie.path??'/',cookie.secure?'TRUE':'FALSE',Math.floor(expiry),cookie.name,cookie.value].join('\t');
+  });
+  const text='# Netscape HTTP Cookie File\n'+lines.join('\n')+'\n';
+  return {text,...validateYouTubeCookies(text)};
+}
+
+export async function importYouTubeCookieJson(config){
+  const input=await readCookieText(config,path.join(config.cookiesRoot,'youtube.cookies.json'));
+  let raw;try{raw=JSON.parse(input.text);}catch{throw new UserError('The local cookie JSON is invalid. No cookie values are displayed.','COOKIE_CONFIG');}
+  const converted=convertYouTubeCookieJson(raw);
+  const directory=await mkdtemp(path.join(input.root,'.yt-cookies-import-'));
+  if(!inside(input.root,directory))throw invalid();
+  try{
+    await chmod(directory,0o700);
+    const temporary=path.join(directory,'cookies.txt');
+    await writeFile(temporary,converted.text,{mode:0o600,flag:'wx'});
+    await rename(temporary,path.join(input.root,'youtube.cookies.txt'));
+    return {count:converted.count,usable:converted.usable};
+  }finally{await rm(directory,{recursive:true,force:true,maxRetries:3,retryDelay:100});}
 }
 
 export async function inspectYouTubeCookies(config) {

@@ -23,8 +23,8 @@ The remaining **36 runtime modules** are all reachable from `src/index.js`; no o
 
 | Check | Result |
 |---|---|
-| Node built-in automated tests | **175 passed**, zero failures/skips |
-| ESLint 10.14.0 static scan | **61 files**, zero errors/warnings |
+| Node built-in automated tests | **195 passed**, zero failures/skips |
+| ESLint 10.14.0 static scan | **63 files**, zero errors/warnings |
 | JavaScript syntax verification | Passed |
 | Runtime import reachability | 36/36 modules reachable |
 | npm dependency compatibility | All direct dependencies resolved; no invalid/extraneous direct packages |
@@ -49,3 +49,13 @@ An upstream compatible release or a separately validated installer migration is 
 ## Deployment result
 
 The bot was restarted after the changes and verified to reach Discord ready in three guilds with prefix `>`. Environment credentials, the original local cookie JSON and its converted export were preserved. Cookie exports and credential values remain excluded from release ZIPs. Queue state remains in memory and resets during restart, as documented.
+
+## Follow-up: session host, manual disconnect and cookie retirement
+
+The user subsequently reported that manually disconnecting the bot caused it to rejoin, while the requester could not stop after moving out of the bot's voice channel. The first play/join caller is now the session host; queue additions do not transfer ownership. Stop/leave and the Stop button are restricted to that host or a Manage Server moderator and work outside voice. They immediately destroy the voice connection, cancel imports and recovery, clear playback/queue and release the session, overriding 24/7 mode. Other playback controls still require the active voice channel.
+
+Gateway voice removal is terminal. Manual disconnects never rejoin, and close code 4014 permits passive library-managed channel-move recovery only. Temporary network outages retain the existing bounded recovery. Late callbacks after a terminal stop are ignored.
+
+The local cookie setting was cleared and the bot restarted in anonymous mode pending a replacement export. Automated deletion of the old JSON/Netscape files and their secrets directory was rejected by automatic approval review with “blocked by policy”; manual operator cleanup was requested. The old files remain disabled and excluded from Git/release ZIPs until that cleanup is performed. Local cleanup does not revoke browser sessions remotely. The new `npm run cookies:import` command supports a new local JSON export, validates it without echoing values, atomically replaces the Netscape file and enables the path in `.env`. An empty input template is not an authenticated session.
+
+Twenty new regression tests cover host/moderator authorization, stop from another/no VC, stop buttons, pending discovery cancellation, manual removal, passive channel moves, bounded network recovery, cancellation, late callbacks and valid/invalid atomic JSON imports. These bring the suite from 175 to 195 passing tests. Real-time local playback and an anonymous permitted-source smoke probe passed; no new live Discord voice listening or replacement-account authentication was claimed. The existing private GitHub repository was updated only after secret/path scans; `.env` and real cookie exports remain untracked.
