@@ -26,7 +26,7 @@ export function loadConfig(env = process.env) {
     logLevel: env.LOG_LEVEL || 'info', ffmpeg: env.FFMPEG_PATH || 'ffmpeg', ytdlp: env.YTDLP_PATH || 'yt-dlp',
     cacheMs: number('SEARCH_CACHE_SECONDS',900,1,86400)*1000,
     audioSourceCacheMs: number('AUDIO_SOURCE_CACHE_SECONDS',300,0,300)*1000,
-    youtubeFastExtraction: bool('YOUTUBE_FAST_EXTRACTION',true),
+    youtubeFastExtraction: bool('YOUTUBE_FAST_EXTRACTION',false),
     spotifyDiscoveryMs: number('SPOTIFY_DISCOVERY_TIMEOUT_MS',2000,250,10000),
     concurrency: number('METADATA_CONCURRENCY',2,1,8), processMs: number('PROCESS_TIMEOUT_SECONDS',45,5,120)*1000,
     maxTrack: number('MAX_TRACK_SECONDS',7200,10,86400), maxPlayers: number('MAX_PLAYERS',20,1,1000),

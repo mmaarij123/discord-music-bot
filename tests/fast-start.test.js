@@ -13,13 +13,19 @@ import { fixture,track,logger,settle } from './helpers.js';
 function deferred(){let resolve,reject;const promise=new Promise((a,b)=>{resolve=a;reject=b;});return {promise,resolve,reject};}
 const video={id:'abcdefghijk',title:'Song',url:'https://r1.googlevideo.com/audio?expire=9999999999',duration:180};
 const target={youtubeUrl:'https://www.youtube.com/watch?v=abcdefghijk'};
-function resolver(config={}){return new YouTubeResolver({...loadConfig({}),...config},new Semaphore(2));}
+function resolver(config={}){return new YouTubeResolver({...loadConfig({}),youtubeFastExtraction:true,...config},new Semaphore(2));}
 
 test('fast extraction skips manifests and retains normal player/auth requests',async()=>{
   const y=resolver(),calls=[];y.json=async args=>{calls.push(args);return {data:video};};
   await y.audio(target);
   assert.equal(calls.length,1);assert.ok(calls[0].includes('youtube:skip=hls,dash,translated_subs'));
   assert.ok(!calls[0].join(' ').includes('player_skip'));assert.ok(!calls[0].join(' ').includes('player_client'));
+});
+test('normal extraction is the default and source selection checks download availability',async()=>{
+  const config=loadConfig({});assert.equal(config.youtubeFastExtraction,false);
+  const y=new YouTubeResolver(config,new Semaphore(2));let args;
+  y.json=async value=>{args=value;return {data:video};};await y.audio(target);
+  assert.ok(args.includes('--check-formats'));assert.ok(!args.includes('--check-all-formats'));assert.ok(!args.includes('--extractor-args'));
 });
 test('fast extraction falls back to full extraction once when no direct format exists',async()=>{
   const y=resolver(),calls=[];y.json=async args=>{calls.push(args);if(calls.length===1)throw new UserError('No format','FORMAT');return {data:video};};

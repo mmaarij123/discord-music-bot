@@ -41,7 +41,7 @@ export class AudioManager {
     if (offset) args.push('-ss',String(offset));
     args.push('-i',source.input,'-vn','-sn','-dn','-map_metadata','-1','-t',String(Math.max(0.1,this.config.maxTrack-offset)),'-f','s16le','-ar','48000','-ac','2','pipe:1');
     const child = this.spawn(this.config.ffmpeg,args);
-    let disposed=false, stderr='', started=false;
+    let disposed=false, stderr='', started=false,childClosed=false;
     const pcm=new PassThrough({highWaterMark:48000*2*2});
     const report = error => { if (!disposed) {
       if(['ACCESS_DENIED','SOURCE_STALE'].includes(error.code)&&source.match?.youtubeUrl)this.youtube.invalidate?.(source.match);
@@ -53,6 +53,7 @@ export class AudioManager {
     pcm.on('error',report);
     child.stdout.pipe(pcm);
     child.on('close',code => {
+      childClosed=true;
       handle.exitCode=code;
       if(code !== 0)report(decoderError(stderr,code,{cachedSource:source.fromCache===true&&Boolean(source.match?.youtubeUrl),provider:source.match?.youtubeUrl?'YouTube':'The provider'}));
     });
@@ -75,9 +76,13 @@ export class AudioManager {
           once(pcm,'readable',{signal:readySignal}),
           once(child,'close',{signal:readySignal}).then(()=>{if(!pcm.readableLength)throw handle.failure ?? new UserError('The source returned no decodable audio.','NO_AUDIO');})
         ]);
+        // 'readable' also fires for EOF with zero bytes. Wait for the decoder's
+        // close/status in that case instead of declaring an empty stream ready.
+        if(!pcm.readableLength&&!childClosed)await once(child,'close',{signal:readySignal});
       }
       signal?.throwIfAborted();
       if(handle.failure)throw handle.failure;
+      if(!pcm.readableLength)throw new UserError('The source returned no decodable audio.','NO_AUDIO');
       if (pcm.readableEnded || pcm.destroyed) throw new UserError('The source returned no playable audio.');
       resource=createAudioResource(pcm,{inputType:StreamType.Raw,inlineVolume:true,metadata:track,silencePaddingFrames:5});
       resource.playStream.on('error',report);

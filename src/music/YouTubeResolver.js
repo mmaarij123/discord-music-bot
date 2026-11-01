@@ -69,8 +69,8 @@ export class YouTubeResolver {
     if(cached&&cached.expiresAt>Date.now())return {...cached,fromCache:true};
     if(cached)this.sourceCache.delete(key);
     return this.requests.run(key,async sharedSignal=>{
-      const args=['--no-playlist','--dump-single-json','--format','bestaudio/best','--',parsed.url];
-      let result,fast=this.config.youtubeFastExtraction!==false;
+      const args=['--no-playlist','--check-formats','--dump-single-json','--format','bestaudio/best','--',parsed.url];
+      let result,fast=this.config.youtubeFastExtraction===true;
       try{
         // Prefer direct audio without fetching unused streaming manifests.
         // Keep normal webpage, player, JS and account validation requests.

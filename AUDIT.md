@@ -23,7 +23,7 @@ The remaining **39 runtime modules** are all reachable from `src/index.js`; no o
 
 | Check | Result |
 |---|---|
-| Node built-in automated tests | **223 passed**, zero failures/skips |
+| Node built-in automated tests | **226 passed**, zero failures/skips |
 | ESLint 10.14.0 static scan | **67 files**, zero errors/warnings |
 | JavaScript syntax verification | Passed |
 | Runtime import reachability | 39/39 modules reachable |
@@ -75,3 +75,13 @@ The user clarified that Searching/Added queue confirmations belong in the play c
 Version-1 saved log preferences load safely; version 2 stores both IDs without overwriting either during concurrent updates. No DJ destination is invented during migration. Nine additional regression tests cover this migration, independent resets/updates, moderator-only DJ configuration, local Searching/Added replies, DJ-only embed output, log-only notices, no duplicate snapshots and missing-destination recovery. **223 automated tests passed**, all syntax checks passed and **67 files** passed static analysis. Discord routing was exercised with mocks, not real server posts.
 
 The user again replaced their local cookie JSON. The normal private import command validated and converted **22 entries**, updated only the local cookie setting and passed a real permitted-source extraction/FFmpeg/Opus ten-packet probe. Credentials/cookie values were not printed or uploaded. The bot was restarted with this replacement, and source-only updates were pushed to the existing private repository after scanning against the current local secrets.
+
+## Reported Maula Mere Maula HTTP 403
+
+The running bot reported a fresh-source HTTP 403 during decoder input opening at zero playback seconds for the user's selected video. A normal-extraction probe passed once, but subsequent fast and normal extractions both produced unavailable format-251 URLs. This did not establish that manifest skipping alone caused the failure. The installed yt-dlp 2026.10.26 was checked against the latest stable upstream release and was current.
+
+Source resolution now uses upstream `--check-formats` to verify selected candidates are downloadable before caching them; it does not use `--check-all-formats`, alternate account rotation, client overrides or restriction-bypass options. Normal full extraction is now the default and was enabled locally to retain the complete format set. Format checks may fetch small test samples and add cold-start latency; five-minute cache reuse remains bounded by signed-URL expiry.
+
+A separate startup bug was reproduced: a PCM readable event on empty EOF could be mistaken for actual audio, producing audio_started just before the decoder's 403 close event. Empty startup now waits for decoder status and rejects with the actual safe HTTP/no-audio error, rather than returning a playback resource.
+
+**226 tests passed**, with zero failures/skips, plus syntax checks and a clean 67-file static scan. Three new tests cover normal availability-checked selection, late HTTP denial following zero-byte EOF and clean zero-byte exits. Two independent fresh extractions of the affected Maula Mere Maula video each played **4.02 seconds** through real FFmpeg/Opus and the voice scheduler without errors. These short offline probes are not proof of full-song or live Discord listening. Real-time local playback/seek/queue checks also passed. The bot was restarted with the fix and source-only updates published to the existing private repo; credentials remained local.

@@ -33,7 +33,11 @@ function setup(outcomes,sources){
       const outcome=outcomes.shift();
       process.nextTick(()=>{
         if(outcome==='ok')child.stdout.write(Buffer.alloc(3840));
-        else {child.stderr.write('HTTP error 403 Forbidden');child.emit('close',1);child.stdout.end();}
+        else if(outcome==='empty-first'){
+          child.stdout.end();setTimeout(()=>{child.stderr.write('HTTP error 403 Forbidden');child.emit('close',1);},15);
+        }else if(outcome==='empty-success'){
+          child.stdout.end();setTimeout(()=>child.emit('close',0),15);
+        }else {child.stderr.write('HTTP error 403 Forbidden');child.emit('close',1);child.stdout.end();}
       });
       return child;
     },
@@ -62,4 +66,13 @@ test('late cached-link rejection resumes at heard position using fresh metadata'
   f.handles[0].resource.playbackDuration=5000;
   f.fakePlayer.emit('error',new UserError('Cached signed URL rejected','SOURCE_STALE'));await settle();await settle();
   assert.deepEqual(f.prepared,['A','A']);assert.deepEqual(f.offsets,[0,5]);assert.equal(f.player.current.title,'A');assert.equal(f.player.queue.length,1);
+});
+test('zero-byte EOF waits for decoder status and never returns a playing resource',async t=>{
+  const f=setup(['empty-first'],[source(false)]);t.after(()=>f.audio.dispose());let returned=false;
+  const request=f.audio.prepare(target).then(()=>{returned=true;});
+  await assert.rejects(request,{code:'ACCESS_DENIED',httpStatus:403});assert.equal(returned,false);assert.equal(f.audio.handles.size,0);
+});
+test('clean decoder exit with zero bytes is not a successful audio start',async t=>{
+  const f=setup(['empty-success'],[source(false)]);t.after(()=>f.audio.dispose());
+  await assert.rejects(f.audio.prepare(target),{code:'NO_AUDIO'});assert.equal(f.audio.handles.size,0);
 });
