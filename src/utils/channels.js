@@ -2,9 +2,9 @@ import { ChannelType,PermissionFlagsBits } from 'discord.js';
 import { UserError } from './errors.js';
 
 export async function requireLogChannel(guild,channel){
-  if(!channel||channel.guildId!==guild.id||![ChannelType.GuildText,ChannelType.GuildAnnouncement].includes(channel.type))throw new UserError('Choose a text channel in this server for music logs.','LOG_CHANNEL');
+  if(!channel||channel.guildId!==guild.id||![ChannelType.GuildText,ChannelType.GuildAnnouncement].includes(channel.type))throw new UserError('Choose a text channel in this server for music output.','LOG_CHANNEL');
   const bot=guild.members.me??await guild.members.fetchMe();
-  if(!channel.permissionsFor(bot)?.has([PermissionFlagsBits.ViewChannel,PermissionFlagsBits.SendMessages,PermissionFlagsBits.EmbedLinks]))throw new UserError('The bot needs View Channel, Send Messages and Embed Links in the log channel.','LOG_CHANNEL');
+  if(!channel.permissionsFor(bot)?.has([PermissionFlagsBits.ViewChannel,PermissionFlagsBits.SendMessages,PermissionFlagsBits.EmbedLinks]))throw new UserError('The bot needs View Channel, Send Messages and Embed Links in the selected channel.','LOG_CHANNEL');
   return channel;
 }
 export async function findLogChannel(guild,input){

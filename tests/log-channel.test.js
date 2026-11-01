@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import path from 'node:path';
 import { tmpdir } from 'node:os';
 import { mkdtemp,readFile,writeFile,rm,readdir } from 'node:fs/promises';
-import { ChannelType } from 'discord.js';
+import { ChannelType,PermissionFlagsBits } from 'discord.js';
 import { GuildSettings } from '../src/config/GuildSettings.js';
 import { findLogChannel,requireLogChannel } from '../src/utils/channels.js';
 import { MusicManager } from '../src/music/MusicManager.js';
@@ -108,11 +108,11 @@ test('logchannel off is usable when the old destination is missing',async t=>{
   const f=setup(t);await f.manager.settings.setLogChannel(GUILD,OUTPUT);f.channels.delete(OUTPUT);await f.run('>logchannel off');
   assert.equal(f.manager.settings.getLogChannel(GUILD),null);await f.run('>help');assert.ok(f.source.messages.at(-1).embeds.length);
 });
-test('changing output invalidates old controls and preserves active audio',async t=>{
+test('changing the DJ output invalidates old controls and preserves active audio',async t=>{
   const f=setup(t),music=fixture({id:GUILD});await music.player.enqueue([track('A')],music.channel);
   const presenter=new PlayerPresenter(music.player,logger);f.manager.players.set(GUILD,music.player);f.manager.presenters.set(GUILD,presenter);
   presenter.bind(f.source);await presenter.render();const handle=music.player.handle,nonce=presenter.nonce;
-  await f.manager.setLogChannel(f.guild,f.output,f.source);await presenter.render();
+  await f.manager.setDjChannel(f.guild,f.output,f.source);await presenter.render();
   assert.equal(music.player.handle,handle);assert.equal(music.player.current.title,'A');assert.notEqual(presenter.nonce,nonce);
   assert.deepEqual(f.source.edits.at(-1).components,[]);assert.equal(f.output.messages.length,1);assert.equal(presenter.channel,f.output);
 });
@@ -130,11 +130,75 @@ test('default binding preserves the original session output without a configured
 });
 test('saved JSON contains only channel preferences and no runtime player data',async t=>{
   const file=path.join(await folder(t),'settings.json'),settings=new GuildSettings(file);await settings.setLogChannel(GUILD,OUTPUT);
-  assert.deepEqual(JSON.parse(await readFile(file,'utf8')),{version:1,guilds:{[GUILD]:{logChannelId:OUTPUT}}});
+  assert.deepEqual(JSON.parse(await readFile(file,'utf8')),{version:2,guilds:{[GUILD]:{logChannelId:OUTPUT}}});
 });
 test('production manager factory reloads saved routing after a restart',async t=>{
   const f=setup(t),config={...loadConfig({}),settingsFile:path.join(await folder(t),'settings.json')};
   const first=await MusicManager.create(config,logger);await first.setLogChannel(f.guild,f.output,f.source);await first.destroy();
   const restarted=await MusicManager.create(config,logger);t.after(()=>restarted.destroy());
   assert.equal(await restarted.outputChannel(f.guild,f.source),f.output);
+});
+test('legacy log settings load without inventing a DJ channel and migrate safely',async t=>{
+  const file=path.join(await folder(t),'settings.json');await writeFile(file,JSON.stringify({version:1,guilds:{[GUILD]:{logChannelId:OUTPUT}}}));
+  const settings=await GuildSettings.open(file);assert.equal(settings.getLogChannel(GUILD),OUTPUT);assert.equal(settings.getDjChannel(GUILD),null);
+  await settings.setDjChannel(GUILD,SECOND);const loaded=await GuildSettings.open(file);
+  assert.equal(loaded.getLogChannel(GUILD),OUTPUT);assert.equal(loaded.getDjChannel(GUILD),SECOND);assert.equal(JSON.parse(await readFile(file,'utf8')).version,2);
+});
+test('concurrent log and DJ updates preserve both destinations and reset independently',async t=>{
+  const file=path.join(await folder(t),'settings.json'),settings=new GuildSettings(file);
+  await Promise.all([settings.setLogChannel(GUILD,OUTPUT),settings.setDjChannel(GUILD,SECOND)]);
+  await settings.setLogChannel(GUILD,null);const loaded=await GuildSettings.open(file);
+  assert.equal(loaded.getLogChannel(GUILD),null);assert.equal(loaded.getDjChannel(GUILD),SECOND);
+  await loaded.setLogChannel(GUILD,OUTPUT);await loaded.setDjChannel(GUILD,null);
+  assert.equal(loaded.getLogChannel(GUILD),OUTPUT);assert.equal(loaded.getDjChannel(GUILD),null);
+});
+test('DJ command supports names, status and off independently from the log channel',async t=>{
+  const f=setup(t);assert.equal(parsePrefix('>djchannel #other').values.channel,'#other');
+  await f.run('>logchannel #music-logs');await f.run('>djchannel #other');
+  assert.equal(f.manager.settings.getLogChannel(GUILD),OUTPUT);assert.equal(f.manager.settings.getDjChannel(GUILD),SECOND);
+  await f.run('>djchannel');assert.match(f.source.messages.at(-1).content,new RegExp(SECOND));
+  await f.run('>djchannel off');assert.equal(f.manager.settings.getDjChannel(GUILD),null);assert.equal(f.manager.settings.getLogChannel(GUILD),OUTPUT);
+});
+test('DJ configuration requires Manage Server even if a user is in voice',async t=>{
+  const f=setup(t);f.member.permissions.has=()=>false;await f.run('>djchannel #other');
+  assert.equal(f.manager.settings.getDjChannel(GUILD),null);assert.match(f.source.messages.at(-1).content,/Manage Server/);
+});
+test('changing only the log channel does not move the embed or invalidate its controls',async t=>{
+  const f=setup(t),music=fixture({id:GUILD}),presenter=new PlayerPresenter(music.player,logger);
+  f.manager.players.set(GUILD,music.player);f.manager.presenters.set(GUILD,presenter);presenter.bind(f.other);await presenter.render();const nonce=presenter.nonce;
+  await f.manager.setLogChannel(f.guild,f.output,f.source);
+  assert.equal(presenter.channel,f.other);assert.equal(presenter.noticeChannel,f.output);assert.equal(presenter.nonce,nonce);assert.equal(f.output.messages.length,0);
+});
+test('play confirmation stays local, the embed stays in DJ, and notices go to logs',async t=>{
+  const f=setup(t),music=fixture({id:GUILD}),presenter=new PlayerPresenter(music.player,logger);
+  f.manager.players.set(GUILD,music.player);f.manager.presenters.set(GUILD,presenter);
+  f.manager.discovery={resolve:async()=>({tracks:[track('Song')],notices:[]})};
+  f.member.voice.channel={id:'voice',type:ChannelType.GuildVoice,full:false,permissionsFor:()=>({has:()=>true})};
+  await f.manager.settings.setLogChannel(GUILD,OUTPUT);await f.manager.settings.setDjChannel(GUILD,SECOND);
+  // The command channel only needs text replies when a separate DJ channel is set.
+  f.source.permissions.has=value=>value!==PermissionFlagsBits.EmbedLinks;
+  await f.run('>play Artist Song');await presenter.render();
+  assert.equal(f.source.messages.length,1);assert.equal(f.source.messages[0].content,'Searching of `Artist Song`');
+  assert.equal(f.source.edits.at(-1).content,'Added `Song` in the queue');assert.equal(f.output.messages.length,0);
+  assert.equal(f.other.messages.length,1);assert.ok(f.other.messages[0].embeds.length);assert.equal(f.other.messages[0].content,undefined);
+  presenter.notice('Playback notice');await new Promise(resolve=>{setTimeout(resolve,3100);});
+  assert.equal(f.output.messages[0].content,'Playback notice');assert.equal(f.other.messages.length,1);
+  const handle=music.player.handle;await f.run('>nowplaying');
+  assert.equal(f.other.messages.length,1);assert.match(f.output.messages.at(-1).content,/music player is in/);assert.equal(music.player.handle,handle);
+});
+test('log-only configuration does not pull the player away from the play command channel',async t=>{
+  const f=setup(t),music=fixture({id:GUILD}),presenter=new PlayerPresenter(music.player,logger);
+  f.manager.players.set(GUILD,music.player);f.manager.presenters.set(GUILD,presenter);await f.manager.settings.setLogChannel(GUILD,OUTPUT);
+  await f.manager.bindPresenter(f.guild,f.source);assert.equal(presenter.channel,f.source);assert.equal(presenter.noticeChannel,f.output);
+});
+test('missing DJ destination can be reset without touching the log setting',async t=>{
+  const f=setup(t);await f.manager.settings.setLogChannel(GUILD,OUTPUT);await f.manager.settings.setDjChannel(GUILD,SECOND);f.channels.delete(SECOND);
+  await assert.rejects(f.manager.djChannel(f.guild,f.source),/DJ channel is unavailable/);await f.run('>djchannel off');
+  assert.equal(f.manager.settings.getDjChannel(GUILD),null);assert.equal(f.manager.settings.getLogChannel(GUILD),OUTPUT);
+});
+test('a broken log destination cannot prevent the host from stopping outside voice',async t=>{
+  const f=setup(t),music=fixture({id:GUILD});f.manager.players.set(GUILD,music.player);music.player.claimHost('666666666666666666');
+  await music.player.enqueue([track('Song')],music.channel);await f.manager.settings.setLogChannel(GUILD,OUTPUT);f.channels.delete(OUTPUT);
+  f.member.permissions.has=()=>false;f.source.permissions.has=value=>value!==PermissionFlagsBits.EmbedLinks;
+  await f.run('>stop');assert.equal(music.player.voice.channelId,null);assert.ok(music.player.closed);assert.match(f.source.messages.at(-1).content,/left voice/);
 });

@@ -5,8 +5,8 @@ import { UserError } from '../utils/errors.js';
 import { integer, parseTime, classifyInput } from '../utils/validators.js';
 import { withAbort } from '../utils/async.js';
 import { performance } from 'node:perf_hooks';
-import { logChannel } from './logChannel.js';
-const readOnly=new Set(['help','queue','nowplaying','lyrics','logchannel']);
+import { channelSettings } from './channelSettings.js';
+const readOnly=new Set(['help','queue','nowplaying','lyrics','logchannel','djchannel']);
 const songLabel=value=>`\`${String(value).replace(/`/g,'ˋ').replace(/[\r\n]/g,' ').slice(0,500)}\``;
 export async function voiceAccess(interaction,player) {
   const member=await interaction.guild.members.fetch(interaction.user.id);
@@ -22,8 +22,8 @@ export async function voiceAccess(interaction,player) {
 }
 function requirePlayer(player,prefix) { if (!player) throw new UserError(`No music session is active. Use ${prefix}play or ${prefix}join first.`); return player; }
 function admin(member) { if (!member.permissions.has(PermissionFlagsBits.ManageGuild)) throw new UserError('Manage Server permission is required to change this setting.'); }
-function textAccess(interaction){
-  const channel=interaction.channel,bot=interaction.guild.members.me;
+function textAccess(interaction,channel=interaction.channel){
+  const bot=interaction.guild.members.me;
   const permissions=[PermissionFlagsBits.ViewChannel,PermissionFlagsBits.EmbedLinks,channel?.isThread()?PermissionFlagsBits.SendMessagesInThreads:PermissionFlagsBits.SendMessages];
   if(!channel?.isTextBased()||!channel.permissionsFor(bot)?.has(permissions))throw new UserError('The bot needs View Channel, Send Messages (or Send Messages in Threads), and Embed Links here to show the music player.');
 }
@@ -34,15 +34,15 @@ export async function execute(interaction,manager,action=interaction.commandName
   if (!readOnly.has(action)&&!['stop','leave'].includes(action)) access=await voiceAccess(interaction,player);
   const option=interaction.options;
   const reply=content=>interaction.editReply(typeof content==='string' ? {content,allowedMentions:{parse:[]}} : content);
-  if(action==='logchannel')return logChannel(interaction,manager,reply);
+  if(['logchannel','djchannel'].includes(action))return channelSettings(interaction,manager,reply,action==='djchannel'?'dj':'log');
   if (action==='help') {
     const help=commands.map(command=>`**${escapeMarkdown(usage(command,prefix))}** — ${command.description}`).join('\n');
     return reply({embeds:[new EmbedBuilder().setColor(0x1db954).setTitle('Your listening room').setDescription(help).addFields({name:'Try it',value:`${prefix}play Stephen Sanchez Until I Found You\n${prefix}play local:demo\n${prefix}seek 1:30\n${prefix}autoplay on`},{name:'Sources',value:'Spotify metadata is best-effort. Audio uses supported public YouTube sources or the operator’s authorized media library. No music API keys.'})]});
   }
   if (action==='play') {
-    textAccess(interaction);
     const query=option.getString('query',true);
     classifyInput(query);
+    textAccess(interaction,await manager.djChannel?.(interaction.guild,interaction.channel)??interaction.channel);
     // A server has one outstanding discovery request; queue mutations stay independent.
     return manager.import(interaction.guildId,async signal=>{
       const started=performance.now(),preparation=new AbortController();
@@ -95,7 +95,7 @@ export async function execute(interaction,manager,action=interaction.commandName
     });
   }
   if(action==='join'){
-    textAccess(interaction);
+    textAccess(interaction,await manager.djChannel?.(interaction.guild,interaction.channel)??interaction.channel);
     player=manager.get(interaction.guild,true);await manager.bindPresenter?.(interaction.guild,interaction.channel);
     await player.join(access.channel);player.claimHost(interaction.user.id);return reply('Connected to your voice channel.');
   }
@@ -136,7 +136,11 @@ export async function execute(interaction,manager,action=interaction.commandName
     case 'move': await player.editQueue(queue=>queue.move(option.getInteger('from',true),option.getInteger('to',true))); return reply('Moved the queued track.');
     case 'jump': await player.jump(option.getInteger('position',true)); return reply('Jumped to the selected track.');
     case 'seek': await player.seek(parseTime(option.getString('position',true))); return reply('Playback position updated.');
-    case 'nowplaying': return reply({embeds:[playerEmbed(player)]});
+    case 'nowplaying': {
+      const dj=manager.settings?.getDjChannel(interaction.guildId);
+      if(dj){await manager.bindPresenter(interaction.guild,interaction.channel);return reply(`The music player is in <#${dj}>.`);}
+      return reply({embeds:[playerEmbed(player)]});
+    }
     case 'queue': {
       const page=option.getInteger('page')??1, pages=Math.max(1,Math.ceil(player.queue.length/10));
       integer(page,1,pages,'Page');

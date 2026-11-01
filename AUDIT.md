@@ -23,7 +23,7 @@ The remaining **39 runtime modules** are all reachable from `src/index.js`; no o
 
 | Check | Result |
 |---|---|
-| Node built-in automated tests | **214 passed**, zero failures/skips |
+| Node built-in automated tests | **223 passed**, zero failures/skips |
 | ESLint 10.14.0 static scan | **67 files**, zero errors/warnings |
 | JavaScript syntax verification | Passed |
 | Runtime import reachability | 39/39 modules reachable |
@@ -67,3 +67,11 @@ Added `>logchannel #channelname`, channel mention/ID support, status without arg
 New prefix replies, progress/confirmation messages, validation errors, player embeds and playback notices use the configured destination. Setup acknowledgements and broken-destination diagnostics stay in the command channel so administrators can recover. The active player relocates under its presenter mutex with a new nonce, disables old controls and leaves the audio resource untouched. No configured destination silently falls back to an unrelated music output channel.
 
 Preferences persist through atomic, serialized writes to private `data/guild-settings.json`; that directory is excluded from Git and release archives. Failed writes do not modify in-memory settings. Nineteen new tests cover parsing, permissions, same-guild checks, ambiguous names, routing/errors, message reuse, player relocation and in-flight-render ordering, persistence/restart, concurrent guild writes and safe failure. **214 tests passed**, zero failures/skips; **67 JavaScript files** passed static checks and all syntax checks passed. Tests mock Discord sends; no real server channel was selected or test messages posted during development. The bot was restarted to load the new command.
+
+## Separate DJ embeds, local play replies and replacement cookies
+
+The user clarified that Searching/Added queue confirmations belong in the play command's channel, automatic player embeds belong in a separately configurable DJ channel, and notices/other logs belong in the log channel. Added `>djchannel` with the same Manage Server, same-guild and permission checks, independent persistence and reset/status commands. The presenter now owns separate embed/notice destinations; changing log preferences does not move the player or invalidate its controls. `>nowplaying` points at the configured DJ player instead of posting a duplicate snapshot in logs. Play/setup text replies do not require Embed Links in their source channel when the embed is routed to an authorized DJ destination.
+
+Version-1 saved log preferences load safely; version 2 stores both IDs without overwriting either during concurrent updates. No DJ destination is invented during migration. Nine additional regression tests cover this migration, independent resets/updates, moderator-only DJ configuration, local Searching/Added replies, DJ-only embed output, log-only notices, no duplicate snapshots and missing-destination recovery. **223 automated tests passed**, all syntax checks passed and **67 files** passed static analysis. Discord routing was exercised with mocks, not real server posts.
+
+The user again replaced their local cookie JSON. The normal private import command validated and converted **22 entries**, updated only the local cookie setting and passed a real permitted-source extraction/FFmpeg/Opus ten-packet probe. Credentials/cookie values were not printed or uploaded. The bot was restarted with this replacement, and source-only updates were pushed to the existing private repository after scanning against the current local secrets.

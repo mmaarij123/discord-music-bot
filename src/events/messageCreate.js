@@ -4,6 +4,8 @@ import { messageContext } from '../commands/messageContext.js';
 import { execute } from '../commands/execute.js';
 import { publicError, UserError } from '../utils/errors.js';
 import { createCooldown } from '../utils/cooldown.js';
+const localReplies=new Set(['play','logchannel','djchannel']);
+const stopCommands=new Set(['stop','leave']);
 
 export function messageHandler(manager, logger, { cooldown = createCooldown() } = {}) {
   const prefix = manager.config?.prefix ?? '>';
@@ -22,9 +24,15 @@ export function messageHandler(manager, logger, { cooldown = createCooldown() } 
       }
       const head=message.content.slice(prefix.length).trim().split(/\s+/,1)[0]?.toLowerCase();
       if(!head)return;
-      output=head==='logchannel'?message.channel:await manager.outputChannel?.(message.guild,message.channel)??message.channel;
+      if(!localReplies.has(head)){
+        try{output=await manager.outputChannel?.(message.guild,message.channel)??message.channel;}
+        catch(error){
+          if(!stopCommands.has(head))throw error;
+          logger.warn('stop_reply_channel_unavailable',{guildId:message.guildId,error});
+        }
+      }
       const outputPermissions=output.permissionsFor(bot);
-      if(!outputPermissions?.has(PermissionFlagsBits.EmbedLinks))throw new UserError('The bot needs Embed Links permission in the output channel to show music replies and the player.');
+      if(!localReplies.has(head)&&!stopCommands.has(head)&&!outputPermissions?.has(PermissionFlagsBits.EmbedLinks))throw new UserError('The bot needs Embed Links permission in the output channel to show music replies and the player.');
       cooldown(message.guildId, message.author.id);
       const parsed = parsePrefix(message.content, prefix);
       if (!parsed) return;

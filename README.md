@@ -6,7 +6,7 @@ Spotify supplies **metadata only**. All audio comes from a supported public YouT
 
 ## What works
 
-- All 23 prefix commands (default `>`) below, plus six functional player buttons.
+- All 24 prefix commands (default `>`) below, plus six functional player buttons.
 - Independent bounded queues and history per server; concurrent skips advance once; adding tracks leaves current playback running.
 - Song/artist searches with weighted matching, official/Topic preferences, duration comparison, and rejection of unwanted covers, live performances, remixes, karaoke, nightcore, slowed and sped-up versions.
 - Spotify track, album, and public playlist metadata through `spotify-url-info`. Public collections can be partial; imports always say so. No full Spotify audio or previews are played.
@@ -17,7 +17,7 @@ Spotify supplies **metadata only**. All audio comes from a supported public YouT
 - JSON logging with token/URL redaction, configuration validation, safe subprocess argument arrays, same-voice-channel authorization, and Manage Server checks for settings.
 - A single search reply uses ``Searching of `song name` `` and then changes to ``Added `resolved song title` in the queue``. Metadata fallback details stay in debug diagnostics rather than cluttering chat. Failed searches finish with a concise not-found message; partial playlist and queue-limit notices remain visible.
 
-**Explicit limitations:** Public Spotify text search has no supported built-in API-free endpoint. Plain-text input uses YouTube metadata unless you configure optional official Spotify credentials or a trusted Spotify search adapter; fallback details are available in debug diagnostics. Public metadata may change or be inaccessible by region. Lyrics require an operator-configured lawful adapter; `>lyrics` explains this when none is installed. YouTube delivery may fail on some networks/VPS IP ranges. The bot reports such failures and can continue with your authorized library. 24/7 keeps a connection while the application runs; it cannot provide uptime while your host is offline. Queues, history and playback settings reset on restart/session release; the log-channel destination is saved separately on disk.
+**Explicit limitations:** Public Spotify text search has no supported built-in API-free endpoint. Plain-text input uses YouTube metadata unless you configure optional official Spotify credentials or a trusted Spotify search adapter; fallback details are available in debug diagnostics. Public metadata may change or be inaccessible by region. Lyrics require an operator-configured lawful adapter; `>lyrics` explains this when none is installed. YouTube delivery may fail on some networks/VPS IP ranges. The bot reports such failures and can continue with your authorized library. 24/7 keeps a connection while the application runs; it cannot provide uptime while your host is offline. Queues, history and playback settings reset on restart/session release; the independent log/DJ channel destinations are saved separately on disk.
 
 See [AUDIT.md](AUDIT.md) for the current code/dependency audit and [VALIDATION.md](VALIDATION.md) for the checks executed and remaining live Discord checks. A real Discord token and server are required to validate login, prefix handling and voice delivery; these are not simulated claims.
 
@@ -194,7 +194,7 @@ Copy `.env.example` to `.env`. Never commit `.env`, tokens, private media, or pr
 
 Boolean variables accept exactly `true` or `false`. Paths for media and adapters resolve relative to the project root. Executable settings are not shell commands: do not append flags, `python -m`, or quotes within the path value. For a Python yt-dlp installation, point to its generated `yt-dlp` / `yt-dlp.exe` launcher.
 
-`>247` and `>autoplay` require Manage Server permission and change only the current guild session. Both `>stop` and `>leave` override 24/7, clear the queue and disconnect. The first play/join requester owns that session; adding tracks does not transfer ownership. The host and Manage Server moderators can stop even after changing/leaving voice. Idle cleanup releases playback settings; environment defaults apply to new sessions. Application restarts reset queues/playback settings but retain the saved log-channel destination.
+`>247` and `>autoplay` require Manage Server permission and change only the current guild session. Both `>stop` and `>leave` override 24/7, clear the queue and disconnect. The first play/join requester owns that session; adding tracks does not transfer ownership. The host and Manage Server moderators can stop even after changing/leaving voice. Idle cleanup releases playback settings; environment defaults apply to new sessions. Application restarts reset queues/playback settings but retain the saved log/DJ channel destinations.
 
 ### Optional YouTube cookie file
 
@@ -250,7 +250,8 @@ When started, logs should include `ready`. Join a voice channel and use `>play l
 | >247 on/off | Manage Server: retain voice connection while running and idle. |
 | >autoplay on/off | Manage Server: enable/disable conservative recommendations. Default off. |
 | >lyrics | Lawful configured adapter or an informative unavailable response. |
-| >logchannel [channel/off] | Manage Server: select the music output channel, show its setting, or reset it. No voice connection required. |
+| >logchannel [channel/off] | Manage Server: select the playback-log channel, show its setting, or reset it. |
+| >djchannel [channel/off] | Manage Server: select the player-embed channel independently, show its setting, or reset it. |
 | >help | Command list and input examples. |
 
 Buttons: Previous, Pause/Resume, Skip, Stop, Loop, Shuffle. They use the same authorization and queue methods as prefix commands. Old session controls expire. Read-only queue, nowplaying, lyrics and help do not require voice membership. Playback and settings controls do. Volume/control changes are available to listeners in the session channel; restrict channel access for stricter listener control. Discord application-command permissions do not apply to text prefix commands.
@@ -271,13 +272,13 @@ A 401/403 from a reused signed link can trigger one fresh extraction; a denial f
 
 Source metadata for the immediate first track can resolve while Discord voice connects. During playback, only the next queued track gets a best-effort metadata warmup within roughly 20 seconds of the current track ending. This creates no FFmpeg process and downloads no audio. Queue changes, pause, stop and shutdown cancel obsolete warmups. Background warmup is capped at one globally and skipped when it would consume the remaining foreground metadata slot; a one-slot deployment skips background warmup. Actual Discord startup time still depends on provider/network response and voice handshakes.
 
-### Choose the music log channel
+### Choose separate music log and DJ channels
 
 Use `>logchannel #music-logs` with your actual channel name/mention, or supply its channel ID. `>logchannel` shows the saved destination; `>logchannel off` resets it. Manage Server permission is required, and the bot needs View Channel, Send Messages and Embed Links in a text/announcement channel in the same server. If duplicate channel names exist, use a mention or ID.
 
-New prefix replies (including search/queue confirmations and validation errors), the player embed and playback notices route to the selected channel. Setup/status confirmations stay where the setting command was sent. Changing the destination moves the current player, invalidates its old buttons and leaves audio playing. Configuration/output-channel errors are reported where the command was invoked so a moderator can repair the setting; there is no silent fallback posting music into unrelated channels. Player controls still enforce voice/session-host permissions.
+Use `>djchannel #dj` to select the player-only destination independently. `>djchannel` shows it and `>djchannel off` resets it. Searching and `Added ... in the queue` replies remain in the channel where `>play` was entered, using one edited progress reply. The automatic player embed/buttons go only to the configured DJ channel. Playback notices and other command replies go to the log channel; setup/status acknowledgements stay in their command channel. Changing the log destination moves notices only. Changing the DJ destination moves the current player, invalidates old buttons and leaves audio playing. With a DJ destination set, `>nowplaying` points to that player rather than creating another embed in logs. Configuration errors explain how to repair/reset the destination, and player controls still enforce voice/session-host permissions.
 
-The destination is stored per server in `data/guild-settings.json` with serialized atomic writes and survives restarts; ordinary queues/history/voice settings remain in memory. The data directory is private runtime state and excluded from Git and release ZIPs. Keep a private backup if you move hosts. To recover from a deleted destination or removed channel permissions, fix them or run `>logchannel off` in a channel where the bot can reply. No additional music API keys or external database are required.
+Both destinations are stored independently per server in versioned `data/guild-settings.json` with serialized atomic writes and survive restarts; ordinary queues/history/voice settings remain in memory. The data directory is private runtime state and excluded from Git and release ZIPs. Keep a private backup if you move hosts. To recover from a deleted destination or removed channel permissions, fix them or run the matching `>logchannel off` / `>djchannel off` in a channel where the bot can reply. Old log-only settings are read without assigning an unrequested DJ channel; the next setting update safely migrates the file format. No additional music API keys or external database are required.
 
 ## 8. Authorized local and direct-stream fallback
 
@@ -440,7 +441,7 @@ Music Bot/
     index.js                    Discord startup, signals and shutdown
     config/config.js            Validated environment configuration
     config/GuildSettings.js     Atomic per-server log-channel preferences
-    commands/definitions.js     All 23 prefix definitions
+    commands/definitions.js     All 24 prefix definitions
     commands/execute.js         Shared prefix/button business logic
     commands/parsePrefix.js     Typed argument parsing and usage
     commands/messageContext.js  Single-message reply/progress adapter

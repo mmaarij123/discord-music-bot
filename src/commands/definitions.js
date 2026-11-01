@@ -26,6 +26,7 @@ export const commands = [
   command('autoplay', 'Enable or disable related-track discovery (Manage Server)', '<on|off>', [boolean]),
   command('lyrics', 'Retrieve lyrics through an operator-configured lawful source'),
   command('logchannel','Set the music log channel (Manage Server)','[#channelname|channel mention|off]',[string('channel',{required:false,maxLength:100})]),
+  command('djchannel','Set the player embed channel (Manage Server)','[#channelname|channel mention|off]',[string('channel',{required:false,maxLength:100})]),
   command('help', 'Show music commands and input examples')
 ];
 

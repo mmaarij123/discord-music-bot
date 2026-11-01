@@ -23,7 +23,7 @@ test('configuration validates bounds, booleans and secrets',()=>{
   for(const env of [{DEFAULT_VOLUME:'101'},{MAX_QUEUE_LENGTH:'0'},{AUTOPLAY_ENABLED:'yes'},{LOG_LEVEL:'trace'}])assert.throws(()=>loadConfig(env));
   assert.throws(()=>requireDiscord(loadConfig({})),/DISCORD_TOKEN/);
 });
-test('all 23 prefix commands have unique names and bounded arguments',()=>{
-  assert.equal(commands.length,23);assert.equal(new Set(commands.map(c=>c.name)).size,23);
+test('all 24 prefix commands have unique names and bounded arguments',()=>{
+  assert.equal(commands.length,24);assert.equal(new Set(commands.map(c=>c.name)).size,24);
   assert.equal(commands.find(c=>c.name==='volume').args[0].max,100);
 });

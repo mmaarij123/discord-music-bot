@@ -8,7 +8,8 @@ export class PlayerPresenter {
     this.onChange=()=>this.schedule(); this.onNotice=message=>this.notice(message);
     player.on('change',this.onChange); player.on('notice',this.onNotice);
   }
-  bind(channel) { if (!this.channel) this.channel=channel; this.schedule(); }
+  bind(channel) { if (!this.channel) this.channel=channel;if(!this.noticeChannel)this.noticeChannel=channel;this.schedule(); }
+  setNoticeChannel(channel){this.noticeChannel=channel;}
   async relocate(channel){
     await this.lock.run(async()=>{
       if(this.disposed)return;
@@ -37,10 +38,10 @@ export class PlayerPresenter {
   }); }
   notice(message) {
     this.pendingNotice=message;
-    if (this.noticeTimer || !this.channel || this.disposed) return;
+    if (this.noticeTimer || !(this.noticeChannel??this.channel) || this.disposed) return;
     this.noticeTimer=setTimeout(()=>{
       this.noticeTimer=null;
-      this.channel?.send({content:this.pendingNotice.slice(0,1900),allowedMentions:{parse:[]}}).catch(error=>this.logger.warn('notice_failed',{guildId:this.player.guild.id,error}));
+      (this.noticeChannel??this.channel)?.send({content:this.pendingNotice.slice(0,1900),allowedMentions:{parse:[]}}).catch(error=>this.logger.warn('notice_failed',{guildId:this.player.guild.id,error}));
     },3000); this.noticeTimer.unref();
   }
   async dispose() {

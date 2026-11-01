@@ -32,23 +32,37 @@ export class MusicManager {
   }
   constructor(config,logger,services) { Object.assign(this,{config,logger,...services});this.settings=services.settings??new GuildSettings();this.players=new Map(); this.presenters=new Map(); this.imports=new Map(); this.closing=false; }
   async outputChannel(guild,fallback){
-    const id=this.settings.getLogChannel(guild.id);if(!id)return fallback;
+    return this.destinationChannel(guild,fallback,'log');
+  }
+  async djChannel(guild,fallback){
+    return this.destinationChannel(guild,fallback,'dj');
+  }
+  async destinationChannel(guild,fallback,kind){
+    const id=kind==='dj'?this.settings.getDjChannel(guild.id):this.settings.getLogChannel(guild.id);if(!id)return fallback;
     let channel;
     try{channel=guild.channels.cache.get(id)??await guild.channels.fetch(id);if(!channel)throw Error();}
-    catch{throw new UserError('The configured music log channel is unavailable. A moderator can use logchannel #channelname or logchannel off to fix it.','LOG_CHANNEL');}
+    catch{const command=kind==='dj'?'djchannel':'logchannel';throw new UserError(`The configured ${kind==='dj'?'DJ':'music log'} channel is unavailable. A moderator can use ${command} #channelname or ${command} off to fix it.`,'LOG_CHANNEL');}
     return requireLogChannel(guild,channel);
   }
   async bindPresenter(guild,fallback){
-    const channel=await this.outputChannel(guild,fallback),presenter=this.presenters.get(guild.id);
+    const channel=await this.djChannel(guild,fallback),notices=await this.outputChannel(guild,fallback),presenter=this.presenters.get(guild.id);
     if(!presenter)return;
-    if(this.settings.getLogChannel(guild.id)&&presenter.channel&&presenter.channel.id!==channel.id)await presenter.relocate(channel);
+    presenter.setNoticeChannel(notices);
+    if(this.settings.getDjChannel(guild.id)&&presenter.channel&&presenter.channel.id!==channel.id)await presenter.relocate(channel);
     else presenter.bind(channel);
   }
   async setLogChannel(guild,channel,fallback){
     if(channel)await requireLogChannel(guild,channel);
     await this.settings.setLogChannel(guild.id,channel?.id??null);
     const presenter=this.presenters.get(guild.id);
+    if(presenter)presenter.setNoticeChannel(channel??fallback);
+  }
+  async setDjChannel(guild,channel,fallback){
+    if(channel)await requireLogChannel(guild,channel);
+    await this.settings.setDjChannel(guild.id,channel?.id??null);
+    const presenter=this.presenters.get(guild.id);
     if(presenter){
+      if(!presenter.noticeChannel)presenter.setNoticeChannel(fallback);
       const target=channel??fallback;
       if(presenter.channel?.id!==target.id)await presenter.relocate(target);else presenter.bind(target);
     }

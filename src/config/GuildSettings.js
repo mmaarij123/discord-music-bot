@@ -12,10 +12,15 @@ export class GuildSettings {
       const text=await readFile(file,'utf8');
       if(Buffer.byteLength(text)>1024*1024)throw Error();
       const data=JSON.parse(text);
-      if(data?.version!==1||!data.guilds||typeof data.guilds!=='object'||Array.isArray(data.guilds))throw Error();
+      if(![1,2].includes(data?.version)||!data.guilds||typeof data.guilds!=='object'||Array.isArray(data.guilds))throw Error();
       const values=Object.entries(data.guilds).map(([id,value])=>{
-        if(!validId(id)||!validId(value?.logChannelId))throw Error();
-        return [id,value.logChannelId];
+        if(!validId(id)||!value||typeof value!=='object')throw Error();
+        const record={};
+        for(const key of data.version===1?['logChannelId']:['logChannelId','djChannelId']){
+          if(value[key]!==undefined){if(!validId(value[key]))throw Error();record[key]=value[key];}
+        }
+        if(!Object.keys(record).length)throw Error();
+        return [id,record];
       });
       return new GuildSettings(file,values);
     }catch(error){
@@ -23,22 +28,26 @@ export class GuildSettings {
       throw new UserError('The saved guild settings file is invalid or unreadable. Check data/guild-settings.json before starting.','GUILD_SETTINGS');
     }
   }
-  getLogChannel(guildId){return this.values.get(guildId)??null;}
-  setLogChannel(guildId,channelId){
-    if(!validId(guildId)||(channelId!==null&&!validId(channelId)))throw new UserError('Invalid server or log channel ID.','GUILD_SETTINGS');
+  getLogChannel(guildId){return this.values.get(guildId)?.logChannelId??null;}
+  getDjChannel(guildId){return this.values.get(guildId)?.djChannelId??null;}
+  setLogChannel(guildId,channelId){return this.setChannel(guildId,'logChannelId',channelId);}
+  setDjChannel(guildId,channelId){return this.setChannel(guildId,'djChannelId',channelId);}
+  setChannel(guildId,key,channelId){
+    if(!['logChannelId','djChannelId'].includes(key))throw new UserError('Unknown channel setting.','GUILD_SETTINGS');
+    if(!validId(guildId)||(channelId!==null&&!validId(channelId)))throw new UserError('Invalid server or channel ID.','GUILD_SETTINGS');
     return this.lock.run(async()=>{
-      const next=new Map(this.values);
-      if(channelId===null)next.delete(guildId);else next.set(guildId,channelId);
+      const next=new Map(this.values),record={...next.get(guildId)};
+      if(channelId===null)delete record[key];else record[key]=channelId;
+      if(Object.keys(record).length)next.set(guildId,record);else next.delete(guildId);
       if(this.file){
         const directory=path.dirname(this.file),temporary=path.join(directory,`.guild-settings-${randomUUID()}.tmp`);
         try{
           await mkdir(directory,{recursive:true,mode:0o700});
-          const guilds=Object.fromEntries([...next].map(([id,logChannelId])=>[id,{logChannelId}]));
-          const serialized=JSON.stringify({version:1,guilds},null,2)+'\n';
+          const serialized=JSON.stringify({version:2,guilds:Object.fromEntries(next)},null,2)+'\n';
           if(Buffer.byteLength(serialized)>1024*1024)throw Error();
           await writeFile(temporary,serialized,{mode:0o600,flag:'wx'});
           await rename(temporary,this.file);
-        }catch{throw new UserError('The log channel setting could not be saved. Check write access to the data folder.','GUILD_SETTINGS');}
+        }catch{throw new UserError('The channel setting could not be saved. Check write access to the data folder.','GUILD_SETTINGS');}
         finally{await rm(temporary,{force:true}).catch(()=>{});}
       }
       this.values=next;
