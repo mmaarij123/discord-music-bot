@@ -34,7 +34,7 @@ export function loadConfig(env = process.env) {
     playbackRetries: number('PLAYBACK_RETRY_LIMIT',2,0,3),
     spotify: { clientId:env.SPOTIFY_CLIENT_ID?.trim()||'',clientSecret:env.SPOTIFY_CLIENT_SECRET?.trim()||'',market:env.SPOTIFY_MARKET?.trim().toUpperCase()||'' },
     mediaRoot: resolve(env.MEDIA_ROOT || './media'), manifest: resolve(env.MEDIA_MANIFEST || './media.json'),
-    adapters: { spotify: env.SPOTIFY_SEARCH_ADAPTER, recommendations: env.RECOMMENDATION_ADAPTER, lyrics: env.LYRICS_ADAPTER }
+    adapters: { spotify: env.SPOTIFY_SEARCH_ADAPTER, recommendations: env.RECOMMENDATION_ADAPTER }
   };
   if (!['debug','info','warn','error'].includes(config.logLevel)) throw new UserError('LOG_LEVEL must be debug, info, warn, or error.');
   if (!config.prefix.length || config.prefix.length > 5 || /\s|[\x00-\x1f]/.test(config.prefix)) throw new UserError('PREFIX must contain 1–5 characters without spaces or control characters.');

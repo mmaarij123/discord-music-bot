@@ -19,7 +19,7 @@ test('missing bot voice permissions are rejected',async()=>{
 });
 test('administrative settings require Manage Server',async()=>{
   const i=interaction();i.member.permissions.has=permission=>permission!==PermissionFlagsBits.ManageGuild;i.options.getBoolean=()=>true;
-  await assert.rejects(execute(i,{get:()=>undefined},'247'),/Manage Server/);
+  await assert.rejects(execute(i,{get:()=>undefined},'autoplay'),/Manage Server/);
 });
 test('invalid command arguments reject without mutating the queue',async t=>{
   const f=fixture();t.after(()=>f.player.destroy());await f.player.enqueue(['A','B'].map(track),f.channel);
@@ -30,7 +30,7 @@ test('player embed and buttons serialize current state',async t=>{
   const f=fixture();t.after(()=>f.player.destroy());await f.player.enqueue([track('A')],f.channel);
   assert.equal(playerEmbed(f.player).toJSON().title,'A');await f.player.pause();
   const buttons=playerButtons(f.player,'session').flatMap(row=>row.toJSON().components);assert.ok(buttons.some(button=>button.custom_id==='music:session:resume'));
-  assert.equal(buttons.find(button=>button.label==='Previous').disabled,true);
+  assert.equal(buttons.length,5);assert.equal(buttons.some(button=>button.label==='Previous'),false);
 });
 test('expired player buttons return an informative error',async()=>{
   let reply;

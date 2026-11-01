@@ -32,18 +32,17 @@ test('play preserves full search text and public URLs',()=>{
   assert.equal(parsePrefix('> play https://open.spotify.com/track/1234567890123456789012').values.query,'https://open.spotify.com/track/1234567890123456789012');
 });
 test('supports every prefix command with typed arguments',()=>{
-  const samples=['play Song','pause','resume','skip','previous','stop','queue 2','nowplaying','volume 70','loop queue','shuffle','remove 2','clear','seek 1:30','jump 2','move 2 5','join','leave','247 on','autoplay off','lyrics','help'];
+  const samples=['play Song','pause','resume','skip','stop','queue 2','nowplaying','volume 70','loop queue','shuffle','remove 2','join','leave','autoplay off','logchannel','djchannel','clearcache','shutdown','restart','help'];
   for(const sample of samples)assert.ok(parsePrefix(`>${sample}`));
   assert.equal(parsePrefix('>volume 0').values.level,0);assert.equal(parsePrefix('>queue').values.page,undefined);
-  assert.deepEqual(parsePrefix('>move 2 5').values,{from:2,to:5});
-  assert.equal(parsePrefix('>247 on').values.enabled,true);assert.equal(parsePrefix('>autoplay false').values.enabled,false);
+  assert.equal(parsePrefix('>autoplay true').values.enabled,true);assert.equal(parsePrefix('>autoplay false').values.enabled,false);
 });
 test('custom prefix affects parsing and usage errors',()=>{
   assert.equal(parsePrefix('!!help','!!').commandName,'help');assert.equal(parsePrefix('>help','!!'),null);
-  assert.throws(()=>parsePrefix('!!move 2','!!'),/Usage: !!move/);
+  assert.throws(()=>parsePrefix('!!volume nope','!!'),/Usage: !!volume/);
 });
 test('rejects unknown, missing, excess and invalid arguments',()=>{
-  for(const text of ['>unknown','>play','>volume -1','>volume 101','>volume 5.5','>volume 1e2','>move 1','>move 1 2 3','>pause extra','>loop invalid','>247 yes','>remove 0','>play a\nb',`>play ${'a'.repeat(501)}`])assert.throws(()=>parsePrefix(text));
+  for(const text of ['>unknown','>play','>volume -1','>volume 101','>volume 5.5','>volume 1e2','>volume 1 2','>pause extra','>loop invalid','>autoplay yes','>remove 0','>play a\nb',`>play ${'a'.repeat(501)}`])assert.throws(()=>parsePrefix(text));
 });
 test('message context edits a single progress reply and suppresses mentions',async()=>{
   const m=message(),context=messageContext(m,parsePrefix('>help'));
@@ -86,12 +85,12 @@ test('prefix play reaches discovery with the complete query',async t=>{
   assert.equal(m.replies[0].content,'Searching of `Artist Long Song Name`');assert.equal(m.edits.at(-1).content,'Added `Song` in the queue');
 });
 test('prefix settings retain Manage Server authorization',async()=>{
-  const m=message('>247 on');m.member.permissions={has:()=>false};
+  const m=message('>autoplay on');m.member.permissions={has:()=>false};
   await messageHandler({config:{prefix:'>'},get:()=>undefined},logger)(m);assert.match(m.replies[0].content,/Manage Server/);
 });
 test('malformed messages and missing Embed Links give useful replies',async()=>{
   const manager={config:{prefix:'>'},get:()=>undefined};
-  const bad=message('>move nope 3');await messageHandler(manager,logger)(bad);assert.match(bad.replies[0].content,/Usage: >move/);
+  const bad=message('>volume nope');await messageHandler(manager,logger)(bad);assert.match(bad.replies[0].content,/Usage: >volume/);
   const missing=message();missing.permissions.has=value=>value!==PermissionFlagsBits.EmbedLinks;
   await messageHandler(manager,logger)(missing);assert.match(missing.replies[0].content,/Embed Links/);
 });

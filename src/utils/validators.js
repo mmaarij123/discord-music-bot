@@ -43,9 +43,3 @@ export function integer(value, min, max, name = 'Value') {
   if (!Number.isInteger(value) || value < min || value > max) throw new UserError(`${name} must be an integer from ${min} to ${max}.`);
   return value;
 }
-export function parseTime(value) {
-  if (!/^\d+(?::[0-5]\d){0,2}$/.test(value ?? '')) throw new UserError('Use seconds, mm:ss, or hh:mm:ss (for example 1:30).');
-  const seconds = value.split(':').reduce((total, part) => total * 60 + Number(part), 0);
-  if (!Number.isSafeInteger(seconds)) throw new UserError('The seek position is too large.');
-  return seconds;
-}

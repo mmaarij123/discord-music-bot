@@ -179,13 +179,6 @@ export class GuildPlayer extends EventEmitter {
       await this.startNext(); return true;
     });
   }
-  previous() {
-    return this.lock.run(async()=>{
-      this.consecutiveFailures=0;
-      const previous=this.queue.previous(this.current); this.releaseAudio(); this.current=null;
-      await this.startNext(previous); this.changed();
-    });
-  }
   stop(leave=false) {
     this.controller?.abort();
     // Destroy immediately, before the mutex, so pending recovery cannot rejoin
@@ -208,25 +201,6 @@ export class GuildPlayer extends EventEmitter {
   }); }
   setVolume(value) { return this.lock.run(()=>{ integer(value,0,100,'Volume'); this.volume=value; this.handle?.resource.volume?.setVolume(value/100); this.changed(); }); }
   editQueue(fn) { return this.lock.run(()=>{ const result=fn(this.queue);this.schedulePrefetch(); this.changed(); return result; }); }
-  jump(position) {
-    return this.lock.run(async()=>{
-      this.queue.jump(position);this.consecutiveFailures=0; this.queue.remember(this.current); this.releaseAudio(); this.current=null; await this.startNext();
-    });
-  }
-  seek(seconds) {
-    return this.lock.run(async()=>{
-      if (!this.current || !this.handle || !this.current.duration) throw new UserError('Seeking requires a playing track with a known duration.');
-      if (!Number.isFinite(seconds) || seconds<0 || seconds>=this.current.duration) throw new UserError('Seek within the track duration.');
-      const track=this.current, paused=this.state==='paused';
-      this.releaseAudio(); this.generation++; const generation=this.generation;
-      this.controller=new AbortController(); this.state='preparing'; this.changed();
-      try {
-        const handle=await this.audio.prepare(track,{signal:this.controller.signal,offset:seconds,volume:this.volume,onError:error=>this.safe(()=>this.lock.run(()=>this.failed(generation,error)))});
-        this.activate(handle,generation,{offset:seconds,paused});
-      } catch (error) { this.releaseAudio(); this.current=null; this.state='idle'; this.scheduleIdle(); this.changed(); throw error; }
-    });
-  }
-  setPersistent(enabled) { return this.lock.run(()=>{ this.persistent=enabled; this.scheduleIdle(); this.changed(); }); }
   setAutoplay(enabled) { return this.lock.run(()=>{ this.autoplayEnabled=enabled; this.changed(); }); }
   holdIdleTimeout(){
     this.idleHolds++;clearTimeout(this.idleTimer);this.idleTimer=null;

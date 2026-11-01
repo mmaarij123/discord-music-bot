@@ -13,7 +13,7 @@ export function interactionHandler(manager,logger,{cooldown=createCooldown()}={}
       const [,nonce,action]=interaction.customId.split(':');
       const presenter=manager.presenters.get(interaction.guildId);
       if(!presenter || nonce!==presenter.nonce || presenter.message?.id!==interaction.message.id)throw new UserError(`These controls have expired. Use the current player or ${prefix}help.`);
-      if(!['previous','pause','resume','skip','stop','loop','shuffle'].includes(action))throw new UserError('Unknown player control.');
+      if(!['pause','resume','skip','stop','loop','shuffle'].includes(action))throw new UserError('Unknown player control.');
       await execute(interaction,manager,action);
     }catch(error){
       logger.warn('interaction_failed',{guildId:interaction.guildId,command:interaction.commandName,error});

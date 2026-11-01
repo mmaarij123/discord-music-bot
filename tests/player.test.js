@@ -30,10 +30,10 @@ test('queue repeat appends completed track after upcoming tracks',async t=>{
   const f=fixture();t.after(()=>f.player.destroy());await f.player.enqueue(['A','B'].map(track),f.channel);await f.player.editQueue(q=>q.setLoop('queue'));
   f.fakePlayer.finish();await settle();await settle();assert.equal(f.player.current.title,'B');assert.equal(f.player.queue.tracks[0].title,'A');
 });
-test('pause, resume, seek, previous and volume update player state',async t=>{
+test('pause, resume and volume update state without replacing current audio',async t=>{
   const f=fixture();t.after(()=>f.player.destroy());await f.player.enqueue(['A','B'].map(track),f.channel);await f.player.pause();assert.equal(f.player.state,'paused');
-  await f.player.resume();assert.equal(f.player.state,'playing');await f.player.seek(90);assert.equal(f.player.progress,90);await f.player.setVolume(0);assert.equal(f.player.volume,0);
-  await f.player.skip();await f.player.previous();assert.equal(f.player.current.title,'A');await assert.rejects(f.player.seek(999),/duration/);
+  const handle=f.player.handle;await f.player.resume();assert.equal(f.player.state,'playing');await f.player.setVolume(0);assert.equal(f.player.volume,0);
+  assert.equal(f.player.current.title,'A');assert.equal(f.player.handle,handle);assert.equal(handle.disposed,false);
 });
 test('stop clears queue, stops stream and keeps persistent connection',async t=>{
   const f=fixture({config:{persistent:true}});t.after(()=>f.player.destroy());await f.player.enqueue(['A','B'].map(track),f.channel);await f.player.stop();

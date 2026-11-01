@@ -23,13 +23,13 @@ async function adapter(file,method) {
 }
 export class MusicManager {
   static async create(config,logger) {
-    const [search,recommendations,lyrics]=await Promise.all([adapter(config.adapters.spotify,'search'),adapter(config.adapters.recommendations,'recommend'),adapter(config.adapters.lyrics,'lookup')]);
+    const [search,recommendations]=await Promise.all([adapter(config.adapters.spotify,'search'),adapter(config.adapters.recommendations,'recommend')]);
     const credentials=config.spotify??{};
     const official=credentials.clientId&&credentials.clientSecret ? new SpotifyApi({...credentials,cacheMs:config.cacheMs}) : null;
     if(Boolean(credentials.clientId)!==Boolean(credentials.clientSecret))logger.warn('spotify_api_credentials_incomplete',{message:'Set both Spotify Client ID and Client Secret to enable optional official metadata search.'});
     const semaphore=new Semaphore(config.concurrency), youtube=new YouTubeResolver(config,semaphore), spotify=new SpotifyResolver(config,semaphore,search??official), local=new LocalMediaResolver(config);
     const settings=await GuildSettings.open(config.settingsFile);
-    return new MusicManager(config,logger,{discovery:new DiscoveryService(spotify,youtube,local,config),audio:new AudioManager(config,youtube,local),autoplay:new AutoplayManager(youtube,recommendations),lyrics,settings,caches:[youtube.cache,youtube.sourceCache,spotify.cache,official?.cache].filter(Boolean)});
+    return new MusicManager(config,logger,{discovery:new DiscoveryService(spotify,youtube,local,config),audio:new AudioManager(config,youtube,local),autoplay:new AutoplayManager(youtube,recommendations),settings,caches:[youtube.cache,youtube.sourceCache,spotify.cache,official?.cache].filter(Boolean)});
   }
   constructor(config,logger,services) { Object.assign(this,{config,logger,...services});this.settings=services.settings??new GuildSettings();this.players=new Map(); this.presenters=new Map(); this.imports=new Map(); this.closing=false; this.stopCacheCleanup=startCacheCleanup(services.caches??[]); }
   async outputChannel(guild,fallback){

@@ -6,18 +6,18 @@ Spotify supplies **metadata only**. All audio comes from a supported public YouT
 
 ## What works
 
-- All 27 prefix commands (default `>`), including three controls restricted to the configured bot owner, plus six functional player buttons.
+- All 20 prefix commands (default `>`), including three controls restricted to the configured bot owner, plus five functional player buttons.
 - Independent bounded queues and history per server; concurrent skips advance once; adding tracks leaves current playback running.
 - Song/artist searches with weighted matching, official/Topic preferences, duration comparison, and rejection of unwanted covers, live performances, remixes, karaoke, nightcore, slowed and sped-up versions.
 - Spotify track, album, and public playlist metadata through `spotify-url-info`. Public collections can be partial; imports always say so. No full Spotify audio or previews are played.
 - YouTube video links and public playlists, bounded imports, lazy audio extraction, TTL search cache, and limited concurrent requests.
-- FFmpeg streaming, dynamic volume, Opus encoding, pause/resume, seek, deterministic resource disposal, bounded error recovery, idle disconnect, and optional 24/7 connection.
+- FFmpeg streaming, dynamic volume, Opus encoding, pause/resume, deterministic resource disposal, bounded error recovery, idle disconnect, and optional 24/7 connection.
 - Conservative autoplay: another track by a known artist, with recent-track/version filtering. A known matching artist/Topic channel is required. An optional recommendation adapter supports other lawful sources.
 - Compact green Now Playing embed with artwork, album, playback status, requester mention, queue count and volume. State changes update the player, with edits coalesced at least two seconds apart. Deleted player messages never interrupt audio; `>play` or `>join` can create another player.
 - JSON logging with token/URL redaction, configuration validation, safe subprocess argument arrays, same-voice-channel authorization, and Manage Server checks for settings.
 - A single search reply uses ``Searching of `song name` `` and then changes to ``Added `resolved song title` in the queue``. Metadata fallback details stay in debug diagnostics rather than cluttering chat. Failed searches finish with a concise not-found message; partial playlist and queue-limit notices remain visible.
 
-**Explicit limitations:** Public Spotify text search has no supported built-in API-free endpoint. Plain-text input uses YouTube metadata unless you configure optional official Spotify credentials or a trusted Spotify search adapter; fallback details are available in debug diagnostics. Public metadata may change or be inaccessible by region. Lyrics require an operator-configured lawful adapter; `>lyrics` explains this when none is installed. YouTube delivery may fail on some networks/VPS IP ranges. The bot reports such failures and can continue with your authorized library. 24/7 keeps a connection while the application runs; it cannot provide uptime while your host is offline. Queues, history and playback settings reset on restart/session release; the independent log/DJ channel destinations are saved separately on disk.
+**Explicit limitations:** Public Spotify text search has no supported built-in API-free endpoint. Plain-text input uses YouTube metadata unless you configure optional official Spotify credentials or a trusted Spotify search adapter; fallback details are available in debug diagnostics. Public metadata may change or be inaccessible by region. YouTube delivery may fail on some networks/VPS IP ranges. The bot reports such failures and can continue with your authorized library. 24/7 keeps a connection while the application runs; it cannot provide uptime while your host is offline. Queues, history and playback settings reset on restart/session release; the independent log/DJ channel destinations are saved separately on disk.
 
 See [AUDIT.md](AUDIT.md) for the current code/dependency audit and [VALIDATION.md](VALIDATION.md) for the checks executed and remaining live Discord checks. A real Discord token and server are required to validate login, prefix handling and voice delivery; these are not simulated claims.
 
@@ -175,7 +175,7 @@ Copy `.env.example` to `.env`. Never commit `.env`, tokens, private media, or pr
 | MAX_PLAYLIST_TRACKS | 100 | Import cap, 1–1000. Spotify's public library usually exposes at most 100; raising this does not retrieve hidden entries. |
 | IDLE_TIMEOUT_SECONDS | 300 | Delay before leaving after playback ends with 24/7 off; 10–86400. |
 | AUTOPLAY_ENABLED | false | Initial autoplay setting for each new guild session. |
-| ENABLE_247_MODE | false | Initial persistent connection setting; joins only when commanded. |
+| ENABLE_247_MODE | false | Operator-only initial persistent connection setting; no Discord toggle command. Joins only when commanded. |
 | LOG_LEVEL | info | debug, info, warn, or error. Logs are JSON on stdout. |
 | FFMPEG_PATH | ffmpeg | Trusted executable name on PATH or absolute path. |
 | YTDLP_PATH | yt-dlp | Trusted executable name on PATH or absolute path. |
@@ -194,11 +194,10 @@ Copy `.env.example` to `.env`. Never commit `.env`, tokens, private media, or pr
 | MEDIA_MANIFEST | ./media.json | Trusted operator-owned authorized media catalog. |
 | SPOTIFY_SEARCH_ADAPTER | empty | Optional trusted ESM module exporting `search`. |
 | RECOMMENDATION_ADAPTER | empty | Optional trusted ESM module exporting `recommend`. |
-| LYRICS_ADAPTER | empty | Optional trusted ESM module exporting lawful `lookup`. |
 
 Boolean variables accept exactly `true` or `false`. Paths for media and adapters resolve relative to the project root. Executable settings are not shell commands: do not append flags, `python -m`, or quotes within the path value. For a Python yt-dlp installation, point to its generated `yt-dlp` / `yt-dlp.exe` launcher.
 
-`>247` and `>autoplay` require Manage Server permission and change only the current guild session. Both `>stop` and `>leave` override 24/7, clear the queue and disconnect. The first play/join requester owns that session; adding tracks does not transfer ownership. The host and Manage Server moderators can stop even after changing/leaving voice. Idle cleanup releases playback settings; environment defaults apply to new sessions. Application restarts reset queues/playback settings but retain the saved log/DJ channel destinations.
+`>autoplay` requires Manage Server permission and change only the current guild session. Both `>stop` and `>leave` override 24/7, clear the queue and disconnect. The first play/join requester owns that session; adding tracks does not transfer ownership. The host and Manage Server moderators can stop even after changing/leaving voice. Idle cleanup releases playback settings; environment defaults apply to new sessions. Application restarts reset queues/playback settings but retain the saved log/DJ channel destinations.
 
 ### Optional YouTube cookie file
 
@@ -239,7 +238,6 @@ When started, logs should include `ready`. Join a voice channel and use `>play l
 | >pause | Pause current audio. |
 | >resume | Resume paused audio. |
 | >skip | Advance once; explicit skips ignore track repeat. |
-| >previous | Replay history; return current to the front of the upcoming queue. A full queue must have space first. |
 | >stop | Host/moderator only; stop audio, clear the queue, cancel discovery and leave voice, even in 24/7 mode. Works outside voice. |
 | >queue page | Upcoming tracks, ten per page, one-based positions. |
 | >nowplaying | Snapshot of the current compact player. |
@@ -247,15 +245,9 @@ When started, logs should include `ready`. Join a voice channel and use `>play l
 | >loop mode | off, track, queue. Queue repeat appends successfully completed tracks. Failed tracks are not requeued. |
 | >shuffle | Fisher–Yates shuffle of upcoming entries only. |
 | >remove position | Remove one upcoming entry. |
-| >clear | Clear upcoming entries without stopping current audio. |
-| >seek position | Seconds, mm:ss, or hh:mm:ss. Requires a known duration and seekable provider source. Restarts the decoder at that offset; availability depends on the source. |
-| >jump position | Discard earlier upcoming entries and start this one. |
-| >move from to | Reorder upcoming entries. |
 | >join | Join your regular voice channel. |
 | >leave | Same host/moderator authorization as stop; clear and disconnect, overriding 24/7. |
-| >247 on/off | Manage Server: retain voice connection while running and idle. |
 | >autoplay on/off | Manage Server: enable/disable conservative recommendations. Default off. |
-| >lyrics | Lawful configured adapter or an informative unavailable response. |
 | >logchannel [channel/off] | Manage Server: select the playback-log channel, show its setting, or reset it. |
 | >djchannel [channel/off] | Manage Server: select the player-embed channel independently, show its setting, or reset it. |
 | >clearcache | Bot owner only: clear all built-in metadata/search/audio-link caches across servers without stopping playback or clearing queues. |
@@ -263,7 +255,7 @@ When started, logs should include `ready`. Join a voice channel and use `>play l
 | >restart | Bot owner only: cleanly stop the worker and launch a fresh process; all in-memory queues reset. |
 | >help | Command list and input examples. |
 
-Buttons: Previous, Pause/Resume, Skip, Stop, Loop, Shuffle. They use the same authorization and queue methods as prefix commands. Old session controls expire. Read-only queue, nowplaying, lyrics and help do not require voice membership. Playback and settings controls do. Volume/control changes are available to listeners in the session channel; restrict channel access for stricter listener control. Discord application-command permissions do not apply to text prefix commands.
+Buttons: Pause/Resume, Skip, Stop, Loop, Shuffle. They use the same authorization and queue methods as prefix commands. Old session controls expire. Read-only queue, nowplaying and help do not require voice membership. Playback and settings controls do. Volume/control changes are available to listeners in the session channel; restrict channel access for stricter listener control. Discord application-command permissions do not apply to text prefix commands.
 
 Only Discord user ID **1037886658462371860** may use `clearcache`, `shutdown` and `restart`. This exact ID is fixed in `src/config/owner.js`; server ownership, Administrator and Manage Server never grant access. These server-only owner controls require no voice membership or existing session and acknowledge in the invoking channel, independently from log/DJ settings. They are hidden from other users' help output. Cache clearing preserves audio, queues, saved settings and authentication; in-flight metadata requests can populate fresh entries afterwards. Shutdown/restart acknowledgements must succeed before the process action is requested, and concurrent requests are rejected.
 
@@ -332,7 +324,7 @@ To configure a direct HTTPS source, add an entry under `streams`:
 }
 ```
 
-The example domain is illustrative; replace it with your actual authorized media URL. Request `>play stream:licensed-track`. Known durations enable seek UI; the remote server must actually support seeking. Streams and manifests are trusted operator configuration, not an open proxy. Do not give untrusted users write access. Do not configure internal network URLs, redirects to private services, or manifest playlists that reference private services. Remote FFmpeg inputs are restricted to HTTPS/TLS/TCP/crypto protocols, while local inputs use file/pipe.
+The example domain is illustrative; replace it with your actual authorized media URL. Request `>play stream:licensed-track`. Known durations support playback tracking and interruption recovery; recovery offsets require a seekable stream. Streams and manifests are trusted operator configuration, not an open proxy. Do not give untrusted users write access. Do not configure internal network URLs, redirects to private services, or manifest playlists that reference private services. Remote FFmpeg inputs are restricted to HTTPS/TLS/TCP/crypto protocols, while local inputs use file/pipe.
 
 ## 9. Optional adapter contracts
 
@@ -363,9 +355,8 @@ Adapters are **trusted server-side ESM code**, loaded only from operator-configu
 
 - `SPOTIFY_SEARCH_ADAPTER`: named export `async search(query, { signal })`. Return a real Spotify metadata object (`name`/`title`, `artists`/`artist`/`subtitle`, `duration_ms` or `duration` in milliseconds, album, artwork, URI), or `null`. Never label non-Spotify results as Spotify. Ten-second caller timeout, metadata semaphore and fallback apply.
 - `RECOMMENDATION_ADAPTER`: named export `async recommend(previousTrack, { signal, recent })`. Return at most eight candidate objects with `title`, `artist`, and optional duration in **seconds**. Candidates still undergo duplicate/version filtering and YouTube matching. This call has a configured deadline and must not scrape restricted content.
-- `LYRICS_ADAPTER`: named export `async lookup(track, { signal })`. Return `{ text, sourceUrl, license }` only for text you are authorized to redistribute, otherwise `null`. `sourceUrl` must be HTTPS; license and attribution are displayed. The bot shows at most 3500 characters with a source link. Caller timeout is ten seconds. No lyrics scraper or source is enabled by default.
 
-For example, an operator can implement lyrics by reading their own licensed catalog. Keep that catalog outside version control and return its actual license and attribution. Avoid installing arbitrary unreviewed adapter code. The player/resolver interface is replaceable independently of Discord commands.
+Keep private adapter catalogs outside version control. Avoid installing arbitrary unreviewed adapter code. The player/resolver interface is replaceable independently of Discord commands.
 
 ## 10. Tests and real-server verification
 
@@ -375,11 +366,11 @@ npm test
 npm run test:audio
 ```
 
-For an additional paced regression check, run `npm run test:playback`. It uses the real FFmpeg/Opus pipeline and real voice audio scheduler offline: pause, paused seek, near-end completion, a full 12-second second track, queue advancement and fresh playback after completion. It takes roughly 20 seconds and sends nothing to Discord. Unit tests also inject a 400 ms frame gap to check that the complete audio survives, and cover premature EOF, cumulative retry limits, cancellation, late resource errors and denied-source handling.
+For an additional paced regression check, run `npm run test:playback`. It uses the real FFmpeg/Opus pipeline and real voice audio scheduler offline: pause, paused interruption recovery, natural completion, a full 12-second second track, queue advancement and fresh playback after completion. It takes roughly 20 seconds and sends nothing to Discord. Unit tests also inject a 400 ms frame gap to check that the complete audio survives, and cover premature EOF, cumulative retry limits, cancellation, late resource errors and denied-source handling.
 
 Use `RUN_PROVIDER_TESTS=true npm run benchmark:startup` on Linux (or set `$env:RUN_PROVIDER_TESTS='true'` first in PowerShell) to measure cold/warm discovery, source resolution and the first Opus packet from the authorized Blender test video. It sends no Discord messages, performs no voice join and does not download a full song. The output is a live sample for that host/network, not a latency guarantee.
 
-The built-in Node test runner uses mocks for Discord and provider responses. It covers prefix parsing, typed command arguments, message routing/replies, channel/voice/admin permissions, button controls, normalization, URLs, Spotify shapes, matching and rejected variants, queue order/limits, repeat/shuffle, simultaneous skips, guild isolation, pause/resume/seek, stop during extraction, error/idle races, autoplay filtering, idle/24/7 behavior, stale controls, caching, subprocess timeouts and shell metacharacters, and local path containment. `test:audio` makes a temporary generated tone, runs the real FFmpeg/Opus pipeline and checks packets and cleanup without Discord. It removes only its own generated temporary directory.
+The built-in Node test runner uses mocks for Discord and provider responses. It covers prefix parsing, typed command arguments, message routing/replies, channel/voice/admin permissions, button controls, normalization, URLs, Spotify shapes, matching and rejected variants, queue order/limits, repeat/shuffle, simultaneous skips, guild isolation, pause/resume and recovery offsets, stop during extraction, error/idle races, autoplay filtering, idle/24/7 behavior, stale controls, caching, subprocess timeouts and shell metacharacters, and local path containment. `test:audio` makes a temporary generated tone, runs the real FFmpeg/Opus pipeline and checks packets and cleanup without Discord. It removes only its own generated temporary directory.
 
 Optional live metadata probes:
 
@@ -402,13 +393,13 @@ The example was tested as the official Blender Foundation Big Buck Bunny video, 
 
 Real Discord acceptance checklist (requires your server/token):
 
-1. Set `.env`, run doctor, run migration cleanup if upgrading, start, and confirm the `ready` log.
+1. Set `.env`, run doctor, start, and confirm the `ready` log.
 2. Join a regular voice channel, run `>play local:demo`, and hear the generated tone. Verify Now Playing and buttons.
-3. Queue two authorized tracks. Test pause/resume, volume 0/70, seek, skip, previous, loop, move, jump, clear and stop. Add a track during playback and confirm the current song is uninterrupted.
+3. Queue two authorized tracks. Test pause/resume, volume 0/70, skip, loop, remove and stop. Add a track during playback and confirm the current song is uninterrupted.
 4. Test a permitted public YouTube link, a song search, a public Spotify track, album and playlist. Compare reported import counts with accessible metadata, not an assumed full catalog.
 5. Try controls from another voice channel and a settings change without Manage Server; they should be rejected. Remove bot permissions temporarily and check the explanation.
 6. Play in a second guild and confirm isolation. Delete the player message and verify audio continues; use `>play` or `>join` to recreate it.
-7. Toggle 24/7, empty the queue, and observe idle behavior. Simulate a brief network interruption and a permanent disconnect; check bounded recovery. `>leave` must always stop the session.
+7. Empty the queue and observe idle behavior (persistent mode, if desired, is configured through ENABLE_247_MODE). Simulate a brief network interruption and a permanent disconnect; check bounded recovery. `>leave` must always stop the session.
 8. Stop the process while playing; ensure voice disconnects and FFmpeg/yt-dlp processes exit. Restart through PM2 and confirm the intentionally empty in-memory state.
 
 The GitHub Actions workflow exercises syntax, unit tests and dependency audit on Windows and Ubuntu when this folder is the repository root. Those hosted CI jobs are provided, not claimed to have been run here.
@@ -445,7 +436,6 @@ Direct dependencies are pinned: `npm update` primarily refreshes compatible tran
 | Playlist is smaller than expected | Imports are capped and public metadata is incomplete; skipped/private/restricted entries are not silently counted as success. No audio is preloaded. |
 | Autoplay stops | The known artist or a suitably distinct related track may be unavailable. This is expected; unrelated tracks are not added to maintain activity. |
 | Lyrics unavailable | Configure a lawful adapter with source URL/license, or leave the feature unavailable. |
-| Seek fails | Known duration and a seekable source are required. Expired provider URLs are re-resolved. After a failed seek the decoder is cleaned up; request a new source. |
 | Unexpected disconnection | A grace period and two reconnect attempts are allowed; then use >join or >play. 24/7 does not override server permissions, kicks or offline hosts. |
 | High CPU/memory | Keep native Opus if available, reduce MAX_PLAYERS, use fewer simultaneous guild streams, lower metadata concurrency and queue limits, inspect provider failures and PM2 logs. Do not run duplicate instances. |
 | Player message missing | Audio continues. Check text permissions, then use >join or >play to bind a new message. |
@@ -463,7 +453,7 @@ Music Bot/
     config/owner.js             Exact owner ID and protected command names
     config/config.js            Validated environment configuration
     config/GuildSettings.js     Atomic per-server log-channel preferences
-    commands/definitions.js     All 27 prefix definitions
+    commands/definitions.js     All 20 prefix definitions
     commands/execute.js         Shared prefix/button business logic
     commands/parsePrefix.js     Typed argument parsing and usage
     commands/messageContext.js  Single-message reply/progress adapter

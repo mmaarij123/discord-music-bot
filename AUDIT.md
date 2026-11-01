@@ -1,6 +1,6 @@
 # Full code and dependency audit — 1 November 2026
 
-This section records the 1 November audit. The 2 November owner-control validation below supersedes its module/test counts for the current source.
+This section records the 1 November audit. The later 2 November change records below provide the current command/module/test counts.
 
 The audit covers every runtime module, prefix commands and buttons, per-guild queues, playback transitions, connection recovery, FFmpeg/yt-dlp lifecycle, metadata adapters, cache cleanup, log/DJ routing, configuration, credentials and deployment checks. External providers and real Discord listening remain separate from mocked tests.
 
@@ -57,3 +57,9 @@ The current source has 27 prefix commands, including clearcache/shutdown/restart
 - Both process entrypoints reach all **43 runtime modules**, with no unused exports or orphan modules.
 - Real offline forks and owner-handler fixtures verified worker replacement, normal shutdown and scoped Windows process-tree stopping. Real local paced playback passed; the deployed worker reached Discord ready in three guilds.
 - Discord owner-command delivery and PM2 runtime execution remain unverified. No runtime dependencies were added or changed; the prior dependency advisory remains documented above.
+
+## Command removal — 2 November 2026
+
+The current command surface is **20 commands and five buttons** after removing previous/jump/move/seek/247/lyrics/clear and the Previous button. Dead command-only helpers, the seek parser and lyrics adapter loader/config were removed. Internal queue clearing, history and recovery offsets remain in use by retained playback/autoplay functionality. The requested remove command and all three exact-owner controls remain supported. Initial persistent mode remains an operator-only environment setting.
+
+**275 automated tests passed**, zero failures/skips; **75 JavaScript files** passed static and syntax checks. The ESM review still reaches all **43 runtime modules** with no orphan modules or unused exports. The updated actual local audio probe passed paused recovery, queue completion and full 12-second-next-track playback. No new dependencies were introduced; previous provider, Discord listening and dependency-advisory limitations remain as documented.

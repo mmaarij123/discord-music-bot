@@ -1,13 +1,12 @@
 import { ChannelType, PermissionFlagsBits, EmbedBuilder, escapeMarkdown } from 'discord.js';
-import { commands, usage } from './definitions.js';
+import { commands, commandMap, usage } from './definitions.js';
 import { playerEmbed, duration } from '../components/playerEmbed.js';
 import { UserError } from '../utils/errors.js';
-import { integer, parseTime, classifyInput } from '../utils/validators.js';
-import { withAbort } from '../utils/async.js';
+import { integer, classifyInput } from '../utils/validators.js';
 import { performance } from 'node:perf_hooks';
 import { channelSettings } from './channelSettings.js';
 import { OWNER_USER_ID, ownerCommands, requireOwner } from '../config/owner.js';
-const readOnly=new Set(['help','queue','nowplaying','lyrics','logchannel','djchannel']);
+const readOnly=new Set(['help','queue','nowplaying','logchannel','djchannel']);
 const songLabel=value=>`\`${String(value).replace(/`/g,'ˋ').replace(/[\r\n]/g,' ').slice(0,500)}\``;
 export async function voiceAccess(interaction,player) {
   const member=await interaction.guild.members.fetch(interaction.user.id);
@@ -31,6 +30,7 @@ function textAccess(interaction,channel=interaction.channel){
 export async function execute(interaction,manager,action=interaction.commandName) {
   if (!interaction.inGuild()) throw new UserError('Music commands are available in servers only.');
   const prefix=interaction.commandPrefix ?? manager.config?.prefix ?? '>';
+  if(!commandMap.has(action))throw new UserError(`Unknown music command. Use ${prefix}help.`);
   const reply=content=>interaction.editReply(typeof content==='string' ? {content,allowedMentions:{parse:[]}} : content);
   if(ownerCommands.has(action)){
     requireOwner(interaction.user?.id);
@@ -47,7 +47,7 @@ export async function execute(interaction,manager,action=interaction.commandName
   if(['logchannel','djchannel'].includes(action))return channelSettings(interaction,manager,reply,action==='djchannel'?'dj':'log');
   if (action==='help') {
     const help=commands.filter(command=>!command.ownerOnly||interaction.user?.id===OWNER_USER_ID).map(command=>`**${escapeMarkdown(usage(command,prefix))}** — ${command.description}`).join('\n');
-    return reply({embeds:[new EmbedBuilder().setColor(0x1db954).setTitle('Your listening room').setDescription(help).addFields({name:'Try it',value:`${prefix}play Stephen Sanchez Until I Found You\n${prefix}play local:demo\n${prefix}seek 1:30\n${prefix}autoplay on`},{name:'Sources',value:'Spotify metadata is best-effort. Audio uses supported public YouTube sources or the operator’s authorized media library. No music API keys.'})]});
+    return reply({embeds:[new EmbedBuilder().setColor(0x1db954).setTitle('Your listening room').setDescription(help).addFields({name:'Try it',value:`${prefix}play Stephen Sanchez Until I Found You\n${prefix}play local:demo\n${prefix}volume 70\n${prefix}autoplay on`},{name:'Sources',value:'Spotify metadata is best-effort. Audio uses supported public YouTube sources or the operator’s authorized media library. No music API keys.'})]});
   }
   if (action==='play') {
     const query=option.getString('query',true);
@@ -122,20 +122,19 @@ export async function execute(interaction,manager,action=interaction.commandName
     if(player)await player.stop(true);
     return reply('Stopped playback, cleared the queue, cancelled pending discovery, and left voice.');
   }
-  if(action==='247'||action==='autoplay'){
+  if(action==='autoplay'){
     admin(access.member);
     player=manager.get(interaction.guild,true);
     await player.join(access.channel);
     const enabled=option.getBoolean('enabled',true);
-    if(action==='247')await player.setPersistent(enabled); else await player.setAutoplay(enabled);
-    return reply(`${action==='247'?'24/7 voice mode':'Autoplay'} ${enabled?'enabled':'disabled'} for this running session.${action==='247'?' The application must remain online.':''}`);
+    await player.setAutoplay(enabled);
+    return reply(`Autoplay ${enabled?'enabled':'disabled'} for this running session.`);
   }
   player=requirePlayer(player,prefix);
   switch(action){
     case 'pause': await player.pause(); return reply('Paused.');
     case 'resume': await player.resume(); return reply('Resumed.');
     case 'skip': return reply(await player.skip()?'Skipped.':'A skip was already handled.');
-    case 'previous': await player.previous(); return reply('Playing the previous track.');
     case 'volume': await player.setVolume(option.getInteger('level',true)); return reply(`Volume set to ${player.volume}%.`);
     case 'loop': {
       const mode=interaction.isButton() ? ['off','track','queue'][(['off','track','queue'].indexOf(player.queue.loop)+1)%3] : option.getString('mode',true);
@@ -146,10 +145,6 @@ export async function execute(interaction,manager,action=interaction.commandName
       const removed=await player.editQueue(queue=>queue.remove(option.getInteger('position',true)));
       return reply(`Removed “${removed.title}”.`);
     }
-    case 'clear': await player.editQueue(queue=>queue.clear()); return reply('Cleared upcoming tracks.');
-    case 'move': await player.editQueue(queue=>queue.move(option.getInteger('from',true),option.getInteger('to',true))); return reply('Moved the queued track.');
-    case 'jump': await player.jump(option.getInteger('position',true)); return reply('Jumped to the selected track.');
-    case 'seek': await player.seek(parseTime(option.getString('position',true))); return reply('Playback position updated.');
     case 'nowplaying': {
       const dj=manager.settings?.getDjChannel(interaction.guildId);
       if(dj){await manager.bindPresenter(interaction.guild,interaction.channel);return reply(`The music player is in <#${dj}>.`);}
@@ -160,15 +155,6 @@ export async function execute(interaction,manager,action=interaction.commandName
       integer(page,1,pages,'Page');
       const lines=player.queue.tracks.slice((page-1)*10,page*10).map((track,index)=>`**${(page-1)*10+index+1}.** ${escapeMarkdown(track.title.slice(0,120))} • ${duration(track.duration)}`);
       return reply({embeds:[new EmbedBuilder().setColor(0x1db954).setTitle(`Up next • ${player.queue.length} tracks`).setDescription(lines.join('\n')||'The upcoming queue is empty.').setFooter({text:`Page ${page}/${pages} • Repeat ${player.queue.loop}`})]});
-    }
-    case 'lyrics': {
-      if(!player.current)throw new UserError('Start a track before requesting lyrics.');
-      if(!manager.lyrics)throw new UserError('Lyrics are unavailable. The operator must configure a lawful LYRICS_ADAPTER; the bot does not scrape copyrighted lyric sites.');
-      const signal=AbortSignal.timeout(10000);
-      const result=await withAbort(manager.lyrics.lookup(player.current,{signal}),signal);
-      let source; try{source=new URL(result?.sourceUrl);}catch{}
-      if(!result?.text||!result?.license||source?.protocol!=='https:')throw new UserError('The lyrics adapter returned no usable text, license, or source attribution.');
-      return reply({embeds:[new EmbedBuilder().setColor(0x1db954).setTitle('Lyrics').setDescription(result.text.slice(0,3500)).addFields({name:'Source and license',value:`[Source](${source.href}) • ${String(result.license).slice(0,200)}${result.text.length>3500?'\nExcerpt shown; see source for full lyrics.':''}`})]});
     }
     default: throw new UserError(`Unknown music command. Use ${prefix}help.`);
   }
