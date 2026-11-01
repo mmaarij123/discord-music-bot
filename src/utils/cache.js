@@ -7,7 +7,7 @@ export class TTLCache {
     return structuredClone(item.value);
   }
   delete(key) { return this.items.delete(key); }
-  clear() { this.items.clear(); }
+  clear() { const removed=this.items.size;this.items.clear();return removed; }
   set(key, value) {
     for (const [k,v] of this.items) if (v.expires <= Date.now()) this.items.delete(k);
     this.items.delete(key);

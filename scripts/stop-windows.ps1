@@ -2,15 +2,16 @@ param([switch]$CheckOnly)
 
 $ErrorActionPreference = 'Stop'
 $project = Split-Path -Parent $PSScriptRoot
-$entry = (Join-Path $project 'src\index.js').Replace('/', '\')
-$pattern = '(?i)(?:^|[\s"])' + [regex]::Escape($entry) + '(?=$|[\s"])'
+$entries = @((Join-Path $project 'src\run.js'), (Join-Path $project 'src\index.js'))
+$pattern = '(?i)(?:^|[\s"])(?:' + (($entries | ForEach-Object { [regex]::Escape($_.Replace('/', '\')) }) -join '|') + ')(?=$|[\s"])'
 
 try {
     $running = @(Get-CimInstance Win32_Process -Filter "Name='node.exe'" | Where-Object { $_.CommandLine -and $_.CommandLine.Replace('/', '\') -match $pattern })
     if (-not $running.Count) { Write-Host 'Music Bot is already stopped.'; exit 0 }
     if ($CheckOnly) { Write-Host "Found $($running.Count) running Music Bot instance(s). No process was stopped."; exit 0 }
 
-    foreach ($bot in $running) {
+    $roots = @($running | Where-Object { $_.ParentProcessId -notin $running.ProcessId })
+    foreach ($bot in $roots) {
         # Recheck identity immediately before stopping a process tree. Never use
         # taskkill /IM node.exe: other applications may be using Node too.
         $current = Get-CimInstance Win32_Process -Filter "ProcessId=$($bot.ProcessId)"

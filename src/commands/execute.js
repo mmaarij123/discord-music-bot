@@ -6,6 +6,7 @@ import { integer, parseTime, classifyInput } from '../utils/validators.js';
 import { withAbort } from '../utils/async.js';
 import { performance } from 'node:perf_hooks';
 import { channelSettings } from './channelSettings.js';
+import { OWNER_USER_ID, ownerCommands, requireOwner } from '../config/owner.js';
 const readOnly=new Set(['help','queue','nowplaying','lyrics','logchannel','djchannel']);
 const songLabel=value=>`\`${String(value).replace(/`/g,'ˋ').replace(/[\r\n]/g,' ').slice(0,500)}\``;
 export async function voiceAccess(interaction,player) {
@@ -30,13 +31,22 @@ function textAccess(interaction,channel=interaction.channel){
 export async function execute(interaction,manager,action=interaction.commandName) {
   if (!interaction.inGuild()) throw new UserError('Music commands are available in servers only.');
   const prefix=interaction.commandPrefix ?? manager.config?.prefix ?? '>';
+  const reply=content=>interaction.editReply(typeof content==='string' ? {content,allowedMentions:{parse:[]}} : content);
+  if(ownerCommands.has(action)){
+    requireOwner(interaction.user?.id);
+    if(action==='clearcache'){
+      const removed=manager.clearCaches();
+      return reply(`Cleared ${removed} cached music entries. Playback and queues are unchanged.`);
+    }
+    if(!manager.lifecycle)throw new UserError('Process controls are unavailable in this runtime. Use the supplied startup wrapper.');
+    return manager.lifecycle.request(action,()=>reply(action==='shutdown'?'Shutting down the bot in all servers.':'Restarting the bot. Voice connections and in-memory queues will reset.'));
+  }
   let player=manager.get(interaction.guild), access;
   if (!readOnly.has(action)&&!['stop','leave'].includes(action)) access=await voiceAccess(interaction,player);
   const option=interaction.options;
-  const reply=content=>interaction.editReply(typeof content==='string' ? {content,allowedMentions:{parse:[]}} : content);
   if(['logchannel','djchannel'].includes(action))return channelSettings(interaction,manager,reply,action==='djchannel'?'dj':'log');
   if (action==='help') {
-    const help=commands.map(command=>`**${escapeMarkdown(usage(command,prefix))}** — ${command.description}`).join('\n');
+    const help=commands.filter(command=>!command.ownerOnly||interaction.user?.id===OWNER_USER_ID).map(command=>`**${escapeMarkdown(usage(command,prefix))}** — ${command.description}`).join('\n');
     return reply({embeds:[new EmbedBuilder().setColor(0x1db954).setTitle('Your listening room').setDescription(help).addFields({name:'Try it',value:`${prefix}play Stephen Sanchez Until I Found You\n${prefix}play local:demo\n${prefix}seek 1:30\n${prefix}autoplay on`},{name:'Sources',value:'Spotify metadata is best-effort. Audio uses supported public YouTube sources or the operator’s authorized media library. No music API keys.'})]});
   }
   if (action==='play') {

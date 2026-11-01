@@ -2,7 +2,7 @@ param([switch]$CheckOnly)
 
 $ErrorActionPreference = 'Stop'
 $project = Split-Path -Parent $PSScriptRoot
-$entry = Join-Path $project 'src\index.js'
+$entry = Join-Path $project 'src\run.js'
 $mutex = $null
 $ownsMutex = $false
 $result = 1
@@ -41,15 +41,16 @@ try {
     if ($CheckOnly) { Write-Host "Launcher checks passed (Node $version). No bot was started."; exit 0 }
 
     # Serialize double-clicks; the process check also recognizes the running bot
-    # started directly with its absolute src/index.js path.
+    # started through this wrapper or the previous direct entry point.
     $sha = [System.Security.Cryptography.SHA256]::Create()
     try { $key = [BitConverter]::ToString($sha.ComputeHash([Text.Encoding]::UTF8.GetBytes($project.ToLowerInvariant()))).Replace('-', '') }
     finally { $sha.Dispose() }
     $mutex = New-Object System.Threading.Mutex($false, "Local\MusicBot-$key")
     try { $ownsMutex = $mutex.WaitOne(0) }
     catch [System.Threading.AbandonedMutexException] { $ownsMutex = $true }
-    $normalizedEntry = $entry.Replace('/', '\')
-    $running = @(Get-CimInstance Win32_Process -Filter "Name='node.exe'" | Where-Object { $_.CommandLine -and $_.CommandLine.Replace('/', '\').IndexOf($normalizedEntry, [StringComparison]::OrdinalIgnoreCase) -ge 0 })
+    $entries = @($entry, (Join-Path $project 'src\index.js'))
+    $pattern = '(?i)(?:^|[\s"])(?:' + (($entries | ForEach-Object { [regex]::Escape($_.Replace('/', '\')) }) -join '|') + ')(?=$|[\s"])'
+    $running = @(Get-CimInstance Win32_Process -Filter "Name='node.exe'" | Where-Object { $_.CommandLine -and $_.CommandLine.Replace('/', '\') -match $pattern })
     if (-not $ownsMutex -or $running.Count -gt 0) {
         Write-Host 'Music Bot is already running. A second copy was not started.'
         $result = 0

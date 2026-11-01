@@ -4,7 +4,8 @@ import { messageContext } from '../commands/messageContext.js';
 import { execute } from '../commands/execute.js';
 import { publicError, UserError } from '../utils/errors.js';
 import { createCooldown } from '../utils/cooldown.js';
-const localReplies=new Set(['play','logchannel','djchannel']);
+import { ownerCommands } from '../config/owner.js';
+const localReplies=new Set(['play','logchannel','djchannel',...ownerCommands]);
 const stopCommands=new Set(['stop','leave']);
 
 export function messageHandler(manager, logger, { cooldown = createCooldown() } = {}) {

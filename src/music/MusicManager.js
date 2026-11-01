@@ -89,6 +89,11 @@ export class MusicManager {
     Promise.all([player.destroy(),presenter?.dispose()]).catch(error=>this.logger.warn('session_release_failed',{error}));
   }
   cancelImport(guildId) { this.imports.get(guildId)?.abort(); }
+  clearCaches() {
+    let removed=0;
+    for(const cache of this.caches??[])removed+=cache.clear();
+    return removed;
+  }
   async import(guildId,fn) {
     if (this.imports.has(guildId)) throw new UserError(`A discovery/import request is already running in this server. Wait or use ${this.config.prefix ?? '>'}stop to cancel it.`);
     if (this.closing) throw new UserError('The bot is shutting down.');
@@ -103,6 +108,6 @@ export class MusicManager {
     await Promise.allSettled([...this.players.values()].map(p=>p.destroy()));
     await Promise.allSettled([...this.presenters.values()].map(p=>p.dispose()));
     this.audio.dispose(); this.players.clear(); this.presenters.clear();
-    for(const cache of this.caches??[])cache.clear();
+    this.clearCaches();
   }
 }

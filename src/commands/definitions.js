@@ -1,7 +1,7 @@
 const string = (name, extra = {}) => ({ name, type: 'string', required: true, ...extra });
 const integer = (name, min = 1, max = 5000, required = true) => ({ name, type: 'integer', min, max, required });
 const boolean = { name: 'enabled', type: 'boolean', required: true };
-const command = (name, description, usage = '', args = []) => ({ name, description, usage, args });
+const command = (name, description, usage = '', args = [], extra = {}) => ({ name, description, usage, args, ...extra });
 
 export const commands = [
   command('play', 'Discover and queue music, a supported URL, or authorized local:id / stream:id', '<song, artist, URL, local:id or stream:id>', [string('query', { rest: true, maxLength: 500 })]),
@@ -27,6 +27,9 @@ export const commands = [
   command('lyrics', 'Retrieve lyrics through an operator-configured lawful source'),
   command('logchannel','Set the music log channel (Manage Server)','[#channelname|channel mention|off]',[string('channel',{required:false,maxLength:100})]),
   command('djchannel','Set the player embed channel (Manage Server)','[#channelname|channel mention|off]',[string('channel',{required:false,maxLength:100})]),
+  command('clearcache','Clear all music metadata caches (bot owner only)','',[],{ownerOnly:true}),
+  command('shutdown','Shut down the entire bot (bot owner only)','',[],{ownerOnly:true}),
+  command('restart','Restart the entire bot process (bot owner only)','',[],{ownerOnly:true}),
   command('help', 'Show music commands and input examples')
 ];
 

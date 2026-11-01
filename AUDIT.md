@@ -1,5 +1,7 @@
 # Full code and dependency audit — 1 November 2026
 
+This section records the 1 November audit. The 2 November owner-control validation below supersedes its module/test counts for the current source.
+
 The audit covers every runtime module, prefix commands and buttons, per-guild queues, playback transitions, connection recovery, FFmpeg/yt-dlp lifecycle, metadata adapters, cache cleanup, log/DJ routing, configuration, credentials and deployment checks. External providers and real Discord listening remain separate from mocked tests.
 
 ## Cleanup completed
@@ -46,3 +48,12 @@ Registry review also found newer discord.js and dotenv releases; this cleanup re
 ## Deployment and privacy
 
 The bot is restarted after validation and checked for Discord ready. The existing private GitHub repository receives the reviewed source and validation reports after an index scan against local credential/cookie values and prohibited paths. The remote repository's privacy, commit and file tree are verified. Local .env, actual cookie exports, runtime guild preferences, logs, media and node_modules remain excluded. The release ZIP is rebuilt from the same secret-scanned tracked files. Credentials and cookie exports are preserved locally; no secret rotation or cookie deletion is part of this audit. Queues are in memory and reset during restart.
+
+## Owner controls — 2 November 2026
+
+The current source has 27 prefix commands, including clearcache/shutdown/restart restricted to the exact user ID 1037886658462371860 without server-permission overrides. Process controls require successful acknowledgement and reject concurrent requests. Standalone startup now supervises one worker for explicit restart; shutdown remains offline. PM2 supervises the worker directly and skips restart for normal exit. Windows launch/stop helpers cover wrapper and worker paths. See VALIDATION.md for the actual tests and limits.
+
+- **265 tests passed**, no failures/skips; **74 JavaScript files** passed the expanded static scan and syntax checks.
+- Both process entrypoints reach all **43 runtime modules**, with no unused exports or orphan modules.
+- Real offline forks and owner-handler fixtures verified worker replacement, normal shutdown and scoped Windows process-tree stopping. Real local paced playback passed; the deployed worker reached Discord ready in three guilds.
+- Discord owner-command delivery and PM2 runtime execution remain unverified. No runtime dependencies were added or changed; the prior dependency advisory remains documented above.

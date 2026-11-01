@@ -6,7 +6,7 @@
   "description": "Self-hosted Discord music player with public metadata and bounded audio pipelines",
   "engines": { "node": ">=24.17.0" },
   "scripts": {
-    "start": "node src/index.js",
+    "start": "node src/run.js",
     "dev": "node --watch src/index.js",
     "doctor": "node scripts/doctor.js",
     "cookies:import": "node scripts/import-cookies.js",

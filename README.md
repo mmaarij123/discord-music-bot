@@ -6,7 +6,7 @@ Spotify supplies **metadata only**. All audio comes from a supported public YouT
 
 ## What works
 
-- All 24 prefix commands (default `>`) below, plus six functional player buttons.
+- All 27 prefix commands (default `>`), including three controls restricted to the configured bot owner, plus six functional player buttons.
 - Independent bounded queues and history per server; concurrent skips advance once; adding tracks leaves current playback running.
 - Song/artist searches with weighted matching, official/Topic preferences, duration comparison, and rejection of unwanted covers, live performances, remixes, karaoke, nightcore, slowed and sped-up versions.
 - Spotify track, album, and public playlist metadata through `spotify-url-info`. Public collections can be partial; imports always say so. No full Spotify audio or previews are played.
@@ -73,7 +73,7 @@ Set your bot token and enable Message Content Intent before starting. Applicatio
 
 Press Ctrl+C to stop cleanly. `npm run dev` restarts on source changes; it disconnects active music sessions. For production use one process, not watch mode.
 
-For double-click startup on Windows, open **Start Music Bot.bat** in this folder. Keep its console open while the bot runs; press Ctrl+C to stop. The launcher uses Node 24.17+ from PATH, or the compatible workspace runtime when present, and respects `.env`. If yt-dlp is configured by its default command name and is absent from PATH, it can use the workspace's existing tool. Setup still requires installed npm dependencies and FFmpeg/yt-dlp. Simultaneous launcher clicks are guarded, and an already-running bot started with the same absolute `src/index.js` path is detected. Avoid starting another copy through a separate supervisor or relative-path `npm start`. To check the launcher without starting a bot, run `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\start-windows.ps1 -CheckOnly`.
+For double-click startup on Windows, open **Start Music Bot.bat** in this folder. Keep its console open while the bot runs; press Ctrl+C to stop. The launcher uses Node 24.17+ from PATH, or the compatible workspace runtime when present, and respects `.env`. If yt-dlp is configured by its default command name and is absent from PATH, it can use the workspace's existing tool. Setup still requires installed npm dependencies and FFmpeg/yt-dlp. It starts `src/run.js`, which supervises one bot worker and replaces it only on an explicit restart request. Simultaneous launcher clicks are guarded; both the wrapper and legacy absolute `src/index.js` processes are detected. Avoid a separate duplicate supervisor instance. To check the launcher without starting a bot, run `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\start-windows.ps1 -CheckOnly`.
 
 Double-click **Stop Music Bot.bat** to force-close this project's running bot and its audio/extractor child processes. It matches the absolute bot entry path, rechecks process identity and leaves other Node applications alone. Running it when the bot is offline is harmless. Unsaved in-memory queues are lost; Ctrl+C in the running console remains the graceful shutdown option. These launchers manage a local standalone process; use `pm2 stop music-bot` for a PM2-managed bot so its supervisor does not restart it. A non-destructive check is available with `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\stop-windows.ps1 -CheckOnly`.
 
@@ -157,7 +157,7 @@ pm2 stop music-bot
 pm2 start music-bot
 ```
 
-The supplied ecosystem file runs **one forked instance** and sets a restart delay and memory ceiling. Do not use PM2 cluster mode or multiple instances with the same token; in-memory queues and guild voice ownership must have one owner. Enable log rotation, for example with `pm2 install pm2-logrotate`, and monitor CPU/memory. The bot limits each FFmpeg process to one decoder thread, but multiple streams still consume CPU and bandwidth. Start small and adjust `MAX_PLAYERS` for your host.
+The supplied ecosystem file runs **one forked instance** directly under PM2 and sets a restart delay and memory ceiling. It marks the worker as supervised and uses [PM2 stop_exit_codes](https://pm2.keymetrics.io/docs/usage/restart-strategies/#skip-auto-restart-for-specific-exit-codes) to keep an owner-requested shutdown offline while allowing restart/failure exits to restart. If you previously registered an older ecosystem configuration, re-register it with `pm2 delete music-bot`, `pm2 start ecosystem.config.cjs`, then `pm2 save`. Do not use PM2 cluster mode or multiple instances with the same token; in-memory queues and guild voice ownership must have one owner. Enable log rotation, for example with `pm2 install pm2-logrotate`, and monitor CPU/memory. The bot limits each FFmpeg process to one decoder thread, but multiple streams still consume CPU and bandwidth. Start small and adjust `MAX_PLAYERS` for your host.
 
 ## 5. Configuration
 
@@ -258,9 +258,16 @@ When started, logs should include `ready`. Join a voice channel and use `>play l
 | >lyrics | Lawful configured adapter or an informative unavailable response. |
 | >logchannel [channel/off] | Manage Server: select the playback-log channel, show its setting, or reset it. |
 | >djchannel [channel/off] | Manage Server: select the player-embed channel independently, show its setting, or reset it. |
+| >clearcache | Bot owner only: clear all built-in metadata/search/audio-link caches across servers without stopping playback or clearing queues. |
+| >shutdown | Bot owner only: gracefully stop audio, leave voice in all servers and shut down the application. |
+| >restart | Bot owner only: cleanly stop the worker and launch a fresh process; all in-memory queues reset. |
 | >help | Command list and input examples. |
 
 Buttons: Previous, Pause/Resume, Skip, Stop, Loop, Shuffle. They use the same authorization and queue methods as prefix commands. Old session controls expire. Read-only queue, nowplaying, lyrics and help do not require voice membership. Playback and settings controls do. Volume/control changes are available to listeners in the session channel; restrict channel access for stricter listener control. Discord application-command permissions do not apply to text prefix commands.
+
+Only Discord user ID **1037886658462371860** may use `clearcache`, `shutdown` and `restart`. This exact ID is fixed in `src/config/owner.js`; server ownership, Administrator and Manage Server never grant access. These server-only owner controls require no voice membership or existing session and acknowledge in the invoking channel, independently from log/DJ settings. They are hidden from other users' help output. Cache clearing preserves audio, queues, saved settings and authentication; in-flight metadata requests can populate fresh entries afterwards. Shutdown/restart acknowledgements must succeed before the process action is requested, and concurrent requests are rejected.
+
+Use `npm start`, **Start Music Bot.bat**, or the supplied PM2 configuration for `>restart`. An unsupported direct `node src/index.js` or watch/dev launch returns instructions rather than claiming it can restart. The standalone wrapper waits for the old worker to exit before replacing it and does not restart shutdown or crash exits; external PM2 can still recover crashes. After `>shutdown`, use the Start BAT or `npm start` again (or `pm2 start music-bot` under PM2). A stopped bot cannot receive `>restart` through Discord.
 
 Only one discovery/import runs per guild at a time, with a two-minute deadline. Playback controls and queue changes use a separate per-guild mutex. Stop/skip interrupt pending source preparation. Five consecutive track failures, whether at startup or during playback, stop further automatic attempts and preserve remaining entries. Completing a track or explicitly resuming via play/skip resets that failure budget. Temporary voice disconnections get a grace period and at most two rejoin attempts; persistent failures require a fresh `>join` or `>play` and never spin indefinitely.
 
@@ -450,10 +457,13 @@ Logs avoid source URLs, headers, tokens and provider stderr. Errors include guil
 ```text
 Music Bot/
   src/
+    run.js                      Standalone worker supervisor entry
     index.js                    Discord startup, signals and shutdown
+    runtime/                    Owner process control and child supervision
+    config/owner.js             Exact owner ID and protected command names
     config/config.js            Validated environment configuration
     config/GuildSettings.js     Atomic per-server log-channel preferences
-    commands/definitions.js     All 24 prefix definitions
+    commands/definitions.js     All 27 prefix definitions
     commands/execute.js         Shared prefix/button business logic
     commands/parsePrefix.js     Typed argument parsing and usage
     commands/messageContext.js  Single-message reply/progress adapter

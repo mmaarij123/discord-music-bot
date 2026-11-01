@@ -7,13 +7,16 @@ import { voiceStateHandler } from './events/voiceStateUpdate.js';
 import { runTool } from './utils/process.js';
 import { messageHandler } from './events/messageCreate.js';
 import { createCooldown } from './utils/cooldown.js';
+import { ProcessLifecycle } from './runtime/ProcessLifecycle.js';
 let client,manager,shuttingDown=false;
 const logger=createLogger(process.env.LOG_LEVEL);
 async function shutdown(reason,code=0){
   if(shuttingDown)return; shuttingDown=true;
   logger.info('shutdown',{reason});
-  const deadline=setTimeout(()=>process.exit(code||1),10000); deadline.unref();
-  await manager?.destroy(); client?.destroy(); clearTimeout(deadline); process.exitCode=code;
+  const deadline=setTimeout(()=>process.exit(code),10000); deadline.unref();
+  try{await manager?.destroy();await client?.destroy();}
+  catch(error){logger.error('shutdown_cleanup_failed',{error});}
+  finally{process.exitCode=code;if(process.connected)process.disconnect();}
 }
 try{
   const config=loadConfig(); requireDiscord(config);
@@ -23,6 +26,7 @@ try{
   try{await runTool(config.ytdlp,['--version'],{timeoutMs:5000});}
   catch(error){logger.warn('youtube_unavailable_local_media_still_supported',{error});}
   manager=await MusicManager.create(config,logger);
+  manager.lifecycle=new ProcessLifecycle({shutdown,canRestart:typeof process.send==='function'&&['1','pm2'].includes(process.env.MUSIC_BOT_SUPERVISED)});
   client=new Client({intents:[GatewayIntentBits.Guilds,GatewayIntentBits.GuildVoiceStates,GatewayIntentBits.GuildMessages,GatewayIntentBits.MessageContent],allowedMentions:{parse:[]}});
   client.once(Events.ClientReady,ready=>{
     ready.user.setActivity(`${config.prefix}help • Music`,{type:ActivityType.Listening});
@@ -37,6 +41,7 @@ try{
   client.on(Events.Warn,message=>logger.warn('discord_warning',{message}));
   process.once('SIGINT',()=>void shutdown('SIGINT'));
   process.once('SIGTERM',()=>void shutdown('SIGTERM'));
+  process.on('message',message=>{if(message?.type==='music:shutdown')void shutdown('supervisor_stop');});
   process.on('unhandledRejection',error=>logger.error('unhandled_rejection',{error:error instanceof Error?error:new Error(String(error))}));
   process.once('uncaughtException',error=>{logger.error('uncaught_exception',{error});void shutdown('uncaughtException',1);});
   await client.login(config.token);
