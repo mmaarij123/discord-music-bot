@@ -14,6 +14,7 @@ import { GuildPlayer } from './GuildPlayer.js';
 import { PlayerPresenter } from '../components/PlayerPresenter.js';
 import { GuildSettings } from '../config/GuildSettings.js';
 import { requireLogChannel } from '../utils/channels.js';
+import { startCacheCleanup } from '../utils/cache.js';
 async function adapter(file,method) {
   if (!file) return null;
   const module=await import(pathToFileURL(path.resolve(root,file)).href);
@@ -28,9 +29,9 @@ export class MusicManager {
     if(Boolean(credentials.clientId)!==Boolean(credentials.clientSecret))logger.warn('spotify_api_credentials_incomplete',{message:'Set both Spotify Client ID and Client Secret to enable optional official metadata search.'});
     const semaphore=new Semaphore(config.concurrency), youtube=new YouTubeResolver(config,semaphore), spotify=new SpotifyResolver(config,semaphore,search??official), local=new LocalMediaResolver(config);
     const settings=await GuildSettings.open(config.settingsFile);
-    return new MusicManager(config,logger,{discovery:new DiscoveryService(spotify,youtube,local,config),audio:new AudioManager(config,youtube,local),autoplay:new AutoplayManager(youtube,recommendations),lyrics,settings});
+    return new MusicManager(config,logger,{discovery:new DiscoveryService(spotify,youtube,local,config),audio:new AudioManager(config,youtube,local),autoplay:new AutoplayManager(youtube,recommendations),lyrics,settings,caches:[youtube.cache,youtube.sourceCache,spotify.cache,official?.cache].filter(Boolean)});
   }
-  constructor(config,logger,services) { Object.assign(this,{config,logger,...services});this.settings=services.settings??new GuildSettings();this.players=new Map(); this.presenters=new Map(); this.imports=new Map(); this.closing=false; }
+  constructor(config,logger,services) { Object.assign(this,{config,logger,...services});this.settings=services.settings??new GuildSettings();this.players=new Map(); this.presenters=new Map(); this.imports=new Map(); this.closing=false; this.stopCacheCleanup=startCacheCleanup(services.caches??[]); }
   async outputChannel(guild,fallback){
     return this.destinationChannel(guild,fallback,'log');
   }
@@ -98,9 +99,10 @@ export class MusicManager {
     finally { clearTimeout(timeout); this.imports.delete(guildId); }
   }
   async destroy() {
-    this.closing=true; for(const controller of this.imports.values())controller.abort();
+    this.closing=true; this.stopCacheCleanup(); for(const controller of this.imports.values())controller.abort();
     await Promise.allSettled([...this.players.values()].map(p=>p.destroy()));
     await Promise.allSettled([...this.presenters.values()].map(p=>p.dispose()));
     this.audio.dispose(); this.players.clear(); this.presenters.clear();
+    for(const cache of this.caches??[])cache.clear();
   }
 }

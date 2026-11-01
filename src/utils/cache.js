@@ -7,6 +7,7 @@ export class TTLCache {
     return structuredClone(item.value);
   }
   delete(key) { return this.items.delete(key); }
+  clear() { this.items.clear(); }
   set(key, value) {
     for (const [k,v] of this.items) if (v.expires <= Date.now()) this.items.delete(k);
     this.items.delete(key);
@@ -14,4 +15,15 @@ export class TTLCache {
     this.items.set(key, { expires: Date.now() + this.ttlMs, value: structuredClone(value) });
     return value;
   }
+}
+
+export const CACHE_CLEANUP_INTERVAL_MS = 5 * 60 * 1000;
+
+export function startCacheCleanup(caches) {
+  if (!caches.length) return () => {};
+  const timer = setInterval(() => {
+    for (const cache of caches) cache.clear();
+  }, CACHE_CLEANUP_INTERVAL_MS);
+  timer.unref();
+  return () => clearInterval(timer);
 }

@@ -23,8 +23,8 @@ The remaining **39 runtime modules** are all reachable from `src/index.js`; no o
 
 | Check | Result |
 |---|---|
-| Node built-in automated tests | **226 passed**, zero failures/skips |
-| ESLint 10.14.0 static scan | **67 files**, zero errors/warnings |
+| Node built-in automated tests | **229 passed**, zero failures/skips |
+| ESLint 10.14.0 static scan | **68 files**, zero errors/warnings |
 | JavaScript syntax verification | Passed |
 | Runtime import reachability | 39/39 modules reachable |
 | npm dependency compatibility | All direct dependencies resolved; no invalid/extraneous direct packages |
