@@ -1,7 +1,16 @@
 {
-  "checkedAt": "2026-11-01T00:53:57.094Z",
+  "checkedAt": "2026-11-01T01:09:52.928Z",
   "tool": "ESLint 10.14.0",
   "files": 68,
   "errors": 0,
-  "warnings": 0
+  "warnings": 0,
+  "additionalRules": [
+    "no-useless-return",
+    "no-useless-catch",
+    "no-extra-boolean-cast",
+    "no-useless-assignment",
+    "no-duplicate-imports",
+    "no-unreachable-loop",
+    "no-unsafe-optional-chaining"
+  ]
 }

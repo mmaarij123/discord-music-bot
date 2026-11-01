@@ -1,5 +1,5 @@
 {
-  "checkedAt": "2026-10-31T22:56:03.374Z",
+  "checkedAt": "2026-11-01T01:02:46.695Z",
   "vulnerabilities": {
     "info": 0,
     "low": 0,
@@ -13,69 +13,105 @@
       "name": "@discordjs/node-pre-gyp",
       "severity": "moderate",
       "isDirect": false,
-      "fixAvailable": false,
+      "range": "*",
       "via": [
         "rimraf"
-      ]
+      ],
+      "effects": [
+        "@discordjs/opus"
+      ],
+      "fixAvailable": false
     },
     {
       "name": "@discordjs/opus",
       "severity": "moderate",
       "isDirect": true,
-      "fixAvailable": false,
+      "range": ">=0.3.1",
       "via": [
         "@discordjs/node-pre-gyp"
-      ]
+      ],
+      "effects": [
+        "prism-media"
+      ],
+      "fixAvailable": false
     },
     {
       "name": "@discordjs/voice",
       "severity": "moderate",
       "isDirect": true,
-      "fixAvailable": false,
+      "range": "*",
       "via": [
         "prism-media"
-      ]
+      ],
+      "effects": [],
+      "fixAvailable": false
     },
     {
       "name": "glob",
       "severity": "moderate",
       "isDirect": false,
-      "fixAvailable": false,
+      "range": "3.0.0 - 13.0.6",
       "via": [
         "minimatch"
-      ]
+      ],
+      "effects": [
+        "rimraf"
+      ],
+      "fixAvailable": false
     },
     {
       "name": "minimatch",
       "severity": "moderate",
       "isDirect": false,
-      "fixAvailable": false,
+      "range": "<11.0.1",
       "via": [
         {
+          "source": 1244012,
           "name": "minimatch",
+          "dependency": "minimatch",
           "title": "minimatch has potential denial of service via globparts amplification",
           "url": "https://github.com/advisories/GHSA-g3hv-75wg-m249",
+          "severity": "moderate",
+          "cwe": [
+            "CWE-405"
+          ],
+          "cvss": {
+            "score": 0,
+            "vectorString": null
+          },
           "range": "<11.0.1"
         }
-      ]
+      ],
+      "effects": [
+        "glob"
+      ],
+      "fixAvailable": false
     },
     {
       "name": "prism-media",
       "severity": "moderate",
       "isDirect": false,
-      "fixAvailable": false,
+      "range": "1.2.3 - 1.3.5",
       "via": [
         "@discordjs/opus"
-      ]
+      ],
+      "effects": [
+        "@discordjs/voice"
+      ],
+      "fixAvailable": false
     },
     {
       "name": "rimraf",
       "severity": "moderate",
       "isDirect": false,
-      "fixAvailable": false,
+      "range": "2.3.0 - 3.0.2 || >=4.2.0",
       "via": [
         "glob"
-      ]
+      ],
+      "effects": [
+        "@discordjs/node-pre-gyp"
+      ],
+      "fixAvailable": false
     }
   ]
 }

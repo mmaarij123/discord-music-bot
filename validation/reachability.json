@@ -1,0 +1,8 @@
+{
+  "checkedAt": "2026-11-01T01:07:50.171Z",
+  "method": "Static ESM imports from src/index.js; export consumers include src, scripts and tests. Dynamic operator adapters are configured runtime extensions.",
+  "runtimeModules": 39,
+  "reachableRuntimeModules": 39,
+  "orphanRuntimeModules": [],
+  "unusedExports": []
+}

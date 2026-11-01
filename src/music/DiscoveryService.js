@@ -3,12 +3,11 @@ import { bestMatch } from './TrackMatcher.js';
 import { withAbort } from '../utils/async.js';
 export class DiscoveryService {
   constructor(spotify,youtube,local,config={}) { Object.assign(this,{spotify,youtube,local,config}); }
-  async resolve(input, signal, progress = async () => {}) {
+  async resolve(input, signal) {
     const parsed = classifyInput(input);
-    if (parsed.source === 'spotify') { await progress('Reading public Spotify metadata…'); return this.spotify.resolve(parsed.url,signal); }
-    if (parsed.source === 'youtube') { await progress('Reading accessible YouTube metadata…'); return this.youtube.resolveInput(parsed.url,signal); }
+    if (parsed.source === 'spotify') return this.spotify.resolve(parsed.url,signal);
+    if (parsed.source === 'youtube') return this.youtube.resolveInput(parsed.url,signal);
     if (['local','stream'].includes(parsed.type)) return this.local.resolve(parsed.type,parsed.id);
-    await progress('Discovering track metadata…');
     const metadataSignal=AbortSignal.any([signal,AbortSignal.timeout(this.config.spotifyDiscoveryMs??2000)].filter(Boolean));
     const spotifyRequest=withAbort(this.spotify.search(parsed.query,metadataSignal),metadataSignal).catch(()=>{
       if(signal?.aborted)throw signal.reason;

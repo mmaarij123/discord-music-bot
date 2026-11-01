@@ -1,5 +1,6 @@
 import { spawn } from 'node:child_process';
 import path from 'node:path';
+import { StringDecoder } from 'node:string_decoder';
 import { UserError } from './errors.js';
 export function spawnTool(file,args,stdio=['ignore','pipe','pipe']){
   const child=spawn(file,args,{shell:false,windowsHide:true,detached:process.platform!=='win32',stdio});
@@ -24,6 +25,7 @@ export function runTool(file, args, { signal, timeoutMs = 45000, maxBytes = 8*10
     signal?.throwIfAborted();
     const child = spawnTool(file,args);
     let stdout = '', stderr = '', bytes = 0, failure;
+    const decoder = new StringDecoder('utf8');
     const fail = error => { failure ??= error; killProcess(child); };
     const abort = () => fail(signal.reason);
     signal?.addEventListener('abort', abort, { once: true });
@@ -32,19 +34,20 @@ export function runTool(file, args, { signal, timeoutMs = 45000, maxBytes = 8*10
     child.stdout.on('data', data => {
       bytes += data.length;
       if (bytes > maxBytes) fail(new UserError('Metadata exceeded the configured safety limit.'));
-      else stdout += data.toString();
+      else stdout += decoder.write(data);
     });
     child.stderr.on('data', data => { stderr = (stderr + data.toString()).slice(-4096); });
     child.on('error', error => fail(new UserError(error.code === 'ENOENT' ? `Required tool ${file.split(/[\\/]/).at(-1)} is missing. Check its configured path.` : 'The media tool could not start.', 'TOOL_MISSING')));
     child.on('close', code => {
       clearTimeout(timer); signal?.removeEventListener('abort', abort);
+      stdout += decoder.end();
       if (failure) reject(failure);
       else if (code !== 0 && !(allowPartial && stdout.trim())) reject(providerError(stderr));
       else resolve({ stdout, partial: code !== 0 });
     });
   });
 }
-export function providerError(stderr) {
+function providerError(stderr) {
   if (/age.restrict|sign in|login|members.only|private video|not a bot|cookies/i.test(stderr)) return new UserError('This source requires login, age verification, or private access. Choose another permitted public source.','RESTRICTED');
   if (/country|region|geo.restrict/i.test(stderr)) return new UserError('This source is unavailable in the bot’s region. Choose another source.','REGION');
   if (/removed|unavailable|not available|not found/i.test(stderr)) return new UserError('This source is deleted or unavailable. Choose another source.','UNAVAILABLE');

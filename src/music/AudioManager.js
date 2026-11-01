@@ -54,11 +54,10 @@ export class AudioManager {
     child.stdout.pipe(pcm);
     child.on('close',code => {
       childClosed=true;
-      handle.exitCode=code;
       if(code !== 0)report(decoderError(stderr,code,{cachedSource:source.fromCache===true&&Boolean(source.match?.youtubeUrl),provider:source.match?.youtubeUrl?'YouTube':'The provider'}));
     });
     let resource;
-    const handle = { resource:null, match:source.match, duration:source.duration, failure:null, exitCode:null,
+    const handle = { resource:null, match:source.match, duration:source.duration, failure:null,
       dispose:() => {
         if (disposed) return; disposed=true;
         signal?.removeEventListener('abort',abort);

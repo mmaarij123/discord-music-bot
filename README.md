@@ -221,6 +221,8 @@ The default prefix is `>`. Send `>help`, `>play Artist Song`, `>queue`, or `>vol
 
 The earlier slash-command migration was completed and its one-off cleanup script has been removed. Prefix commands need no deployment/registration step. The interaction handler processes music buttons only.
 
+Join claims its session host before asynchronous setup begins. The host can cancel a pending join with `>stop`, including from outside voice; destroying the connection also cancels its readiness waiter promptly.
+
 If `>help` is ignored, verify **Message Content Intent** in the [Bot settings](https://discord.com/developers/applications) and restart. Discord documents this requirement in its [Message Content Intent guide](https://docs.discord.com/developers/events/gateway#message-content-intent). A server administrator still needs to invite the bot; changing prefixes never grants server access.
 
 When started, logs should include `ready`. Join a voice channel and use `>play local:demo` after setting up the local library below, or request a permitted public YouTube track. No token is included in this project.

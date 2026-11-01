@@ -96,8 +96,12 @@ export async function execute(interaction,manager,action=interaction.commandName
   }
   if(action==='join'){
     textAccess(interaction,await manager.djChannel?.(interaction.guild,interaction.channel)??interaction.channel);
-    player=manager.get(interaction.guild,true);await manager.bindPresenter?.(interaction.guild,interaction.channel);
-    await player.join(access.channel);player.claimHost(interaction.user.id);return reply('Connected to your voice channel.');
+    player=manager.get(interaction.guild,true);player.claimHost(interaction.user.id);
+    const releaseIdle=player.holdIdleTimeout();
+    try{
+      await manager.bindPresenter?.(interaction.guild,interaction.channel);
+      await player.join(access.channel);return await reply('Connected to your voice channel.');
+    }finally{releaseIdle();}
   }
   if(action==='stop'||action==='leave') {
     if(player&&player.ownerId!==interaction.user.id){

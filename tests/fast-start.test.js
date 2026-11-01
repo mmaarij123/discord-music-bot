@@ -129,3 +129,16 @@ test('real voice handshake waiter honours cancellation and destroys its connecti
   const waiting=voice.join({id:'voice'},{signal:controller.signal});controller.abort();
   await assert.rejects(waiting,{name:'AbortError'});assert.ok(destroyed);assert.equal(voice.connection,null);
 });
+
+test('stop cancels a real voice handshake waiter even without a caller abort signal',{timeout:2000},async t=>{
+  const f=fixture();t.after(()=>f.player.destroy());
+  const voice=new VoiceSession({id:'guild'},f.fakePlayer,()=>assert.fail('stop must not report unexpected loss'),logger);
+  const connection=new EventEmitter();let destroyed=false;
+  Object.assign(connection,{state:{status:'connecting'},joinConfig:{channelId:'voice'},destroy(){destroyed=true;this.state={status:'destroyed'};}});
+  voice.connection=connection;f.player.voice=voice;
+  const joining=f.player.join(f.channel),cancelled=assert.rejects(joining,{name:'AbortError'});
+  await settle();assert.ok(voice.joinController);
+  await f.player.stop(true);await cancelled;
+  assert.equal(destroyed,true);assert.equal(voice.joinController,null);
+  assert.equal(connection.listenerCount('ready'),0);assert.equal(f.player.state,'disconnected');
+});

@@ -34,7 +34,7 @@ test('player embed and buttons serialize current state',async t=>{
 });
 test('expired player buttons return an informative error',async()=>{
   let reply;
-  const i={...interaction(),isChatInputCommand:()=>false,isButton:()=>true,customId:'music:old:skip',message:{id:'old'},deferReply:async()=>{i.deferred=true;},editReply:async value=>{reply=value;}};
+  const i={...interaction(),isButton:()=>true,customId:'music:old:skip',message:{id:'old'},deferReply:async()=>{i.deferred=true;},editReply:async value=>{reply=value;}};
   await interactionHandler({presenters:new Map()},logger)(i);assert.match(reply.content,/expired/);
 });
 test('expired interaction replies are contained',async()=>{

@@ -2,7 +2,7 @@ import { joinVoiceChannel, entersState, VoiceConnectionStatus as Status, VoiceCo
 import { UserError } from '../utils/errors.js';
 export class VoiceSession {
   constructor(guild, audioPlayer, onLost, logger,{createConnection=joinVoiceChannel,waitForState=entersState}={}) {
-    Object.assign(this,{guild,audioPlayer,onLost,logger,createConnection,waitForState});this.connection=null;this.recoveryController=null;this.closed=false;
+    Object.assign(this,{guild,audioPlayer,onLost,logger,createConnection,waitForState});this.connection=null;this.joinController=null;this.recoveryController=null;this.closed=false;
   }
   get channelId() { return this.connection?.joinConfig.channelId; }
   ensureSubscription(){
@@ -21,14 +21,17 @@ export class VoiceSession {
       connection.on(Status.Destroyed,()=>{ if (!this.closed && this.connection===connection) { this.connection=null; this.onLost(); } });
       connection.subscribe(this.audioPlayer);
     }
+    const controller=new AbortController();this.joinController=controller;
     try {
-      const readySignal=AbortSignal.any([signal,AbortSignal.timeout(20000)].filter(Boolean));
-      await this.waitForState(this.connection,Status.Ready,readySignal);signal?.throwIfAborted();this.ensureSubscription();
+      const readySignal=AbortSignal.any([signal,controller.signal,AbortSignal.timeout(20000)].filter(Boolean));
+      await this.waitForState(this.connection,Status.Ready,readySignal);readySignal.throwIfAborted();this.ensureSubscription();
     }catch {
+      const cancelled=controller.signal.aborted;
       this.destroy();
       if(signal?.aborted)throw signal.reason;
+      if(cancelled)throw controller.signal.reason;
       throw new UserError('Voice connection timed out. Check Connect/Speak permissions and outbound UDP networking.','VOICE_TIMEOUT');
-    }
+    }finally{if(this.joinController===controller)this.joinController=null;}
   }
   async recover(connection) {
     if(this.closed||this.recoveryController||connection!==this.connection)return;
@@ -55,6 +58,7 @@ export class VoiceSession {
   }
   destroy() {
     this.closed=true;
+    this.joinController?.abort();this.joinController=null;
     this.recoveryController?.abort();this.recoveryController=null;
     const connection=this.connection; this.connection=null;
     if (connection && connection.state.status !== Status.Destroyed) connection.destroy();
