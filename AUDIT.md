@@ -1,65 +1,42 @@
-# Full code and dependency audit — 1 November 2026
+# Full code audit — 2 November 2026
 
-This section records the 1 November audit. The later 2 November change records below provide the current command/module/test counts.
+The audit reviewed all 43 runtime modules: command parsing/dispatch, exact-owner controls, same-voice/session-host permissions, queue and playback transitions, source matching/discovery, FFmpeg/yt-dlp subprocess lifecycle, connection recovery, caching, credential handling, log/DJ/help routing, shutdown/restart supervision, Windows launchers and deployment configuration. Historical changes are recorded in VALIDATION.md.
 
-The audit covers every runtime module, prefix commands and buttons, per-guild queues, playback transitions, connection recovery, FFmpeg/yt-dlp lifecycle, metadata adapters, cache cleanup, log/DJ routing, configuration, credentials and deployment checks. External providers and real Discord listening remain separate from mocked tests.
+## Confirmed issue and fix
 
-## Cleanup completed
+Help was routed through the configured music log destination. A deleted/inaccessible log channel could also prevent help from working, and placing help among text-only local replies without a separate permission check would lose its clear Embed Links error.
 
-- Removed the unused discovery-progress callback and its obsolete provider-status strings. No runtime command, script or test supplied that callback; the existing single Searching/Added reply remains the command interface.
-- Removed the unused public export of the internal media-provider error classifier. Its error handling remains active inside subprocess execution.
-- Removed the write-only audio-handle exitCode field; decoder failures still carry classified exit status for safe logging.
-- Removed an obsolete slash-command predicate from a button test fixture.
+The message router now treats help as a local reply and checks Embed Links in the invoking channel. Normal help, malformed help usage and permission failures stay in that channel/thread. Help never resolves the configured log or DJ destination. Existing play confirmations and owner/setup acknowledgements remain local; other music-control replies and playback notices retain their configured log routing, and the automatic player remains in its DJ destination.
 
-All **39 runtime modules** are reachable through static ESM imports from src/index.js. No orphan module was found or deleted. Every remaining exported symbol has a consumer in runtime code, tests or supported diagnostic scripts. Native Opus, its portable fallback, local playback, lawful optional adapters and provider smoke scripts remain in use and were retained. The Spotify retry-after field is used by the connection checker and was retained.
+Four new tests cover two invoking channels with independent log/DJ settings, missing destinations without any channel lookup, local usage/Embed Links errors, and custom-prefix uppercase help in a thread with Send Messages in Threads permission. The pre-existing queue/log tests still exercise the unchanged music routing. No additional confirmed blocking runtime defect was found during this review; the dependency limitation below remains open.
 
-## Bugs fixed
-
-1. **Pending join ownership and guild isolation.** A join requester was assigned ownership only after voice connection completed. During asynchronous presenter/channel preparation, the session also lacked the hold that protects pending play requests from another guild's stale-session cleanup. Join now claims its host immediately, holds the session throughout preparation/connection/reply and releases the hold on success or failure. The host can cancel while outside voice without waiting for setup to finish.
-2. **Cancelling a handshake without an external signal.** Destroying a voice connection did not cancel the library's pending Ready waiter when join had no caller signal. Stop could therefore queue behind the handshake's 20-second timeout. VoiceSession now owns a cancellable join waiter, aborts it during destruction and removes it after completion. Existing caller cancellation, bounded recovery and no-rejoin-on-removal behavior remain covered.
-3. **Split UTF-8 metadata.** Subprocess stdout decoded each buffer independently. A reproduced byte split inside an emoji introduced replacement characters, which could corrupt Urdu or other multilingual titles and matching. The native StringDecoder now preserves partial characters across chunks and flushes at close, retaining the existing byte limit, deadlines and safe subprocess arguments.
-
-## Checks executed
+## Current code and checks
 
 | Check | Result |
 |---|---|
-| Node built-in automated tests | **237 passed**, zero failures/skips |
-| ESLint 10.14.0 | **68 JavaScript files**, zero errors/warnings, including seven additional dead/unsafe-code rules |
-| JavaScript syntax checks | Passed |
-| ESM reachability and export review | 39/39 runtime modules reachable; no orphan modules or unused exports |
-| Installed dependency tree | Six direct/optional packages present; no missing or invalid package reported |
-| Local runtime doctor | Node 24.22.2, FFmpeg 9.0, yt-dlp 2026.10.26, native Opus and DAVE available; cookie format valid |
-| Real local paced playback | Pause, paused seek, near-end completion, full 12-second next track, queue transition and fresh play passed |
-| Real Spotify metadata | Client Credentials authentication and official search passed without displaying credentials/tokens |
-| Real permitted YouTube source | Blender Creative Commons source passed yt-dlp → FFmpeg → ten Opus packets, then disposal |
+| Automated Node tests | **279 passed**, zero failures/skips |
+| Expanded ESLint 10.14.0 scan | **75 JavaScript files**, zero errors/warnings |
+| Syntax checks | All JavaScript files passed |
+| Runtime ESM reachability | **43/43 modules** reachable from wrapper/worker entrypoints, no orphan modules or unused exports |
+| Command surface | **20 commands**, five player buttons; removed commands remain rejected |
+| Installed package tree | All six direct/optional packages present, no missing/invalid dependency reported |
+| Runtime doctor | Node 24.22.2, FFmpeg 9.0, yt-dlp 2026.10.26, Opus/DAVE and cookie-file format checks passed |
+| Real local paced playback | Pause, paused interruption recovery, natural completion, queue transition, full 12-second next track and fresh playback passed |
+| Real Spotify metadata | Authentication and official search passed without exposing credentials/tokens |
+| Real permitted YouTube audio | Blender Creative Commons source passed extraction → FFmpeg → ten Opus packets, then disposal |
 
-The four new regression tests cover pending-join host cancellation, protection from cross-guild reclamation and cleanup after setup failure, split Unicode subprocess output, and cancellation of the real voice library's waiter against a fake connection. Network/channel delivery is mocked in command tests. Audio smoke checks sent no packets or messages to Discord. A successful bot login after restart confirms gateway readiness, not full-song human listening.
+Evidence: [unit tests](validation/automated-tests.tap), [static scan](validation/static-audit.json), [reachability](validation/reachability.json), [dependency scan](validation/dependency-audit.json).
 
-Evidence: [automated tests](validation/automated-tests.tap), [static scan](validation/static-audit.json), [reachability](validation/reachability.json), [dependency scan](validation/dependency-audit.json). Historical feature checks are retained in [VALIDATION.md](VALIDATION.md).
+The review retained active functionality rather than deleting code based only on feature names. Internal queue clearing is used for stop/shutdown; history is bounded and supports autoplay; recovery offsets and paused-state restoration are used after interruptions even though public seek was removed. The three process/cache controls still accept only the exact ID 1037886658462371860, without server-admin exceptions. Manual disconnect remains terminal, transient reconnection is bounded, and shutdown exits are not automatically restarted by the standalone wrapper. PM2 runtime execution was not performed; the supplied configuration is checked by tests.
 
-## Dependency limitation
+## Dependency finding still open
 
-The fresh npm audit still reports **7 moderate package findings, zero high/critical**, propagated from one [upstream minimatch advisory](https://github.com/advisories/GHSA-g3hv-75wg-m249) through glob/rimraf and the native Opus installer. npm reports no automatic compatible fix. The reviewed advisory lists versions below 11.0.1 as affected and describes attacker-controlled pattern amplification.
+The fresh npm audit reports **7 moderate affected-package findings, zero high/critical**, propagated from one [minimatch advisory](https://github.com/advisories/GHSA-g3hv-75wg-m249) through glob/rimraf and the native Opus installer. npm reports no automatic compatible fix. The installed callable/callback-based installer chain is not compatible with a blind major-version override. Native Opus is actually used for encoding and was retained; its portable fallback remains useful too.
 
-The bot does not supply Discord input as glob patterns to those installation utilities. That limits the observed runtime exposure; it does not eliminate the audit finding. Replacing old callback/callable APIs with incompatible major versions would require a separately validated installer migration. Native Opus is actively used and retained for encoding efficiency. No force override or audit suppression was applied; the strict CI audit step will still fail/report these findings.
-
-Registry review also found newer discord.js and dotenv releases; this cleanup retains the tested pinned versions, which satisfy the current Node runtime. It does not silently introduce a dotenv major migration or claim all packages are latest.
+Discord searches/URLs/queue values are not passed as glob patterns to those installation utilities. That reduces the observed application exposure, while npm's finding remains unresolved. No incompatible force override, dependency-source patch or audit suppression was applied. The strict CI npm-audit step still reports/fails on these findings. No runtime dependency was added or upgraded for this routing fix.
 
 ## Deployment and privacy
 
-The bot is restarted after validation and checked for Discord ready. The existing private GitHub repository receives the reviewed source and validation reports after an index scan against local credential/cookie values and prohibited paths. The remote repository's privacy, commit and file tree are verified. Local .env, actual cookie exports, runtime guild preferences, logs, media and node_modules remain excluded. The release ZIP is rebuilt from the same secret-scanned tracked files. Credentials and cookie exports are preserved locally; no secret rotation or cookie deletion is part of this audit. Queues are in memory and reset during restart.
+The bot is restarted after validation and checked for gateway ready with one supervised worker. The Windows launcher and exact-project stop helper remain available. The private .env and cookie exports are checked against a local before/after hash baseline, without displaying their contents. The staged source is scanned against known local credential/cookie values and prohibited paths before upload to the existing private repository; remote privacy, commit and file tree are verified. The release ZIP is rebuilt to match the scanned tracked files. Runtime data, media, logs and actual secret files remain excluded.
 
-## Owner controls — 2 November 2026
-
-The current source has 27 prefix commands, including clearcache/shutdown/restart restricted to the exact user ID 1037886658462371860 without server-permission overrides. Process controls require successful acknowledgement and reject concurrent requests. Standalone startup now supervises one worker for explicit restart; shutdown remains offline. PM2 supervises the worker directly and skips restart for normal exit. Windows launch/stop helpers cover wrapper and worker paths. See VALIDATION.md for the actual tests and limits.
-
-- **265 tests passed**, no failures/skips; **74 JavaScript files** passed the expanded static scan and syntax checks.
-- Both process entrypoints reach all **43 runtime modules**, with no unused exports or orphan modules.
-- Real offline forks and owner-handler fixtures verified worker replacement, normal shutdown and scoped Windows process-tree stopping. Real local paced playback passed; the deployed worker reached Discord ready in three guilds.
-- Discord owner-command delivery and PM2 runtime execution remain unverified. No runtime dependencies were added or changed; the prior dependency advisory remains documented above.
-
-## Command removal — 2 November 2026
-
-The current command surface is **20 commands and five buttons** after removing previous/jump/move/seek/247/lyrics/clear and the Previous button. Dead command-only helpers, the seek parser and lyrics adapter loader/config were removed. Internal queue clearing, history and recovery offsets remain in use by retained playback/autoplay functionality. The requested remove command and all three exact-owner controls remain supported. Initial persistent mode remains an operator-only environment setting.
-
-**275 automated tests passed**, zero failures/skips; **75 JavaScript files** passed static and syntax checks. The ESM review still reaches all **43 runtime modules** with no orphan modules or unused exports. The updated actual local audio probe passed paused recovery, queue completion and full 12-second-next-track playback. No new dependencies were introduced; previous provider, Discord listening and dependency-advisory limitations remain as documented.
+Discord sends, permission/channel lookups and help routing were mocked in automated tests. Provider probes and the paced local audio test sent no server messages or voice packets. Gateway ready confirms login rather than full-track human listening, and no real help message was posted in the user's server during validation.

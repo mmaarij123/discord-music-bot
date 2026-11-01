@@ -107,10 +107,48 @@ test('non-moderators cannot inspect, change or disable the setting',async t=>{
   for(const command of ['>logchannel','>logchannel #other','>logchannel off'])await f.run(command);
   assert.equal(f.manager.settings.getLogChannel(GUILD),OUTPUT);assert.ok(f.source.messages.every(value=>value.content.includes('Manage Server')));
 });
-test('configured replies route to the selected channel instead of the command channel',async t=>{
-  const f=setup(t);await f.manager.settings.setLogChannel(GUILD,OUTPUT);await f.run('>help');
+test('queue replies still route to logs while help is kept local',async t=>{
+  const f=setup(t),music=fixture({id:GUILD});f.manager.players.set(GUILD,music.player);
+  await f.manager.settings.setLogChannel(GUILD,OUTPUT);await f.run('>queue');
   assert.equal(f.source.messages.length,0);assert.equal(f.output.messages.length,1);assert.ok(f.output.messages[0].embeds.length);
   assert.deepEqual(f.output.messages[0].allowedMentions,{parse:[],repliedUser:false});
+});
+
+test('help replies in each invoking channel despite independent log and DJ settings',async t=>{
+  const f=setup(t);await f.manager.settings.setLogChannel(GUILD,OUTPUT);await f.manager.settings.setDjChannel(GUILD,SECOND);
+  await f.run('>help');
+  const second=f.message('>help');second.channel=f.other;second.reply=payload=>f.other.send(payload);
+  await messageHandler(f.manager,logger,{cooldown:()=>{}})(second);
+  assert.equal(f.source.messages.length,1);assert.equal(f.other.messages.length,1);assert.equal(f.output.messages.length,0);
+  for(const output of [f.source,f.other]){
+    assert.equal(output.messages[0].embeds[0].toJSON().title,'Your listening room');
+    assert.deepEqual(output.messages[0].allowedMentions,{parse:[],repliedUser:false});
+  }
+  assert.equal(f.manager.players.size,0);assert.equal(f.manager.presenters.size,0);
+});
+
+test('help never looks up a missing log or DJ destination',async t=>{
+  const f=setup(t);await f.manager.settings.setLogChannel(GUILD,OUTPUT);await f.manager.settings.setDjChannel(GUILD,SECOND);
+  f.channels.delete(OUTPUT);f.channels.delete(SECOND);
+  f.guild.channels.fetch=()=>assert.fail('Help tried to resolve an unrelated channel');
+  await f.run('>help');assert.equal(f.source.messages.length,1);assert.ok(f.source.messages[0].embeds.length);
+  assert.equal(f.output.messages.length,0);assert.equal(f.other.messages.length,0);
+});
+
+test('help usage errors and missing Embed Links are returned locally',async t=>{
+  const f=setup(t);await f.manager.settings.setLogChannel(GUILD,OUTPUT);
+  await f.run('>help extra');assert.match(f.source.messages[0].content,/Usage: >help/);
+  f.source.permissions.has=values=>![values].flat().includes(PermissionFlagsBits.EmbedLinks);
+  await f.run('>help');assert.match(f.source.messages[1].content,/Embed Links/);
+  assert.equal(f.output.messages.length,0);
+});
+
+test('custom-prefix uppercase help stays in the invoking thread with thread permissions',async t=>{
+  const f=setup(t);f.manager.config.prefix='!!';await f.manager.settings.setLogChannel(GUILD,OUTPUT);
+  f.source.isThread=()=>true;
+  f.source.permissions.has=values=>![values].flat().includes(PermissionFlagsBits.SendMessages);
+  await f.run('!!HELP');assert.equal(f.source.messages.length,1);assert.equal(f.output.messages.length,0);
+  assert.ok(f.source.messages[0].embeds[0].toJSON().description.includes('!!play'));
 });
 test('malformed commands and validation errors also route to the configured channel',async t=>{
   const f=setup(t);await f.manager.settings.setLogChannel(GUILD,OUTPUT);await f.run('>volume bad');await f.run('>unknown');
@@ -124,7 +162,7 @@ test('search progress edits one message in the destination channel',async t=>{
 test('deleted or inaccessible configured channels do not silently send music elsewhere',async t=>{
   const f=setup(t);await f.manager.settings.setLogChannel(GUILD,OUTPUT);f.channels.delete(OUTPUT);
   await assert.rejects(f.manager.outputChannel(f.guild,f.source),{code:'LOG_CHANNEL'});
-  await f.run('>help');assert.equal(f.output.messages.length,0);assert.match(f.source.messages[0].content,/text channel|unavailable/);
+  await f.run('>queue');assert.equal(f.output.messages.length,0);assert.match(f.source.messages[0].content,/text channel|unavailable/);
   assert.equal(f.manager.settings.getLogChannel(GUILD),OUTPUT);
 });
 test('logchannel off is usable when the old destination is missing',async t=>{

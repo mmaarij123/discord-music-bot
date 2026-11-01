@@ -5,7 +5,7 @@ import { execute } from '../commands/execute.js';
 import { publicError, UserError } from '../utils/errors.js';
 import { createCooldown } from '../utils/cooldown.js';
 import { ownerCommands } from '../config/owner.js';
-const localReplies=new Set(['play','logchannel','djchannel',...ownerCommands]);
+const localReplies=new Set(['help','play','logchannel','djchannel',...ownerCommands]);
 const stopCommands=new Set(['stop','leave']);
 
 export function messageHandler(manager, logger, { cooldown = createCooldown() } = {}) {
@@ -33,7 +33,8 @@ export function messageHandler(manager, logger, { cooldown = createCooldown() } 
         }
       }
       const outputPermissions=output.permissionsFor(bot);
-      if(!localReplies.has(head)&&!stopCommands.has(head)&&!outputPermissions?.has(PermissionFlagsBits.EmbedLinks))throw new UserError('The bot needs Embed Links permission in the output channel to show music replies and the player.');
+      const needsEmbeds=head==='help'||(!localReplies.has(head)&&!stopCommands.has(head));
+      if(needsEmbeds&&!outputPermissions?.has(PermissionFlagsBits.EmbedLinks))throw new UserError('The bot needs Embed Links permission in the output channel to show music replies and the player.');
       cooldown(message.guildId, message.author.id);
       const parsed = parsePrefix(message.content, prefix);
       if (!parsed) return;

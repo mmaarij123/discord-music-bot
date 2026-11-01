@@ -224,6 +224,8 @@ The default prefix is `>`. Send `>help`, `>play Artist Song`, `>queue`, or `>vol
 
 The earlier slash-command migration was completed and its one-off cleanup script has been removed. Prefix commands need no deployment/registration step. The interaction handler processes music buttons only.
 
+`>help` always replies in the invoking channel or thread, including usage and permission errors. It does not depend on the configured log or DJ channel. The bot needs Embed Links there to show the help embed; otherwise it sends a local permission explanation.
+
 Join claims its session host before asynchronous setup begins. The host can cancel a pending join with `>stop`, including from outside voice; destroying the connection also cancels its readiness waiter promptly.
 
 If `>help` is ignored, verify **Message Content Intent** in the [Bot settings](https://discord.com/developers/applications) and restart. Discord documents this requirement in its [Message Content Intent guide](https://docs.discord.com/developers/events/gateway#message-content-intent). A server administrator still needs to invite the bot; changing prefixes never grants server access.
@@ -253,7 +255,7 @@ When started, logs should include `ready`. Join a voice channel and use `>play l
 | >clearcache | Bot owner only: clear all built-in metadata/search/audio-link caches across servers without stopping playback or clearing queues. |
 | >shutdown | Bot owner only: gracefully stop audio, leave voice in all servers and shut down the application. |
 | >restart | Bot owner only: cleanly stop the worker and launch a fresh process; all in-memory queues reset. |
-| >help | Command list and input examples. |
+| >help | Command list and examples, always in the channel/thread where help was invoked. |
 
 Buttons: Pause/Resume, Skip, Stop, Loop, Shuffle. They use the same authorization and queue methods as prefix commands. Old session controls expire. Read-only queue, nowplaying and help do not require voice membership. Playback and settings controls do. Volume/control changes are available to listeners in the session channel; restrict channel access for stricter listener control. Discord application-command permissions do not apply to text prefix commands.
 
@@ -287,7 +289,7 @@ Source metadata for the immediate first track can resolve while Discord voice co
 
 Use `>logchannel #music-logs` with your actual channel name/mention, or supply its channel ID. `>logchannel` shows the saved destination; `>logchannel off` resets it. Manage Server permission is required, and the bot needs View Channel, Send Messages and Embed Links in a text/announcement channel in the same server. If duplicate channel names exist, use a mention or ID.
 
-Use `>djchannel #dj` to select the player-only destination independently. `>djchannel` shows it and `>djchannel off` resets it. Searching and `Added ... in the queue` replies remain in the channel where `>play` was entered, using one edited progress reply. The automatic player embed/buttons go only to the configured DJ channel. Playback notices and other command replies go to the log channel; setup/status acknowledgements stay in their command channel. Changing the log destination moves notices only. Changing the DJ destination moves the current player, invalidates old buttons and leaves audio playing. With a DJ destination set, `>nowplaying` points to that player rather than creating another embed in logs. Configuration errors explain how to repair/reset the destination, and player controls still enforce voice/session-host permissions.
+Use `>djchannel #dj` to select the player-only destination independently. `>djchannel` shows it and `>djchannel off` resets it. Searching and `Added ... in the queue` replies remain in the channel where `>play` was entered, using one edited progress reply. The automatic player embed/buttons go only to the configured DJ channel. Playback notices and other music-control replies go to the log channel; help, setup/status and owner-control acknowledgements stay in their invoking channel. Changing the log destination moves notices only. Changing the DJ destination moves the current player, invalidates old buttons and leaves audio playing. With a DJ destination set, `>nowplaying` points to that player rather than creating another embed in logs. Configuration errors explain how to repair/reset the destination, and player controls still enforce voice/session-host permissions.
 
 Both destinations are stored independently per server in versioned `data/guild-settings.json` with serialized atomic writes and survive restarts; ordinary queues/history/voice settings remain in memory. The data directory is private runtime state and excluded from Git and release ZIPs. Keep a private backup if you move hosts. To recover from a deleted destination or removed channel permissions, fix them or run the matching `>logchannel off` / `>djchannel off` in a channel where the bot can reply. Old log-only settings are read without assigning an unrequested DJ channel; the next setting update safely migrates the file format. No additional music API keys or external database are required.
 
