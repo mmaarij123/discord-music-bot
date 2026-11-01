@@ -12,6 +12,8 @@ import { AutoplayManager } from './AutoplayManager.js';
 import { DiscoveryService } from './DiscoveryService.js';
 import { GuildPlayer } from './GuildPlayer.js';
 import { PlayerPresenter } from '../components/PlayerPresenter.js';
+import { GuildSettings } from '../config/GuildSettings.js';
+import { requireLogChannel } from '../utils/channels.js';
 async function adapter(file,method) {
   if (!file) return null;
   const module=await import(pathToFileURL(path.resolve(root,file)).href);
@@ -25,9 +27,32 @@ export class MusicManager {
     const official=credentials.clientId&&credentials.clientSecret ? new SpotifyApi({...credentials,cacheMs:config.cacheMs}) : null;
     if(Boolean(credentials.clientId)!==Boolean(credentials.clientSecret))logger.warn('spotify_api_credentials_incomplete',{message:'Set both Spotify Client ID and Client Secret to enable optional official metadata search.'});
     const semaphore=new Semaphore(config.concurrency), youtube=new YouTubeResolver(config,semaphore), spotify=new SpotifyResolver(config,semaphore,search??official), local=new LocalMediaResolver(config);
-    return new MusicManager(config,logger,{discovery:new DiscoveryService(spotify,youtube,local,config),audio:new AudioManager(config,youtube,local),autoplay:new AutoplayManager(youtube,recommendations),lyrics});
+    const settings=await GuildSettings.open(config.settingsFile);
+    return new MusicManager(config,logger,{discovery:new DiscoveryService(spotify,youtube,local,config),audio:new AudioManager(config,youtube,local),autoplay:new AutoplayManager(youtube,recommendations),lyrics,settings});
   }
-  constructor(config,logger,services) { Object.assign(this,{config,logger,...services}); this.players=new Map(); this.presenters=new Map(); this.imports=new Map(); this.closing=false; }
+  constructor(config,logger,services) { Object.assign(this,{config,logger,...services});this.settings=services.settings??new GuildSettings();this.players=new Map(); this.presenters=new Map(); this.imports=new Map(); this.closing=false; }
+  async outputChannel(guild,fallback){
+    const id=this.settings.getLogChannel(guild.id);if(!id)return fallback;
+    let channel;
+    try{channel=guild.channels.cache.get(id)??await guild.channels.fetch(id);if(!channel)throw Error();}
+    catch{throw new UserError('The configured music log channel is unavailable. A moderator can use logchannel #channelname or logchannel off to fix it.','LOG_CHANNEL');}
+    return requireLogChannel(guild,channel);
+  }
+  async bindPresenter(guild,fallback){
+    const channel=await this.outputChannel(guild,fallback),presenter=this.presenters.get(guild.id);
+    if(!presenter)return;
+    if(this.settings.getLogChannel(guild.id)&&presenter.channel&&presenter.channel.id!==channel.id)await presenter.relocate(channel);
+    else presenter.bind(channel);
+  }
+  async setLogChannel(guild,channel,fallback){
+    if(channel)await requireLogChannel(guild,channel);
+    await this.settings.setLogChannel(guild.id,channel?.id??null);
+    const presenter=this.presenters.get(guild.id);
+    if(presenter){
+      const target=channel??fallback;
+      if(presenter.channel?.id!==target.id)await presenter.relocate(target);else presenter.bind(target);
+    }
+  }
   get(guild,create=false) {
     let player=this.players.get(guild.id);
     if (!player && create) {

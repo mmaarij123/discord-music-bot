@@ -11,6 +11,7 @@ export function messageHandler(manager, logger, { cooldown = createCooldown() } 
     if (!message.inGuild() || message.author.bot || message.webhookId || !message.content?.startsWith(prefix)) return;
     let context;
     let action;
+    let output=message.channel;
     try {
       const bot = message.guild.members.me ?? await message.guild.members.fetchMe();
       const permissions = message.channel.permissionsFor(bot);
@@ -19,19 +20,25 @@ export function messageHandler(manager, logger, { cooldown = createCooldown() } 
         logger.warn('prefix_reply_permission_missing', { guildId: message.guildId });
         return;
       }
+      const head=message.content.slice(prefix.length).trim().split(/\s+/,1)[0]?.toLowerCase();
+      if(!head)return;
+      output=head==='logchannel'?message.channel:await manager.outputChannel?.(message.guild,message.channel)??message.channel;
+      const outputPermissions=output.permissionsFor(bot);
+      if(!outputPermissions?.has(PermissionFlagsBits.EmbedLinks))throw new UserError('The bot needs Embed Links permission in the output channel to show music replies and the player.');
       cooldown(message.guildId, message.author.id);
       const parsed = parsePrefix(message.content, prefix);
       if (!parsed) return;
       action = parsed.commandName;
       context = messageContext(message, parsed, prefix);
-      if (!permissions.has(PermissionFlagsBits.EmbedLinks)) throw new UserError('The bot needs Embed Links permission here to show music replies and the player.');
+      context.setResponseChannel(output);
       await execute(context, manager, action);
     } catch (error) {
       logger.warn('prefix_command_failed', { guildId: message.guildId, command: action, error });
       try {
         const payload = { content: publicError(error), embeds: [], allowedMentions: { parse: [], repliedUser: false } };
         if (context) await context.editReply(payload);
-        else await message.reply({ ...payload, failIfNotExists: false });
+        else if(output===message.channel)await message.reply({...payload,failIfNotExists:false});
+        else await output.send(payload);
       } catch (replyError) { logger.debug('prefix_reply_failed', { code: replyError.code }); }
     }
   };

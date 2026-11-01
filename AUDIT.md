@@ -9,7 +9,7 @@ The audit covered production modules, command/button routing, queue and player t
 - Unused Discord application/guild ID settings, progress-update interval configuration and the write-only catalogDuration property. Spotify application credentials remain supported.
 - Unused variables/imports, unreachable video branches after an early return and unused promise-executor return values. Stale setup/troubleshooting instructions were updated.
 
-The remaining **36 runtime modules** are all reachable from `src/index.js`; no orphan production modules were found. No runtime dependencies were removed: native Opus is actually used, opusscript remains its portable fallback, and spotify-url-info still serves public Spotify URL imports. External adapters and diagnostic scripts remain because they support documented features and validation.
+The remaining **39 runtime modules** are all reachable from `src/index.js`; no orphan production modules were found. No runtime dependencies were removed: native Opus is actually used, opusscript remains its portable fallback, and spotify-url-info still serves public Spotify URL imports. External adapters and diagnostic scripts remain because they support documented features and validation.
 
 ## Issues fixed
 
@@ -23,10 +23,10 @@ The remaining **36 runtime modules** are all reachable from `src/index.js`; no o
 
 | Check | Result |
 |---|---|
-| Node built-in automated tests | **195 passed**, zero failures/skips |
-| ESLint 10.14.0 static scan | **63 files**, zero errors/warnings |
+| Node built-in automated tests | **214 passed**, zero failures/skips |
+| ESLint 10.14.0 static scan | **67 files**, zero errors/warnings |
 | JavaScript syntax verification | Passed |
-| Runtime import reachability | 36/36 modules reachable |
+| Runtime import reachability | 39/39 modules reachable |
 | npm dependency compatibility | All direct dependencies resolved; no invalid/extraneous direct packages |
 | Doctor | Node 24.22.2, FFmpeg 9.0, yt-dlp 2026.10.26, Opus/DAVE and configured local-cookie format passed |
 | Official Spotify API | Real authentication and catalog metadata search passed; no credentials/tokens printed |
@@ -59,3 +59,11 @@ Gateway voice removal is terminal. Manual disconnects never rejoin, and close co
 The local cookie setting was initially cleared. Automatic approval review blocked direct deletion of the old cookie files/directory, so operator cleanup was requested. The user replaced the JSON export; its 19 entries passed validation and a real ten-packet audio probe. A separate new converted file was enabled, and the user manually deleted the old converted export. Filesystem verification confirmed that only the new JSON, new converted file and empty Git placeholder remain in secrets. All real exports remain excluded from Git/release ZIPs. Local cleanup does not revoke browser sessions remotely. The new `npm run cookies:import` command supports subsequent local JSON exports, validates without echoing values, atomically replaces its Netscape output and enables that path in `.env`. An empty input template is not an authenticated session.
 
 Twenty new regression tests cover host/moderator authorization, stop from another/no VC, stop buttons, pending discovery cancellation, manual removal, passive channel moves, bounded network recovery, cancellation, late callbacks and valid/invalid atomic JSON imports. These bring the suite from 175 to 195 passing tests. Real-time local playback and an anonymous permitted-source smoke probe passed; no new live Discord voice listening or replacement-account authentication was claimed. The existing private GitHub repository was updated only after secret/path scans; `.env` and real cookie exports remain untracked.
+
+## Per-server music log channel
+
+Added `>logchannel #channelname`, channel mention/ID support, status without arguments and `off`. Manage Server permission is required without requiring voice membership. The selected channel must be a same-server text/announcement channel with bot View Channel, Send Messages and Embed Links permissions. Duplicate names require a mention/ID.
+
+New prefix replies, progress/confirmation messages, validation errors, player embeds and playback notices use the configured destination. Setup acknowledgements and broken-destination diagnostics stay in the command channel so administrators can recover. The active player relocates under its presenter mutex with a new nonce, disables old controls and leaves the audio resource untouched. No configured destination silently falls back to an unrelated music output channel.
+
+Preferences persist through atomic, serialized writes to private `data/guild-settings.json`; that directory is excluded from Git and release archives. Failed writes do not modify in-memory settings. Nineteen new tests cover parsing, permissions, same-guild checks, ambiguous names, routing/errors, message reuse, player relocation and in-flight-render ordering, persistence/restart, concurrent guild writes and safe failure. **214 tests passed**, zero failures/skips; **67 JavaScript files** passed static checks and all syntax checks passed. Tests mock Discord sends; no real server channel was selected or test messages posted during development. The bot was restarted to load the new command.

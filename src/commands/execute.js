@@ -5,7 +5,8 @@ import { UserError } from '../utils/errors.js';
 import { integer, parseTime, classifyInput } from '../utils/validators.js';
 import { withAbort } from '../utils/async.js';
 import { performance } from 'node:perf_hooks';
-const readOnly=new Set(['help','queue','nowplaying','lyrics']);
+import { logChannel } from './logChannel.js';
+const readOnly=new Set(['help','queue','nowplaying','lyrics','logchannel']);
 const songLabel=value=>`\`${String(value).replace(/`/g,'ˋ').replace(/[\r\n]/g,' ').slice(0,500)}\``;
 export async function voiceAccess(interaction,player) {
   const member=await interaction.guild.members.fetch(interaction.user.id);
@@ -33,6 +34,7 @@ export async function execute(interaction,manager,action=interaction.commandName
   if (!readOnly.has(action)&&!['stop','leave'].includes(action)) access=await voiceAccess(interaction,player);
   const option=interaction.options;
   const reply=content=>interaction.editReply(typeof content==='string' ? {content,allowedMentions:{parse:[]}} : content);
+  if(action==='logchannel')return logChannel(interaction,manager,reply);
   if (action==='help') {
     const help=commands.map(command=>`**${escapeMarkdown(usage(command,prefix))}** — ${command.description}`).join('\n');
     return reply({embeds:[new EmbedBuilder().setColor(0x1db954).setTitle('Your listening room').setDescription(help).addFields({name:'Try it',value:`${prefix}play Stephen Sanchez Until I Found You\n${prefix}play local:demo\n${prefix}seek 1:30\n${prefix}autoplay on`},{name:'Sources',value:'Spotify metadata is best-effort. Audio uses supported public YouTube sources or the operator’s authorized media library. No music API keys.'})]});
@@ -74,7 +76,7 @@ export async function execute(interaction,manager,action=interaction.commandName
         // A user can move channels or lose permissions during discovery.
         access=await voiceAccess(interaction,manager.get(interaction.guild));
         prepareSignal.throwIfAborted();
-        manager.presenters.get(interaction.guildId)?.bind(interaction.channel);
+        await manager.bindPresenter?.(interaction.guild,interaction.channel);
         const queued=await player.enqueue(tracks,access.channel,{signal:prepareSignal});
         accepted=true;
         manager.logger?.info('play_request_ready',{guildId:interaction.guildId,elapsedMs:Math.round(performance.now()-started),queuedDuringPlayback:wasPlaying});
@@ -94,7 +96,7 @@ export async function execute(interaction,manager,action=interaction.commandName
   }
   if(action==='join'){
     textAccess(interaction);
-    player=manager.get(interaction.guild,true); manager.presenters.get(interaction.guildId)?.bind(interaction.channel);
+    player=manager.get(interaction.guild,true);await manager.bindPresenter?.(interaction.guild,interaction.channel);
     await player.join(access.channel);player.claimHost(interaction.user.id);return reply('Connected to your voice channel.');
   }
   if(action==='stop'||action==='leave') {

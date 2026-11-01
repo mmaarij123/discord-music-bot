@@ -9,6 +9,15 @@ export class PlayerPresenter {
     player.on('change',this.onChange); player.on('notice',this.onNotice);
   }
   bind(channel) { if (!this.channel) this.channel=channel; this.schedule(); }
+  async relocate(channel){
+    await this.lock.run(async()=>{
+      if(this.disposed)return;
+      clearTimeout(this.timer);this.timer=null;
+      const previous=this.message;this.message=null;this.channel=channel;this.nonce=randomBytes(6).toString('hex');
+      if(previous)await previous.edit({components:[]}).catch(error=>this.logger.debug('old_player_controls_cleanup_failed',{code:error.code}));
+    });
+    this.schedule();
+  }
   schedule() {
     if (this.disposed || !this.channel || this.timer) return;
     this.timer=setTimeout(()=>{this.timer=null; this.render().catch(error=>this.logger.warn('player_message_failed',{guildId:this.player.guild.id,error}));},Math.max(100,2000-(Date.now()-this.lastEdit)));
