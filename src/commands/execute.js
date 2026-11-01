@@ -1,5 +1,5 @@
 import { ChannelType, PermissionFlagsBits, EmbedBuilder, escapeMarkdown } from 'discord.js';
-import { commands, commandMap, usage } from './definitions.js';
+import { commands, commandMap } from './definitions.js';
 import { playerEmbed, duration } from '../components/playerEmbed.js';
 import { UserError } from '../utils/errors.js';
 import { integer, classifyInput } from '../utils/validators.js';
@@ -46,8 +46,8 @@ export async function execute(interaction,manager,action=interaction.commandName
   const option=interaction.options;
   if(['logchannel','djchannel'].includes(action))return channelSettings(interaction,manager,reply,action==='djchannel'?'dj':'log');
   if (action==='help') {
-    const help=commands.filter(command=>!command.ownerOnly||interaction.user?.id===OWNER_USER_ID).map(command=>`**${escapeMarkdown(usage(command,prefix))}** — ${command.description}`).join('\n');
-    return reply({embeds:[new EmbedBuilder().setColor(0x1db954).setTitle('Your listening room').setDescription(help).addFields({name:'Try it',value:`${prefix}play Stephen Sanchez Until I Found You\n${prefix}play local:demo\n${prefix}volume 70\n${prefix}autoplay on`},{name:'Sources',value:'Spotify metadata is best-effort. Audio uses supported public YouTube sources or the operator’s authorized media library. No music API keys.'})]});
+    const help=commands.filter(command=>!command.ownerOnly||interaction.user?.id===OWNER_USER_ID).map(command=>`**${command.name}** — ${command.description}`).join('\n');
+    return reply({embeds:[new EmbedBuilder().setColor(0x1db954).setDescription(`Your prefix is: \`${prefix}\`\n\n${help}`)]});
   }
   if (action==='play') {
     const query=option.getString('query',true);

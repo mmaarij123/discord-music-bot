@@ -25,13 +25,15 @@ test('remove and owner-only clearcache remain available while removed methods/co
   assert.equal(Object.hasOwn(loadConfig({LYRICS_ADAPTER:'missing-removed-adapter.js'}).adapters,'lyrics'),false);
 });
 
-test('owner help has no removed commands or seek example',async()=>{
+test('owner help lists only current command names with no removed commands or extra fields',async()=>{
   let payload;
   await execute({inGuild:()=>true,user:{id:OWNER_USER_ID},editReply:async value=>{payload=value;}},{get:()=>undefined},'help');
   const embed=payload.embeds[0].toJSON();
-  for(const name of removed)assert.equal(embed.description.includes(`**>${name}**`),false);
-  assert.ok(embed.description.includes('**>remove'));assert.ok(embed.description.includes('**>clearcache**'));
-  assert.equal(embed.fields.some(field=>field.value.includes('>seek')),false);
+  for(const name of removed)assert.equal(embed.description.includes(`**${name}**`),false);
+  assert.ok(embed.description.includes('**remove**'));assert.ok(embed.description.includes('**clearcache**'));
+  assert.equal(embed.fields,undefined);
+  const listed=[...embed.description.matchAll(/^\*\*([a-z0-9]+)\*\* — /gm)].map(match=>match[1]);
+  assert.deepEqual(listed,commands.map(command=>command.name));
 });
 
 test('legacy previous button cannot access a player even with a matching current nonce',async()=>{

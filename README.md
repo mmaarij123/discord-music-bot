@@ -224,7 +224,7 @@ The default prefix is `>`. Send `>help`, `>play Artist Song`, `>queue`, or `>vol
 
 The earlier slash-command migration was completed and its one-off cleanup script has been removed. Prefix commands need no deployment/registration step. The interaction handler processes music buttons only.
 
-`>help` always replies in the invoking channel or thread, including usage and permission errors. It does not depend on the configured log or DJ channel. The bot needs Embed Links there to show the help embed; otherwise it sends a local permission explanation.
+`>help` always replies in the invoking channel or thread, including usage and permission errors. Its first line shows the current prefix once, followed by command names and short English descriptions. It has no examples/source sections or repeated prefixes/arguments on each command. Only current commands are listed; owner controls are visible only to the exact owner. It does not depend on the configured log or DJ channel. The bot needs Embed Links there to show the help embed; otherwise it sends a local permission explanation.
 
 Join claims its session host before asynchronous setup begins. The host can cancel a pending join with `>stop`, including from outside voice; destroying the connection also cancels its readiness waiter promptly.
 
@@ -255,7 +255,7 @@ When started, logs should include `ready`. Join a voice channel and use `>play l
 | >clearcache | Bot owner only: clear all built-in metadata/search/audio-link caches across servers without stopping playback or clearing queues. |
 | >shutdown | Bot owner only: gracefully stop audio, leave voice in all servers and shut down the application. |
 | >restart | Bot owner only: cleanly stop the worker and launch a fresh process; all in-memory queues reset. |
-| >help | Command list and examples, always in the channel/thread where help was invoked. |
+| >help | Current command names and short descriptions, always in the invoking channel/thread. |
 
 Buttons: Pause/Resume, Skip, Stop, Loop, Shuffle. They use the same authorization and queue methods as prefix commands. Old session controls expire. Read-only queue, nowplaying and help do not require voice membership. Playback and settings controls do. Volume/control changes are available to listeners in the session channel; restrict channel access for stricter listener control. Discord application-command permissions do not apply to text prefix commands.
 

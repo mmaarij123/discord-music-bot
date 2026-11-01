@@ -61,10 +61,13 @@ test('deleted progress responses can be safely recreated',async()=>{
   await context.editReply('Searching');m.response.edit=async()=>{const error=Error('deleted');error.code=10008;throw error;};
   await context.editReply('Done');assert.equal(m.replies.length,2);
 });
-test('message handler runs help and shows prefix usage',async()=>{
+test('help shows its prefix once and simple command names without extra sections',async()=>{
   const m=message();await messageHandler({config:{prefix:'>'},get:()=>undefined},logger)(m);
   assert.equal(m.replies.length,1);const embed=m.replies[0].embeds[0].toJSON();
-  assert.match(embed.description,/>play/);assert.match(embed.fields[0].value,/>autoplay on/);assert.ok(!embed.description.includes('/play'));
+  assert.ok(embed.description.startsWith('Your prefix is: `>`\n\n'));
+  assert.ok(embed.description.includes('**play** — Play a song or add it to the queue.'));
+  assert.equal(embed.description.includes('>play'),false);assert.equal(embed.fields,undefined);assert.equal(embed.title,undefined);
+  assert.equal(embed.description.includes('Try it'),false);assert.equal(embed.description.includes('Sources'),false);
 });
 test('message handler ignores bot, webhook and direct messages',async()=>{
   for(const change of [{author:{id:'bot',bot:true}},{webhookId:'hook'},{inGuild:()=>false},{content:'ordinary message'}]){

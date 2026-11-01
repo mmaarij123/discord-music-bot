@@ -40,3 +40,7 @@ Discord searches/URLs/queue values are not passed as glob patterns to those inst
 The bot is restarted after validation and checked for gateway ready with one supervised worker. The Windows launcher and exact-project stop helper remain available. The private .env and cookie exports are checked against a local before/after hash baseline, without displaying their contents. The staged source is scanned against known local credential/cookie values and prohibited paths before upload to the existing private repository; remote privacy, commit and file tree are verified. The release ZIP is rebuilt to match the scanned tracked files. Runtime data, media, logs and actual secret files remain excluded.
 
 Discord sends, permission/channel lookups and help routing were mocked in automated tests. Provider probes and the paced local audio test sent no server messages or voice packets. Gateway ready confirms login rather than full-track human listening, and no real help message was posted in the user's server during validation.
+
+## Help presentation follow-up
+
+The subsequent cosmetic update shows the prefix once above short English command descriptions, without the previous title, Try it/Sources fields or repeated prefixes/arguments. Existing current-command, removed-command, owner visibility and channel-routing checks were updated; **279 tests**, syntax checks and the **75-file static scan** passed. Playback, permissions and runtime dependencies were not changed. See VALIDATION.md for the exact scope.

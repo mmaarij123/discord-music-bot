@@ -79,7 +79,7 @@ test('help shows owner controls only to the exact owner and fits the embed limit
   for(const id of [OWNER_USER_ID,'server-admin']){
     const i=context(id);await execute(i,{get:()=>undefined},'help');
     const help=i.replies[0].embeds[0].toJSON().description;
-    for(const action of ownerCommands)assert.equal(help.includes(`>${action}`),id===OWNER_USER_ID);
+    for(const action of ownerCommands)assert.equal(help.includes(`**${action}**`),id===OWNER_USER_ID);
     assert.ok(help.length<=4096);
   }
 });
