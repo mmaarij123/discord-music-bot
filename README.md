@@ -75,6 +75,8 @@ Press Ctrl+C to stop cleanly. `npm run dev` restarts on source changes; it disco
 
 For double-click startup on Windows, open **Start Music Bot.bat** in this folder. Keep its console open while the bot runs; press Ctrl+C to stop. The launcher uses Node 24.17+ from PATH, or the compatible workspace runtime when present, and respects `.env`. If yt-dlp is configured by its default command name and is absent from PATH, it can use the workspace's existing tool. Setup still requires installed npm dependencies and FFmpeg/yt-dlp. Simultaneous launcher clicks are guarded, and an already-running bot started with the same absolute `src/index.js` path is detected. Avoid starting another copy through a separate supervisor or relative-path `npm start`. To check the launcher without starting a bot, run `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\start-windows.ps1 -CheckOnly`.
 
+Double-click **Stop Music Bot.bat** to force-close this project's running bot and its audio/extractor child processes. It matches the absolute bot entry path, rechecks process identity and leaves other Node applications alone. Running it when the bot is offline is harmless. Unsaved in-memory queues are lost; Ctrl+C in the running console remains the graceful shutdown option. These launchers manage a local standalone process; use `pm2 stop music-bot` for a PM2-managed bot so its supervisor does not restart it. A non-destructive check is available with `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\stop-windows.ps1 -CheckOnly`.
+
 ## 3. Ubuntu / Linux setup
 
 Install Node from the official [Node downloads](https://nodejs.org/en/download) or a trusted version manager. With an existing `nvm` installation, for example:
