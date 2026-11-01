@@ -12,6 +12,7 @@ import { parsePrefix } from '../src/commands/parsePrefix.js';
 import { messageHandler } from '../src/events/messageCreate.js';
 import { messageContext } from '../src/commands/messageContext.js';
 import { loadConfig } from '../src/config/config.js';
+import { voiceStateHandler } from '../src/events/voiceStateUpdate.js';
 import { fixture,logger,track } from './helpers.js';
 
 const GUILD='111111111111111111',OTHER_GUILD='222222222222222222',SOURCE='333333333333333333',OUTPUT='444444444444444444',SECOND='555555555555555555';
@@ -36,6 +37,28 @@ function setup(t){
   const run=content=>messageHandler(manager,logger,{cooldown:()=>{}})(message(content));
   return {source,output,other,member,guild,channels,manager,message,run};
 }
+
+test('manual bot removal sends one log-channel notice even during immediate session release',async t=>{
+  const f=setup(t),music=fixture({id:GUILD,config:{persistent:true}});
+  t.after(()=>music.player.destroy());
+  music.player.onRelease=player=>f.manager.release(player);
+  const presenter=new PlayerPresenter(music.player,logger);
+  f.manager.players.set(GUILD,music.player);f.manager.presenters.set(GUILD,presenter);
+  await f.manager.setLogChannel(f.guild,f.output,f.source);
+  await f.manager.setDjChannel(f.guild,f.other,f.source);
+  await music.player.enqueue([track('Current'),track('Next')],music.channel);
+  const handler=voiceStateHandler(f.manager,{user:{id:'bot'}},logger);
+  const before={channelId:'voice'},after={id:'bot',guild:f.guild,channelId:null};
+  handler(before,after);handler(before,after);
+  await music.player.lock.run(()=>{});
+  assert.equal(f.output.messages.length,1);
+  assert.match(f.output.messages[0].content,/Disconnected from the voice channel/);
+  assert.deepEqual(f.output.messages[0].allowedMentions,{parse:[]});
+  assert.equal(f.source.messages.length,0);assert.equal(f.other.messages.length,0);
+  assert.equal(music.player.voice.channelId,null);assert.equal(music.player.queue.length,0);
+  assert.equal(f.manager.players.has(GUILD),false);assert.equal(presenter.disposed,true);
+  assert.equal(presenter.noticeTimer,null);
+});
 
 test('logchannel accepts a channel name, mention, ID, off and status query',()=>{
   for(const text of ['#music-logs',`<#${OUTPUT}>`,OUTPUT,'off'])assert.equal(parsePrefix(`>logchannel ${text}`).values.channel,text);

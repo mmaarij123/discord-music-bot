@@ -37,16 +37,26 @@ export class PlayerPresenter {
     } else this.message=await this.channel.send(payload);
   }); }
   notice(message) {
+    if(this.disposed)return;
     this.pendingNotice=message;
-    if (this.noticeTimer || !(this.noticeChannel??this.channel) || this.disposed) return;
+    if (this.noticeTimer || !(this.noticeChannel??this.channel)) return;
     this.noticeTimer=setTimeout(()=>{
-      this.noticeTimer=null;
-      (this.noticeChannel??this.channel)?.send({content:this.pendingNotice.slice(0,1900),allowedMentions:{parse:[]}}).catch(error=>this.logger.warn('notice_failed',{guildId:this.player.guild.id,error}));
+      void this.flushNotice();
     },3000); this.noticeTimer.unref();
   }
+  async flushNotice() {
+    clearTimeout(this.noticeTimer);this.noticeTimer=null;
+    const message=this.pendingNotice,channel=this.noticeChannel??this.channel;
+    this.pendingNotice=null;
+    if(!message||!channel)return;
+    try{await channel.send({content:message.slice(0,1900),allowedMentions:{parse:[]}});}
+    catch(error){this.logger.warn('notice_failed',{guildId:this.player.guild.id,error});}
+  }
   async dispose() {
+    if(this.disposed)return;
     this.disposed=true; clearTimeout(this.timer); clearTimeout(this.noticeTimer);
     this.player.off('change',this.onChange); this.player.off('notice',this.onNotice);
+    await this.flushNotice();
     await this.lock.run(async()=>{
       if (this.message) await this.message.edit({embeds:[playerEmbed(this.player)],components:[]}).catch(()=>{});
     });

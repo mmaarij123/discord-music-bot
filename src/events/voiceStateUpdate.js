@@ -8,6 +8,7 @@ export function voiceStateHandler(manager,client,logger){
       // A gateway channel=null update is authoritative removal, not a brief
       // audio-network outage. Respect it even when 24/7 mode was enabled.
       manager.cancelImport(newState.guild.id);
+      player.notify('Disconnected from the voice channel. Playback stopped and the queue was cleared.');
       player.stop(true).catch(error=>logger.warn('voice_removal_cleanup_failed',{guildId:newState.guild.id,error}));
       return;
     }
