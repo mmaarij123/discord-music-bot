@@ -16,5 +16,5 @@ export async function channelSettings(interaction,manager,reply,kind){
   if(dj)await manager.setDjChannel(interaction.guild,channel,interaction.channel);
   else await manager.setLogChannel(interaction.guild,channel,interaction.channel);
   if(!channel)return reply(`${label} channel disabled. ${dj?'New player messages':'Logs'} will use the command channel.`);
-  return reply(`${label} channel set to <#${channel.id}>. ${dj?'Only the player embed and controls will go there.':'Playback notices and other logs will go there; play confirmations stay in the command channel.'}`);
+  return reply(`${label} channel set to <#${channel.id}>. ${dj?'The permanent player embed and controls will go there.':'Playback notices and other logs will go there; command replies stay where you run them.'}`);
 }

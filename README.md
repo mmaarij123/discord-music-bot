@@ -41,7 +41,7 @@ yt-dlp needs its EJS component and a supported JavaScript runtime for current Yo
 2. Open **Bot**. Create the bot if prompted. Use **Reset Token** / token generation to obtain its token. Treat this like a password; keep it only in `.env`. Reset it if exposed.
 3. Copy **Application ID** from **General Information** for the bot invite URL below. The runtime does not need an application ID setting.
 4. Under **Bot**, enable **Public Bot** and leave **Requires OAuth2 Code Grant** off for ordinary server invites. No server/guild IDs are needed in configuration.
-5. Under **OAuth2 → URL Generator**, select the **bot** scope (application-command scope is not required for prefix commands). Grant **View Channels**, **Send Messages**, **Embed Links**, **Connect**, and **Speak**. If using threads, also grant **Send Messages in Threads**. Enable **Message Content Intent** under **Bot → Privileged Gateway Intents**. Administrator, Server Members and Presence privileged intents are unnecessary.
+5. Under **OAuth2 → URL Generator**, select the **bot** scope (application-command scope is not required for prefix commands). Grant **View Channels**, **Send Messages**, **Embed Links**, **Read Message History**, **Connect**, and **Speak**. If using threads, also grant **Send Messages in Threads**. Enable **Message Content Intent** under **Bot → Privileged Gateway Intents**. Administrator, Server Members and Presence privileged intents are unnecessary.
 6. Open the generated invite URL, select your server, and authorize it. You must have permission to add applications. Check channel permission overrides too.
 
 The runtime requests Guilds, GuildVoiceStates, GuildMessages and MessageContent intents. All commands are server-only. Message Content Intent must also be enabled in the Developer Portal. Prefix command replies are ordinary channel messages, not ephemeral replies. Playback controls require a regular voice channel matching the active bot session, except stop/leave: only the session host or a Manage Server moderator may use these, including from outside voice. Stage channels are explicitly unsupported. A full voice channel must have room for the bot; Move Members is optional if you want it to enter full channels.
@@ -291,9 +291,13 @@ Source metadata for the immediate first track can resolve while Discord voice co
 
 Use `>logchannel #music-logs` with your actual channel name/mention, or supply its channel ID. `>logchannel` shows the saved destination; `>logchannel off` resets it. Manage Server permission is required, and the bot needs View Channel, Send Messages and Embed Links in a text/announcement channel in the same server. If duplicate channel names exist, use a mention or ID.
 
-Use `>djchannel #dj` to select the player-only destination independently. `>djchannel` shows it and `>djchannel off` resets it. Searching and `Added ... in the queue` replies remain in the channel where `>play` was entered, using one edited progress reply. The automatic player embed/buttons go only to the configured DJ channel. Playback notices and other music-control replies go to the log channel; help, setup/status and owner-control acknowledgements stay in their invoking channel. Changing the log destination moves notices only. Changing the DJ destination moves the current player, invalidates old buttons and leaves audio playing. With a DJ destination set, `>nowplaying` points to that player rather than creating another embed in logs. Configuration errors explain how to repair/reset the destination, and player controls still enforce voice/session-host permissions.
+Use `>djchannel #dj` to select the player-only destination independently. `>djchannel` shows it and `>djchannel off` resets it. All command replies, including volume, join, leave, queue, validation errors, searching and queue confirmations, stay in the channel/thread where the command was entered. Play progress edits one reply. Actual playback, recovery and disconnect notices go to the configured log channel. Button acknowledgements remain private to the user who clicked them.
 
-Both destinations are stored independently per server in versioned `data/guild-settings.json` with serialized atomic writes and survive restarts; ordinary queues/history/voice settings remain in memory. The data directory is private runtime state and excluded from Git and release ZIPs. Keep a private backup if you move hosts. To recover from a deleted destination or removed channel permissions, fix them or run the matching `>logchannel off` / `>djchannel off` in a channel where the bot can reply. Old log-only settings are read without assigning an unrequested DJ channel; the next setting update safely migrates the file format. No additional music API keys or external database are required.
+The configured DJ channel has one permanent player message: song/playlist transitions, queued additions, pause/volume changes and new voice sessions edit that same message. Its ID is saved and reused after bot restarts. The bot needs **Read Message History** in the DJ channel to fetch it. On upgrade, a bounded scan of the latest 100 messages adopts the newest existing player owned by this bot. Old sessions cannot overwrite the current session's display. If someone deletes the player message, one replacement is created on the next player update; access/network errors do not trigger duplicate creation. Stop/leave keep the message and disable its controls until the next session. This does not preserve in-memory queues across application restarts.
+
+Changing the log destination moves notices only. Changing the DJ destination invalidates old controls and selects a player in the new channel while leaving audio playing. With a DJ destination set, `>nowplaying` replies locally with that channel rather than posting another player. Configuration errors explain how to repair/reset the destination, and player controls still enforce voice/session-host permissions.
+
+Both destinations and the DJ player message ID are stored independently per server in versioned `data/guild-settings.json` with serialized atomic writes and survive restarts; ordinary queues/history/voice settings remain in memory. The data directory is private runtime state and excluded from Git and release ZIPs. Keep a private backup if you move hosts. To recover from a deleted destination or removed channel permissions, fix them or run the matching `>logchannel off` / `>djchannel off` in a channel where the bot can reply. Version 1/2 channel settings load and migrate safely to version 3. No additional music API keys or external database are required.
 
 ## 8. Authorized local and direct-stream fallback
 
@@ -442,7 +446,7 @@ Direct dependencies are pinned: `npm update` primarily refreshes compatible tran
 | Lyrics unavailable | Configure a lawful adapter with source URL/license, or leave the feature unavailable. |
 | Unexpected disconnection | A grace period and two reconnect attempts are allowed; then use >join or >play. 24/7 does not override server permissions, kicks or offline hosts. |
 | High CPU/memory | Keep native Opus if available, reduce MAX_PLAYERS, use fewer simultaneous guild streams, lower metadata concurrency and queue limits, inspect provider failures and PM2 logs. Do not run duplicate instances. |
-| Player message missing | Audio continues. Check text permissions, then use >join or >play to bind a new message. |
+| Player message missing | Audio continues. In a configured DJ channel, the next update replaces a deleted message once. Check Read Message History, View Channel, Send Messages and Embed Links. |
 
 Logs avoid source URLs, headers, tokens and provider stderr. Errors include guild, event and safe error codes for debugging. Do not publish `.env`, raw extractor dumps or signed CDN URLs. Ordinary source failures are caught per guild; unexpected fatal exceptions initiate shutdown so a supervisor can restart cleanly.
 
@@ -456,7 +460,7 @@ Music Bot/
     runtime/                    Owner process control and child supervision
     config/owner.js             Exact owner ID and protected command names
     config/config.js            Validated environment configuration
-    config/GuildSettings.js     Atomic per-server log-channel preferences
+    config/GuildSettings.js     Atomic channel preferences and DJ message IDs
     commands/definitions.js     All 20 prefix definitions
     commands/execute.js         Shared prefix/button business logic
     commands/parsePrefix.js     Typed argument parsing and usage

@@ -12,6 +12,7 @@ import { AutoplayManager } from './AutoplayManager.js';
 import { DiscoveryService } from './DiscoveryService.js';
 import { GuildPlayer } from './GuildPlayer.js';
 import { PlayerPresenter } from '../components/PlayerPresenter.js';
+import { PlayerMessageStore } from '../components/PlayerMessageStore.js';
 import { GuildSettings } from '../config/GuildSettings.js';
 import { requireLogChannel } from '../utils/channels.js';
 import { startCacheCleanup } from '../utils/cache.js';
@@ -31,7 +32,7 @@ export class MusicManager {
     const settings=await GuildSettings.open(config.settingsFile);
     return new MusicManager(config,logger,{discovery:new DiscoveryService(spotify,youtube,local,config),audio:new AudioManager(config,youtube,local),autoplay:new AutoplayManager(youtube,recommendations),settings,caches:[youtube.cache,youtube.sourceCache,spotify.cache,official?.cache].filter(Boolean)});
   }
-  constructor(config,logger,services) { Object.assign(this,{config,logger,...services});this.settings=services.settings??new GuildSettings();this.players=new Map(); this.presenters=new Map(); this.imports=new Map(); this.closing=false; this.stopCacheCleanup=startCacheCleanup(services.caches??[]); }
+  constructor(config,logger,services) { Object.assign(this,{config,logger,...services});this.settings=services.settings??new GuildSettings();this.messageStore=new PlayerMessageStore(this.settings);this.players=new Map(); this.presenters=new Map(); this.imports=new Map(); this.closing=false; this.stopCacheCleanup=startCacheCleanup(services.caches??[]); }
   async outputChannel(guild,fallback){
     return this.destinationChannel(guild,fallback,'log');
   }
@@ -43,7 +44,7 @@ export class MusicManager {
     let channel;
     try{channel=guild.channels.cache.get(id)??await guild.channels.fetch(id);if(!channel)throw Error();}
     catch{const command=kind==='dj'?'djchannel':'logchannel';throw new UserError(`The configured ${kind==='dj'?'DJ':'music log'} channel is unavailable. A moderator can use ${command} #channelname or ${command} off to fix it.`,'LOG_CHANNEL');}
-    return requireLogChannel(guild,channel);
+    return requireLogChannel(guild,channel,{history:kind==='dj'});
   }
   async bindPresenter(guild,fallback){
     const channel=await this.djChannel(guild,fallback),notices=await this.outputChannel(guild,fallback),presenter=this.presenters.get(guild.id);
@@ -59,7 +60,7 @@ export class MusicManager {
     if(presenter)presenter.setNoticeChannel(channel??fallback);
   }
   async setDjChannel(guild,channel,fallback){
-    if(channel)await requireLogChannel(guild,channel);
+    if(channel)await requireLogChannel(guild,channel,{history:true});
     await this.settings.setDjChannel(guild.id,channel?.id??null);
     const presenter=this.presenters.get(guild.id);
     if(presenter){
@@ -77,7 +78,7 @@ export class MusicManager {
       }
       if (this.players.size>=this.config.maxPlayers) throw new UserError('The bot has reached its configured server session limit. Try again later.');
       player=new GuildPlayer(guild,this.config,{audio:this.audio,autoplay:this.autoplay,logger:this.logger,onRelease:p=>this.release(p)});
-      this.players.set(guild.id,player); this.presenters.set(guild.id,new PlayerPresenter(player,this.logger));
+      this.players.set(guild.id,player); this.presenters.set(guild.id,new PlayerPresenter(player,this.logger,{messageStore:this.messageStore}));
     }
     return player;
   }

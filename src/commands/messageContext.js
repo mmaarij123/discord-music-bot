@@ -3,7 +3,6 @@ import { UserError } from '../utils/errors.js';
 
 export function messageContext(message, parsed, prefix = '>') {
   let response;
-  let target=message.channel;
   const lock = new Mutex();
   const get = (name, required, type) => {
     const value = parsed.values[name];
@@ -23,7 +22,6 @@ export function messageContext(message, parsed, prefix = '>') {
     user: message.author,
     inGuild: () => message.inGuild(),
     isButton: () => false,
-    setResponseChannel(channel){target=channel;context.channel=channel;},
     options: {
       getString: (name, required = false) => get(name, required, 'string'),
       getInteger: (name, required = false) => get(name, required, 'number'),
@@ -40,9 +38,7 @@ export function messageContext(message, parsed, prefix = '>') {
         try { response = await response.edit(safe); return response; }
         catch (error) { if (error.code !== 10008) throw error; response = null; }
       }
-      response=target===message.channel||(target.id&&target.id===message.channel.id)
-        ?await message.reply({...safe,failIfNotExists:false})
-        :await target.send(safe);
+      response=await message.reply({...safe,failIfNotExists:false});
       return response;
     })
   };

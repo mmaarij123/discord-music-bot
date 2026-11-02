@@ -3,8 +3,9 @@ import { playerEmbed } from './playerEmbed.js';
 import { playerButtons } from './playerButtons.js';
 import { Mutex } from '../utils/async.js';
 export class PlayerPresenter {
-  constructor(player,logger) {
+  constructor(player,logger,{messageStore}={}) {
     this.player=player; this.logger=logger; this.nonce=randomBytes(6).toString('hex'); this.message=null; this.channel=null; this.lock=new Mutex(); this.lastEdit=0; this.disposed=false;
+    this.messageStore=messageStore;this.messageOwner=messageStore?.claim(player.guild.id);
     this.onChange=()=>this.schedule(); this.onNotice=message=>this.notice(message);
     player.on('change',this.onChange); player.on('notice',this.onNotice);
   }
@@ -28,6 +29,10 @@ export class PlayerPresenter {
     if (this.disposed || !this.channel) return;
     const payload={embeds:[playerEmbed(this.player)],components:playerButtons(this.player,this.nonce),allowedMentions:{parse:[]}};
     this.lastEdit=Date.now();
+    if(this.messageStore?.ownsChannel(this.player.guild.id,this.channel.id)){
+      this.message=await this.messageStore.render(this.player.guild,this.channel,payload,this.messageOwner);
+      return;
+    }
     if (this.message) {
       try { await this.message.edit(payload); }
       catch (error) {
@@ -58,6 +63,10 @@ export class PlayerPresenter {
     this.player.off('change',this.onChange); this.player.off('notice',this.onNotice);
     await this.flushNotice();
     await this.lock.run(async()=>{
+      if(this.channel&&this.messageStore?.ownsChannel(this.player.guild.id,this.channel.id)){
+        await this.messageStore.render(this.player.guild,this.channel,{embeds:[playerEmbed(this.player)],components:[],allowedMentions:{parse:[]}},this.messageOwner,{create:false});
+        return;
+      }
       if (this.message) await this.message.edit({embeds:[playerEmbed(this.player)],components:[]}).catch(()=>{});
     });
   }
