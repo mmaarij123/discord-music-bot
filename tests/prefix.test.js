@@ -1,14 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { ChannelType,PermissionFlagsBits } from 'discord.js';
+import { ChannelType,PermissionFlagsBits,MessageFlags } from 'discord.js';
 import { parsePrefix } from '../src/commands/parsePrefix.js';
 import { messageContext } from '../src/commands/messageContext.js';
 import { messageHandler } from '../src/events/messageCreate.js';
 import { interactionHandler } from '../src/events/interactionCreate.js';
 import { createCooldown } from '../src/utils/cooldown.js';
 import { loadConfig } from '../src/config/config.js';
-import { fixture,logger } from './helpers.js';
-import helpEmbeds from '../src/components/helpEmbeds.json' with { type: 'json' };
+import { fixture,logger,flattenComponents } from './helpers.js';
+import helpPanels from '../src/components/helpPanels.json' with { type: 'json' };
 
 function message(content='>help') {
   const replies=[],edits=[];
@@ -62,18 +62,13 @@ test('deleted progress responses can be safely recreated',async()=>{
   await context.editReply('Searching');m.response.edit=async()=>{const error=Error('deleted');error.code=10008;throw error;};
   await context.editReply('Done');assert.equal(m.replies.length,2);
 });
-test('help reproduces all five Discohook embeds without changing text, colours or order',async()=>{
+test('V2 help preserves all five Discohook panels, their exact text, colours and order',async()=>{
   const m=message();await messageHandler({config:{prefix:'>'},get:()=>undefined},logger)(m);
-  assert.equal(m.replies.length,1);const embeds=m.replies[0].embeds.map(embed=>embed.toJSON());
-  assert.deepEqual(embeds,helpEmbeds);
-  assert.deepEqual(embeds.map(embed=>embed.color),[16711904,7405312,65515,16711762,7471104]);
-  assert.equal(embeds[0].title,'**Your Prefix is **`>`');
-  assert.equal(embeds[1].title,'**Playback Controls**');
-  assert.equal(embeds[2].title,'**Queue Management**');
-  assert.equal(embeds[3].title,'**Voice & Audio**');
-  assert.equal(embeds[4].title,'**Channel Configuration**');
-  assert.ok(embeds[1].description.startsWith('`Play` Search for a song and start playing, or add it to the queue.'));
-  assert.ok(embeds.reduce((length,embed)=>length+embed.title.length+(embed.description?.length??0),0)<=6000);
+  assert.equal(m.replies.length,1);const panels=m.replies[0].components.map(component=>component.toJSON());
+  assert.equal(m.replies[0].flags,MessageFlags.IsComponentsV2);assert.equal(m.replies[0].embeds,undefined);assert.equal(m.replies[0].content,undefined);
+  assert.deepEqual(panels.map(panel=>panel.accent_color),[16711904,7405312,65515,16711762,7471104]);
+  for(const [index,panel] of panels.entries())assert.deepEqual(panel.components.map(component=>component.content),[helpPanels[index].title,helpPanels[index].description].filter(Boolean));
+  assert.ok(flattenComponents(m.replies[0]).length<=40);
 });
 
 test('a standalone bot mention replies locally with the exact shared prefix embed',async()=>{
@@ -82,7 +77,9 @@ test('a standalone bot mention replies locally with the exact shared prefix embe
     const manager={config:{prefix:'>'},get:()=>assert.fail('Mention accessed a player'),outputChannel:()=>assert.fail('Mention looked up logs or DJ settings')};
     await messageHandler(manager,logger)(m);
     assert.equal(m.replies.length,1);
-    assert.deepEqual(m.replies[0].embeds.map(embed=>embed.toJSON()),[{title:'**Your Prefix is **`>`',color:16711904}]);
+    const panel=m.replies[0].components[0].toJSON();
+    assert.equal(panel.accent_color,16711904);assert.equal(panel.components[0].content,'**Your Prefix is **`>`');
+    assert.equal(m.replies[0].flags,MessageFlags.IsComponentsV2);assert.equal(m.replies[0].embeds,undefined);
     assert.deepEqual(m.replies[0].allowedMentions,{parse:[],repliedUser:false});
   }
 });
@@ -99,7 +96,7 @@ test('mentions ignore other users, role/everyone pings, reply pings, bots, webho
   }
 });
 
-test('mention replies respect text/thread send and Embed Links permissions',async()=>{
+test('V2 mentions respect text/thread send permissions and work without Embed Links',async()=>{
   for(const isThread of [false,true]){
     const m=message('<@123456789012345678>');m.client={user:{id:'123456789012345678'}};
     m.channel.isThread=()=>isThread;
@@ -107,9 +104,9 @@ test('mention replies respect text/thread send and Embed Links permissions',asyn
     m.permissions.has=values=>![values].flat().includes(send);
     await messageHandler({},logger)(m);assert.equal(m.replies.length,0);
     m.permissions.has=values=>![values].flat().includes(PermissionFlagsBits.EmbedLinks);
-    await messageHandler({},logger)(m);assert.match(m.replies[0].content,/Embed Links/);
+    await messageHandler({},logger)(m);assert.equal(m.replies[0].components.length,1);
     m.permissions.has=values=>![values].flat().includes(isThread?PermissionFlagsBits.SendMessages:PermissionFlagsBits.SendMessagesInThreads);
-    await messageHandler({},logger)(m);assert.equal(m.replies[1].embeds.length,1);
+    await messageHandler({},logger)(m);assert.equal(m.replies[1].components.length,1);
   }
 });
 
@@ -117,7 +114,7 @@ test('mentions share the bounded user cooldown and reply failures are contained'
   const m=message('<@123456789012345678>');m.client={user:{id:'123456789012345678'}};
   const handler=messageHandler({},logger);
   await handler(m);await handler(m);
-  assert.equal(m.replies[0].embeds.length,1);assert.match(m.replies[1].content,/Please wait/);
+  assert.equal(m.replies[0].components.length,1);assert.match(m.replies[1].content,/Please wait/);
   m.reply=async()=>{throw Error('Reply unavailable');};
   await assert.doesNotReject(messageHandler({},logger,{cooldown:()=>{}})(m));
 });
@@ -143,11 +140,11 @@ test('prefix settings retain Manage Server authorization',async()=>{
   const m=message('>autoplay on');m.member.permissions={has:()=>false};
   await messageHandler({config:{prefix:'>'},get:()=>undefined},logger)(m);assert.match(m.replies[0].content,/Manage Server/);
 });
-test('malformed messages and missing Embed Links give useful replies',async()=>{
+test('malformed messages give useful replies and V2 help does not need Embed Links',async()=>{
   const manager={config:{prefix:'>'},get:()=>undefined};
   const bad=message('>volume nope');await messageHandler(manager,logger)(bad);assert.match(bad.replies[0].content,/Usage: >volume/);
   const missing=message();missing.permissions.has=value=>value!==PermissionFlagsBits.EmbedLinks;
-  await messageHandler(manager,logger)(missing);assert.match(missing.replies[0].content,/Embed Links/);
+  await messageHandler(manager,logger)(missing);assert.equal(missing.replies[0].flags,MessageFlags.IsComponentsV2);
 });
 test('reply failures cannot crash the message handler',async()=>{
   const m=message('>unknown');m.reply=async()=>{throw Error('missing access');};

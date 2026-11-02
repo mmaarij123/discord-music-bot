@@ -1,7 +1,8 @@
-import { ChannelType, PermissionFlagsBits, EmbedBuilder, escapeMarkdown } from 'discord.js';
+import { ChannelType, PermissionFlagsBits, escapeMarkdown } from 'discord.js';
 import { commandMap } from './definitions.js';
-import helpEmbeds from '../components/helpEmbeds.json' with { type: 'json' };
-import { playerEmbed, duration } from '../components/playerEmbed.js';
+import helpPanels from '../components/helpPanels.json' with { type: 'json' };
+import { playerMessage, duration } from '../components/playerView.js';
+import { panelsMessage } from '../components/messages.js';
 import { UserError } from '../utils/errors.js';
 import { integer, classifyInput } from '../utils/validators.js';
 import { performance } from 'node:perf_hooks';
@@ -47,7 +48,7 @@ export async function execute(interaction,manager,action=interaction.commandName
   const option=interaction.options;
   if(['logchannel','djchannel'].includes(action))return channelSettings(interaction,manager,reply,action==='djchannel'?'dj':'log');
   if (action==='help') {
-    return reply({embeds:helpEmbeds.map(embed=>new EmbedBuilder(embed))});
+    return reply(panelsMessage(helpPanels));
   }
   if (action==='play') {
     const query=option.getString('query',true);
@@ -152,13 +153,13 @@ export async function execute(interaction,manager,action=interaction.commandName
     case 'nowplaying': {
       const dj=manager.settings?.getDjChannel(interaction.guildId);
       if(dj){await manager.bindPresenter(interaction.guild,interaction.channel);return reply(`The music player is in <#${dj}>.`);}
-      return reply({embeds:[playerEmbed(player)]});
+      return reply(playerMessage(player,undefined,{controls:false}));
     }
     case 'queue': {
       const page=option.getInteger('page')??1, pages=Math.max(1,Math.ceil(player.queue.length/10));
       integer(page,1,pages,'Page');
       const lines=player.queue.tracks.slice((page-1)*10,page*10).map((track,index)=>`**${(page-1)*10+index+1}.** ${escapeMarkdown(track.title.slice(0,120))} • ${duration(track.duration)}`);
-      return reply({embeds:[new EmbedBuilder().setColor(0x1db954).setTitle(`Up next • ${player.queue.length} tracks`).setDescription(lines.join('\n')||'The upcoming queue is empty.').setFooter({text:`Page ${page}/${pages} • Repeat ${player.queue.loop}`})]});
+      return reply(panelsMessage([{color:0x1db954,title:`**Up next • ${player.queue.length} tracks**`,description:`${lines.join('\n')||'The upcoming queue is empty.'}\n\nPage ${page}/${pages} • Repeat ${player.queue.loop}`} ]));
     }
     default: throw new UserError(`Unknown music command. Use ${prefix}help.`);
   }

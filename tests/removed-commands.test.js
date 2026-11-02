@@ -8,7 +8,7 @@ import { loadConfig } from '../src/config/config.js';
 import { GuildPlayer } from '../src/music/GuildPlayer.js';
 import { QueueManager } from '../src/music/QueueManager.js';
 import { OWNER_USER_ID } from '../src/config/owner.js';
-import { logger, fixture, track, settle } from './helpers.js';
+import { logger, fixture, track, settle, componentText } from './helpers.js';
 
 const removed=['previous','jump','move','seek','247','lyrics','clear'];
 for(const name of removed)test(`removed ${name} is rejected by parsing and direct dispatch before state access`,async()=>{
@@ -28,12 +28,11 @@ test('remove and owner-only clearcache remain available while removed methods/co
 test('shared help lists active public controls without removed commands or extra fields',async()=>{
   let payload;
   await execute({inGuild:()=>true,user:{id:OWNER_USER_ID},editReply:async value=>{payload=value;}},{get:()=>undefined},'help');
-  const embeds=payload.embeds.map(embed=>embed.toJSON());
-  const descriptions=embeds.map(embed=>embed.description??'').join('\n');
+  const descriptions=componentText(payload);
   const listed=[...descriptions.matchAll(/^`([a-z0-9]+)` /gmi)].map(match=>match[1].toLowerCase());
   for(const name of removed)assert.equal(listed.includes(name),false);
   assert.ok(listed.includes('remove'));
-  for(const embed of embeds)assert.equal(embed.fields,undefined);
+  assert.equal(payload.embeds,undefined);
   assert.deepEqual([...listed].sort(),commands.filter(command=>!command.ownerOnly&&command.name!=='help').map(command=>command.name).sort());
 });
 

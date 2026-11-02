@@ -2,10 +2,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { ChannelType,PermissionFlagsBits } from 'discord.js';
 import { execute,voiceAccess } from '../src/commands/execute.js';
-import { playerEmbed } from '../src/components/playerEmbed.js';
+import { playerMessage } from '../src/components/playerView.js';
 import { playerButtons } from '../src/components/playerButtons.js';
 import { interactionHandler } from '../src/events/interactionCreate.js';
-import { fixture,logger,track } from './helpers.js';
+import { fixture,logger,track,componentText } from './helpers.js';
 function interaction(channelId='voice'){
   const member={voice:{channel:channelId?{id:channelId,type:ChannelType.GuildVoice,full:false,permissionsFor:()=>({has:()=>true})}:null},permissions:{has:()=>true}};
   return {guildId:'guild',user:{id:'user'},guild:{id:'guild',members:{fetch:async()=>member,me:{voice:{}}}},inGuild:()=>true,isButton:()=>false,options:{},editReply:async()=>{},member};
@@ -26,9 +26,9 @@ test('invalid command arguments reject without mutating the queue',async t=>{
   const i=interaction();i.options.getInteger=()=>99;
   await assert.rejects(execute(i,{get:()=>f.player},'remove'),/Position/);assert.equal(f.player.queue.length,1);
 });
-test('player embed and buttons serialize current state',async t=>{
+test('V2 player and buttons serialize current state',async t=>{
   const f=fixture();t.after(()=>f.player.destroy());await f.player.enqueue([track('A')],f.channel);
-  assert.equal(playerEmbed(f.player).toJSON().title,'A');await f.player.pause();
+  assert.ok(componentText(playerMessage(f.player,'session')).includes('**A**'));await f.player.pause();
   const buttons=playerButtons(f.player,'session').flatMap(row=>row.toJSON().components);assert.ok(buttons.some(button=>button.custom_id==='music:session:resume'));
   assert.equal(buttons.length,5);assert.equal(buttons.some(button=>button.label==='Previous'),false);
 });

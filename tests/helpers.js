@@ -19,3 +19,11 @@ export function fixture(options={}){
   return {player,handles,prepared,offsets,fakePlayer,channel:{id:'voice'}};
 }
 export const settle=()=>new Promise(resolve=>{setImmediate(resolve);});
+export function flattenComponents(value){
+  const components=Array.isArray(value)?value:value.components??[];
+  return components.flatMap(component=>{
+    const data=component.toJSON?.()??component;
+    return [data,...flattenComponents(data.components??[]),...flattenComponents(data.accessory?[data.accessory]:[])];
+  });
+}
+export const componentText=value=>flattenComponents(value).filter(component=>component.type===10).map(component=>component.content).join('\n');

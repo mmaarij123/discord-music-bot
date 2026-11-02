@@ -9,8 +9,8 @@ import { PlayerMessageStore } from '../src/components/PlayerMessageStore.js';
 import { PlayerPresenter } from '../src/components/PlayerPresenter.js';
 import { MusicManager } from '../src/music/MusicManager.js';
 import { requireLogChannel } from '../src/utils/channels.js';
-import { PermissionFlagsBits } from 'discord.js';
-import { fixture,logger,track,settle } from './helpers.js';
+import { PermissionFlagsBits,MessageFlags,MessageFlagsBitField } from 'discord.js';
+import { fixture,logger,track,settle,componentText } from './helpers.js';
 
 const GUILD='111111111111111111',CHANNEL='222222222222222222',OTHER='333333333333333333',BOT='444444444444444444';
 let sequence=500000000000000000n;
@@ -22,8 +22,10 @@ function room(id=CHANNEL){
   const seed=(payload,author=BOT)=>{
     const message={id:String(sequence++),author:{id:author},embeds:[],components:[]};
     const apply=value=>{
+      if(message.flags?.has(MessageFlags.IsComponentsV2))assert.equal(Object.hasOwn(value,'embeds'),false,'V2 edits must not include legacy embeds');
       if(value.embeds)message.embeds=value.embeds.map(embed=>embed.toJSON?.()??embed);
-      if(value.components)message.components=value.components;
+      if(value.components)message.components=value.components.map(component=>component.toJSON?.()??component);
+      if(value.flags!==undefined)message.flags=new MessageFlagsBitField(value.flags);
     };
     apply(payload);
     message.edit=async value=>{if(!items.has(message.id))throw missing();apply(value);edits.push(value);return message;};
@@ -62,7 +64,7 @@ test('playlist transitions, adding tracks, pause and volume all edit the same DJ
   await f.player.pause();await f.presenter.render();await f.player.setVolume(32);await f.presenter.render();
   await f.player.resume();f.fakePlayer.finish();await settle();await f.presenter.render();
   assert.equal(f.presenter.message.id,id);assert.equal(settings.getDjMessage(GUILD),id);
-  assert.equal(channel.sent.length,1);assert.equal(channel.items.get(id).embeds[0].title,'Second');
+  assert.equal(channel.sent.length,1);assert.ok(componentText(channel.items.get(id)).includes('**Second**'));
   assert.equal(f.player.queue.length,1);assert.ok(channel.edits.length>=4);
 });
 
@@ -77,7 +79,7 @@ test('a released production manager session reuses its previous DJ message',asyn
   const second=manager.get(server,true);second.current=track('After stop');second.state='playing';
   await manager.bindPresenter(server,channel);await manager.presenters.get(GUILD).render();await settle();
   assert.notEqual(first,second);assert.equal(settings.getDjMessage(GUILD),id);
-  assert.equal(channel.sent.length,1);assert.equal(channel.items.get(id).embeds[0].title,'After stop');
+  assert.equal(channel.sent.length,1);assert.ok(componentText(channel.items.get(id)).includes('**After stop**'));
 });
 
 test('saved message IDs survive a restart without searching or creating another message',async t=>{
@@ -126,7 +128,7 @@ test('a slow retiring presenter cannot overwrite a new session or make another m
   const retiring=first.presenter.dispose(),second=make();
   await second.player.enqueue([track('New')],second.channel);await second.presenter.render();
   release();await retiring;
-  assert.equal(channel.sent.length,1);assert.equal(channel.items.values().next().value.embeds[0].title,'New');
+  assert.equal(channel.sent.length,1);assert.ok(componentText(channel.items.values().next().value).includes('**New**'));
   assert.ok(channel.items.values().next().value.components.length);
 });
 

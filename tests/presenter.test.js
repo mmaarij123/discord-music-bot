@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { PlayerPresenter } from '../src/components/PlayerPresenter.js';
-import { fixture,logger,track } from './helpers.js';
+import { fixture,logger,track,flattenComponents } from './helpers.js';
 test('deleted message leaves playback active and can be rebound',async t=>{
   const f=fixture(),presenter=new PlayerPresenter(f.player,logger);t.after(async()=>{await f.player.destroy();await presenter.dispose();});
   await f.player.enqueue([track('A')],f.channel);
@@ -40,7 +40,7 @@ test('failed final notice cannot prevent player controls from being cleaned up',
   const f=fixture(),warnings=[],presenter=new PlayerPresenter(f.player,{...logger,warn:event=>warnings.push(event)});
   t.after(()=>f.player.destroy());
   let disabled=false;
-  presenter.message={edit:async payload=>{disabled=payload.components.length===0;}};
+  presenter.message={edit:async payload=>{disabled=!flattenComponents(payload).some(component=>component.type===2);}};
   presenter.setNoticeChannel({send:async()=>{throw Error('Missing access');}});
   presenter.notice('Disconnected from voice');await presenter.dispose();
   assert.deepEqual(warnings,['notice_failed']);assert.equal(disabled,true);

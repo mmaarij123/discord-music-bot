@@ -2,1863 +2,1911 @@ TAP version 13
 # Subtest: HTTP status detection ignores numbers inside signed URLs
 ok 1 - HTTP status detection ignores numbers inside signed URLs
   ---
-  duration_ms: 10.9879
+  duration_ms: 6.6129
   type: 'test'
   ...
 # Subtest: actual FFmpeg HTTP denial is terminal for a fresh source
 ok 2 - actual FFmpeg HTTP denial is terminal for a fresh source
   ---
-  duration_ms: 7.4884
+  duration_ms: 7.1355
   type: 'test'
   ...
 # Subtest: only a reused signed source is eligible for renewal after HTTP denial
 ok 3 - only a reused signed source is eligible for renewal after HTTP denial
   ---
-  duration_ms: 20.581
+  duration_ms: 5.6243
   type: 'test'
   ...
 # Subtest: cached startup denial renews once and disposes the failed decoder
 ok 4 - cached startup denial renews once and disposes the failed decoder
   ---
-  duration_ms: 289.1825
+  duration_ms: 342.467
   type: 'test'
   ...
 # Subtest: fresh startup denial never loops or tries another identity
 ok 5 - fresh startup denial never loops or tries another identity
   ---
-  duration_ms: 6.2543
+  duration_ms: 20.6866
   type: 'test'
   ...
 # Subtest: fresh denial after cached renewal stops after exactly two attempts
 ok 6 - fresh denial after cached renewal stops after exactly two attempts
   ---
-  duration_ms: 2.5082
+  duration_ms: 3.2394
   type: 'test'
   ...
 # Subtest: late cached-link rejection resumes at heard position using fresh metadata
 ok 7 - late cached-link rejection resumes at heard position using fresh metadata
   ---
-  duration_ms: 6.9294
+  duration_ms: 6.9227
   type: 'test'
   ...
 # Subtest: zero-byte EOF waits for decoder status and never returns a playing resource
 ok 8 - zero-byte EOF waits for decoder status and never returns a playing resource
   ---
-  duration_ms: 16.2553
+  duration_ms: 17.2286
   type: 'test'
   ...
 # Subtest: clean decoder exit with zero bytes is not a successful audio start
 ok 9 - clean decoder exit with zero bytes is not a successful audio start
   ---
-  duration_ms: 15.8115
+  duration_ms: 16.5897
   type: 'test'
   ...
 # Subtest: join assigns its host before asynchronous preparation so the host can cancel it
 ok 10 - join assigns its host before asynchronous preparation so the host can cancel it
   ---
-  duration_ms: 29.8703
+  duration_ms: 42.8746
   type: 'test'
   ...
 # Subtest: a pending join cannot be reclaimed by another guild and releases its idle hold on failure
 ok 11 - a pending join cannot be reclaimed by another guild and releases its idle hold on failure
   ---
-  duration_ms: 4.4966
+  duration_ms: 6.0957
   type: 'test'
   ...
 # Subtest: subprocess metadata preserves Unicode when a UTF-8 character spans output chunks
 ok 12 - subprocess metadata preserves Unicode when a UTF-8 character spans output chunks
   ---
-  duration_ms: 240.6007
+  duration_ms: 320.0621
   type: 'test'
   ...
 # Subtest: new guild creation cannot reclaim another guild while its play request is preparing
 ok 13 - new guild creation cannot reclaim another guild while its play request is preparing
   ---
-  duration_ms: 1.7192
+  duration_ms: 1.6213
   type: 'test'
   ...
 # Subtest: active discovery protects a disconnected guild session from stale-session cleanup
 ok 14 - active discovery protects a disconnected guild session from stale-session cleanup
   ---
-  duration_ms: 1.0645
+  duration_ms: 1.4747
   type: 'test'
   ...
 # Subtest: malformed public Spotify artist entries do not abort an otherwise usable track
 ok 15 - malformed public Spotify artist entries do not abort an otherwise usable track
   ---
-  duration_ms: 0.5941
+  duration_ms: 0.6018
   type: 'test'
   ...
 # Subtest: YouTube normalization rejects malformed titles and unsafe text types
 ok 16 - YouTube normalization rejects malformed titles and unsafe text types
   ---
-  duration_ms: 0.4408
+  duration_ms: 0.4388
   type: 'test'
   ...
 # Subtest: five consecutive runtime failures pause automatic advancement and preserve upcoming tracks
 ok 17 - five consecutive runtime failures pause automatic advancement and preserve upcoming tracks
   ---
-  duration_ms: 6.1762
+  duration_ms: 5.629
   type: 'test'
   ...
 # Subtest: a completed track resets the consecutive failure budget
 ok 18 - a completed track resets the consecutive failure budget
   ---
-  duration_ms: 2.4086
+  duration_ms: 2.1683
   type: 'test'
   ...
 # Subtest: logger redacts nested credentials and source URLs
 ok 19 - logger redacts nested credentials and source URLs
   ---
-  duration_ms: 3.4805
+  duration_ms: 3.308
   type: 'test'
   ...
 # Subtest: logger bounds circular object traversal instead of crashing playback
 ok 20 - logger bounds circular object traversal instead of crashing playback
   ---
-  duration_ms: 0.6452
+  duration_ms: 0.551
   type: 'test'
   ...
 # Subtest: shutdown waits for released-session notices and then drops cached Discord message references
 ok 21 - shutdown waits for released-session notices and then drops cached Discord message references
   ---
-  duration_ms: 2.1393
+  duration_ms: 1.9298
   type: 'test'
   ...
 # Subtest: a failed released-player cleanup still waits for its final presenter cleanup
 ok 22 - a failed released-player cleanup still waits for its final presenter cleanup
   ---
-  duration_ms: 2.728
+  duration_ms: 2.4311
   type: 'test'
   ...
 # Subtest: failed empty joins release their claimed host and session instead of retaining stale ownership
 ok 23 - failed empty joins release their claimed host and session instead of retaining stale ownership
   ---
-  duration_ms: 1.5408
+  duration_ms: 2.4558
   type: 'test'
   ...
 # Subtest: a successful join remains connected if only its reply delivery fails
 ok 24 - a successful join remains connected if only its reply delivery fails
   ---
-  duration_ms: 1.2025
+  duration_ms: 1.6824
   type: 'test'
   ...
 # Subtest: already-cancelled waits still observe a rejected operation without an unhandled rejection
 ok 25 - already-cancelled waits still observe a rejected operation without an unhandled rejection
   ---
-  duration_ms: 2.0796
+  duration_ms: 1.8482
   type: 'test'
   ...
 # Subtest: invalid YouTube durations cannot enter playback timing or matching as negative/infinite values
 ok 26 - invalid YouTube durations cannot enter playback timing or matching as negative/infinite values
   ---
-  duration_ms: 0.4029
+  duration_ms: 0.6263
   type: 'test'
   ...
 # Subtest: oversized tool output is rejected and its subprocess is closed
 ok 27 - oversized tool output is rejected and its subprocess is closed
   ---
-  duration_ms: 619.5348
+  duration_ms: 578.381
   type: 'test'
   ...
 # Subtest: tool cancellation preserves even a falsy abort reason
 ok 28 - tool cancellation preserves even a falsy abort reason
   ---
-  duration_ms: 212.7573
+  duration_ms: 316.147
   type: 'test'
   ...
 # Subtest: cache cleanup clears fresh and expired entries every five minutes, including idle caches
 ok 29 - cache cleanup clears fresh and expired entries every five minutes, including idle caches
   ---
-  duration_ms: 20.377
+  duration_ms: 20.4963
   type: 'test'
   ...
 # Subtest: stopping cleanup cancels subsequent periodic clears
 ok 30 - stopping cleanup cancels subsequent periodic clears
   ---
-  duration_ms: 0.4971
+  duration_ms: 0.5307
   type: 'test'
   ...
 # Subtest: production manager cleans all four provider caches without changing playback or queues
 ok 31 - production manager cleans all four provider caches without changing playback or queues
   ---
-  duration_ms: 16.1276
+  duration_ms: 14.1437
   type: 'test'
   ...
 # Subtest: playback controls require the same voice channel
 ok 32 - playback controls require the same voice channel
   ---
-  duration_ms: 20.0154
+  duration_ms: 25.1674
   type: 'test'
   ...
 # Subtest: missing bot voice permissions are rejected
 ok 33 - missing bot voice permissions are rejected
   ---
-  duration_ms: 0.44
+  duration_ms: 0.4543
   type: 'test'
   ...
 # Subtest: administrative settings require Manage Server
 ok 34 - administrative settings require Manage Server
   ---
-  duration_ms: 1.0992
+  duration_ms: 1.2063
   type: 'test'
   ...
 # Subtest: invalid command arguments reject without mutating the queue
 ok 35 - invalid command arguments reject without mutating the queue
   ---
-  duration_ms: 4.5549
+  duration_ms: 4.6359
   type: 'test'
   ...
-# Subtest: player embed and buttons serialize current state
-ok 36 - player embed and buttons serialize current state
+# Subtest: V2 player and buttons serialize current state
+ok 36 - V2 player and buttons serialize current state
   ---
-  duration_ms: 5.8105
+  duration_ms: 6.6733
   type: 'test'
   ...
 # Subtest: expired player buttons return an informative error
 ok 37 - expired player buttons return an informative error
   ---
-  duration_ms: 1.0379
+  duration_ms: 2.6507
   type: 'test'
   ...
 # Subtest: expired interaction replies are contained
 ok 38 - expired interaction replies are contained
   ---
-  duration_ms: 0.7943
+  duration_ms: 1.6323
+  type: 'test'
+  ...
+# Subtest: V2 player contains artwork, requester, live state and the five working controls within Discord limits
+ok 39 - V2 player contains artwork, requester, live state and the five working controls within Discord limits
+  ---
+  duration_ms: 25.3269
+  type: 'test'
+  ...
+# Subtest: V2 player snapshots and disconnected displays retain a body without interactive controls
+ok 40 - V2 player snapshots and disconnected displays retain a body without interactive controls
+  ---
+  duration_ms: 2.6661
+  type: 'test'
+  ...
+# Subtest: maximum track text stays within V2 limits and absent or unsafe artwork never creates an invalid section
+ok 41 - maximum track text stays within V2 limits and absent or unsafe artwork never creates an invalid section
+  ---
+  duration_ms: 2.8753
+  type: 'test'
+  ...
+# Subtest: legacy-to-V2 edits clear old fields while subsequent V2 sends and edits omit them
+ok 42 - legacy-to-V2 edits clear old fields while subsequent V2 sends and edits omit them
+  ---
+  duration_ms: 142.2927
+  type: 'test'
+  ...
+# Subtest: an error after a V2 progress response remains V2 instead of attempting an invalid downgrade
+ok 43 - an error after a V2 progress response remains V2 instead of attempting an invalid downgrade
+  ---
+  duration_ms: 0.8909
+  type: 'test'
+  ...
+# Subtest: an existing plain progress message can migrate in place and stay V2 on later errors
+ok 44 - an existing plain progress message can migrate in place and stay V2 on later errors
+  ---
+  duration_ms: 0.638
+  type: 'test'
+  ...
+# Subtest: migration finds an existing V2 player when its saved ID is absent, without sending another message
+ok 45 - migration finds an existing V2 player when its saved ID is absent, without sending another message
+  ---
+  duration_ms: 3.622
+  type: 'test'
+  ...
+# Subtest: buttons nested inside a V2 container execute pause and resume with normal voice and session checks
+ok 46 - buttons nested inside a V2 container execute pause and resume with normal voice and session checks
+  ---
+  duration_ms: 3.6369
   type: 'test'
   ...
 # Subtest: fast extraction skips manifests and retains normal player/auth requests
-ok 39 - fast extraction skips manifests and retains normal player/auth requests
+ok 47 - fast extraction skips manifests and retains normal player/auth requests
   ---
-  duration_ms: 26.5003
+  duration_ms: 20.4075
   type: 'test'
   ...
 # Subtest: normal extraction is the default and source selection checks download availability
-ok 40 - normal extraction is the default and source selection checks download availability
+ok 48 - normal extraction is the default and source selection checks download availability
   ---
-  duration_ms: 2.5648
+  duration_ms: 0.9988
   type: 'test'
   ...
 # Subtest: fast extraction falls back to full extraction once when no direct format exists
-ok 41 - fast extraction falls back to full extraction once when no direct format exists
+ok 49 - fast extraction falls back to full extraction once when no direct format exists
   ---
-  duration_ms: 0.8388
+  duration_ms: 0.8266
   type: 'test'
   ...
 # Subtest: missing fast source URL falls back once without skipping restriction checks
-ok 42 - missing fast source URL falls back once without skipping restriction checks
+ok 50 - missing fast source URL falls back once without skipping restriction checks
   ---
-  duration_ms: 1.5337
+  duration_ms: 1.853
   type: 'test'
   ...
 # Subtest: access and network errors do not trigger another extraction strategy
-ok 43 - access and network errors do not trigger another extraction strategy
+ok 51 - access and network errors do not trigger another extraction strategy
   ---
-  duration_ms: 2.5845
+  duration_ms: 2.5265
   type: 'test'
   ...
 # Subtest: full extraction can be selected explicitly and fallback is bounded
-ok 44 - full extraction can be selected explicitly and fallback is bounded
+ok 52 - full extraction can be selected explicitly and fallback is bounded
   ---
-  duration_ms: 4.073
+  duration_ms: 1.2684
   type: 'test'
   ...
 # Subtest: five-minute source cache remains bounded by actual signed URL expiry
-ok 45 - five-minute source cache remains bounded by actual signed URL expiry
+ok 53 - five-minute source cache remains bounded by actual signed URL expiry
   ---
-  duration_ms: 0.9707
+  duration_ms: 0.6227
   type: 'test'
   ...
 # Subtest: voice handshake and discovery overlap; source warming starts before voice is ready
-ok 46 - voice handshake and discovery overlap; source warming starts before voice is ready
+ok 54 - voice handshake and discovery overlap; source warming starts before voice is ready
   ---
-  duration_ms: 26.5749
+  duration_ms: 22.9597
   type: 'test'
   ...
 # Subtest: slow search reply delivery does not delay ready audio
-ok 47 - slow search reply delivery does not delay ready audio
+ok 55 - slow search reply delivery does not delay ready audio
   ---
-  duration_ms: 2.3261
+  duration_ms: 2.724
   type: 'test'
   ...
 # Subtest: failed discovery rolls back a newly created idle voice session
-ok 48 - failed discovery rolls back a newly created idle voice session
+ok 56 - failed discovery rolls back a newly created idle voice session
   ---
-  duration_ms: 1.8547
+  duration_ms: 1.7873
   type: 'test'
   ...
 # Subtest: failed discovery preserves a pre-existing voice session
-ok 49 - failed discovery preserves a pre-existing voice session
+ok 57 - failed discovery preserves a pre-existing voice session
   ---
-  duration_ms: 1.3172
+  duration_ms: 1.454
   type: 'test'
   ...
 # Subtest: cancelled play aborts pending voice preparation and leaves no queued audio
-ok 50 - cancelled play aborts pending voice preparation and leaves no queued audio
+ok 58 - cancelled play aborts pending voice preparation and leaves no queued audio
   ---
-  duration_ms: 2.1232
+  duration_ms: 3.326
   type: 'test'
   ...
 # Subtest: moving to another channel during search cannot enqueue or move the bot
-ok 51 - moving to another channel during search cannot enqueue or move the bot
+ok 59 - moving to another channel during search cannot enqueue or move the bot
   ---
-  duration_ms: 1.448
+  duration_ms: 2.2776
   type: 'test'
   ...
 # Subtest: invalid URLs fail before connecting to voice or starting discovery
-ok 52 - invalid URLs fail before connecting to voice or starting discovery
+ok 60 - invalid URLs fail before connecting to voice or starting discovery
   ---
-  duration_ms: 0.8175
+  duration_ms: 2.8998
   type: 'test'
   ...
 # Subtest: idle leave is suspended during discovery and restored after a failed request
-ok 53 - idle leave is suspended during discovery and restored after a failed request
+ok 61 - idle leave is suspended during discovery and restored after a failed request
   ---
-  duration_ms: 1.8903
+  duration_ms: 2.888
   type: 'test'
   ...
 # Subtest: voice handshake failure cancels discovery without queuing a track
-ok 54 - voice handshake failure cancels discovery without queuing a track
+ok 62 - voice handshake failure cancels discovery without queuing a track
   ---
-  duration_ms: 1.4305
+  duration_ms: 2.006
   type: 'test'
   ...
 # Subtest: real voice handshake waiter honours cancellation and destroys its connection
-ok 55 - real voice handshake waiter honours cancellation and destroys its connection
+ok 63 - real voice handshake waiter honours cancellation and destroys its connection
   ---
-  duration_ms: 1.3245
+  duration_ms: 2.2258
   type: 'test'
   ...
 # Subtest: stop cancels a real voice handshake waiter even without a caller abort signal
-ok 56 - stop cancels a real voice handshake waiter even without a caller abort signal
+ok 64 - stop cancels a real voice handshake waiter even without a caller abort signal
   ---
-  duration_ms: 3.8453
+  duration_ms: 2.7972
   type: 'test'
   ...
 # Subtest: session host can stop from outside voice and stop always disconnects
-ok 57 - session host can stop from outside voice and stop always disconnects
+ok 65 - session host can stop from outside voice and stop always disconnects
   ---
-  duration_ms: 21.4733
+  duration_ms: 26.446
   type: 'test'
   ...
 # Subtest: session host can leave after moving to another voice channel
-ok 58 - session host can leave after moving to another voice channel
+ok 66 - session host can leave after moving to another voice channel
   ---
-  duration_ms: 1.122
+  duration_ms: 1.1058
   type: 'test'
   ...
 # Subtest: non-host users cannot stop or disconnect even from the active voice channel
-ok 59 - non-host users cannot stop or disconnect even from the active voice channel
+ok 67 - non-host users cannot stop or disconnect even from the active voice channel
   ---
-  duration_ms: 1.8071
+  duration_ms: 1.7255
   type: 'test'
   ...
 # Subtest: a Manage Server moderator can stop a session from outside voice
-ok 60 - a Manage Server moderator can stop a session from outside voice
+ok 68 - a Manage Server moderator can stop a session from outside voice
   ---
-  duration_ms: 1.2082
+  duration_ms: 1.5362
   type: 'test'
   ...
 # Subtest: host exception does not relax other playback control voice permissions
-ok 61 - host exception does not relax other playback control voice permissions
+ok 69 - host exception does not relax other playback control voice permissions
   ---
-  duration_ms: 1.3197
+  duration_ms: 1.4453
   type: 'test'
   ...
 # Subtest: adding another requester to the queue does not transfer session ownership
-ok 62 - adding another requester to the queue does not transfer session ownership
+ok 70 - adding another requester to the queue does not transfer session ownership
   ---
-  duration_ms: 0.9655
+  duration_ms: 1.1484
   type: 'test'
   ...
 # Subtest: stop button uses host authorization without requiring voice membership
-ok 63 - stop button uses host authorization without requiring voice membership
+ok 71 - stop button uses host authorization without requiring voice membership
   ---
-  duration_ms: 1.8636
+  duration_ms: 1.6581
   type: 'test'
   ...
 # Subtest: host is assigned before discovery so stop can cancel an in-flight first play
-ok 64 - host is assigned before discovery so stop can cancel an in-flight first play
+ok 72 - host is assigned before discovery so stop can cancel an in-flight first play
   ---
-  duration_ms: 13.4466
+  duration_ms: 11.8286
   type: 'test'
   ...
 # Subtest: gateway removal closes immediately, cancels imports and overrides 24/7
-ok 65 - gateway removal closes immediately, cancels imports and overrides 24/7
+ok 73 - gateway removal closes immediately, cancels imports and overrides 24/7
   ---
-  duration_ms: 3.0183
+  duration_ms: 2.0027
   type: 'test'
   ...
 # Subtest: user voice updates and bot channel moves do not terminate the session
-ok 66 - user voice updates and bot channel moves do not terminate the session
+ok 74 - user voice updates and bot channel moves do not terminate the session
   ---
-  duration_ms: 2.0203
+  duration_ms: 1.1998
   type: 'test'
   ...
 # Subtest: late voice-loss callbacks cannot alter or restart a stopped session
-ok 67 - late voice-loss callbacks cannot alter or restart a stopped session
+ok 75 - late voice-loss callbacks cannot alter or restart a stopped session
   ---
-  duration_ms: 2.4652
+  duration_ms: 2.3003
   type: 'test'
   ...
 # Subtest: manual disconnect never waits or sends a rejoin
-ok 68 - manual disconnect never waits or sends a rejoin
+ok 76 - manual disconnect never waits or sends a rejoin
   ---
-  duration_ms: 1.3328
+  duration_ms: 1.3354
   type: 'test'
   ...
 # Subtest: 4014 do-not-reconnect close never explicitly rejoins after its grace period
-ok 69 - 4014 do-not-reconnect close never explicitly rejoins after its grace period
+ok 77 - 4014 do-not-reconnect close never explicitly rejoins after its grace period
   ---
-  duration_ms: 0.5678
+  duration_ms: 0.6905
   type: 'test'
   ...
 # Subtest: 4014 automatic channel-move recovery can finish without an explicit rejoin
-ok 70 - 4014 automatic channel-move recovery can finish without an explicit rejoin
+ok 78 - 4014 automatic channel-move recovery can finish without an explicit rejoin
   ---
-  duration_ms: 0.437
+  duration_ms: 0.5062
   type: 'test'
   ...
 # Subtest: transient failures retain a bounded two-rejoin recovery budget
-ok 71 - transient failures retain a bounded two-rejoin recovery budget
+ok 79 - transient failures retain a bounded two-rejoin recovery budget
   ---
-  duration_ms: 0.5915
+  duration_ms: 0.6303
   type: 'test'
   ...
 # Subtest: destroy cancels an active recovery waiter before it can rejoin
-ok 72 - destroy cancels an active recovery waiter before it can rejoin
+ok 80 - destroy cancels an active recovery waiter before it can rejoin
   ---
-  duration_ms: 2.2736
+  duration_ms: 4.4622
   type: 'test'
   ...
 # Subtest: manual bot removal sends one log-channel notice even during immediate session release
-ok 73 - manual bot removal sends one log-channel notice even during immediate session release
+ok 81 - manual bot removal sends one log-channel notice even during immediate session release
   ---
-  duration_ms: 36.3077
+  duration_ms: 40.8633
   type: 'test'
   ...
 # Subtest: logchannel accepts a channel name, mention, ID, off and status query
-ok 74 - logchannel accepts a channel name, mention, ID, off and status query
+ok 82 - logchannel accepts a channel name, mention, ID, off and status query
   ---
-  duration_ms: 1.823
+  duration_ms: 2.3679
   type: 'test'
   ...
 # Subtest: settings start empty and persist independently across guilds and restart
-ok 75 - settings start empty and persist independently across guilds and restart
+ok 83 - settings start empty and persist independently across guilds and restart
   ---
-  duration_ms: 54.8088
+  duration_ms: 73.2402
   type: 'test'
   ...
 # Subtest: failed persistent writes do not apply a setting in memory
-ok 76 - failed persistent writes do not apply a setting in memory
+ok 84 - failed persistent writes do not apply a setting in memory
   ---
-  duration_ms: 15.9672
+  duration_ms: 22.0221
   type: 'test'
   ...
 # Subtest: malformed and oversized settings fail safely without silent routing fallback
-ok 77 - malformed and oversized settings fail safely without silent routing fallback
+ok 85 - malformed and oversized settings fail safely without silent routing fallback
   ---
-  duration_ms: 29.0664
+  duration_ms: 35.7029
   type: 'test'
   ...
 # Subtest: settings validate IDs before writing
-ok 78 - settings validate IDs before writing
+ok 86 - settings validate IDs before writing
   ---
-  duration_ms: 0.513
+  duration_ms: 0.5985
   type: 'test'
   ...
 # Subtest: channel lookup supports names/mentions while rejecting duplicate names
-ok 79 - channel lookup supports names/mentions while rejecting duplicate names
+ok 87 - channel lookup supports names/mentions while rejecting duplicate names
   ---
-  duration_ms: 1.1156
+  duration_ms: 2.3154
   type: 'test'
   ...
 # Subtest: other-guild, voice and inaccessible channels cannot be configured
-ok 80 - other-guild, voice and inaccessible channels cannot be configured
+ok 88 - other-guild, voice and inaccessible channels cannot be configured
   ---
-  duration_ms: 0.9137
+  duration_ms: 2.0545
   type: 'test'
   ...
 # Subtest: moderators can configure the channel without joining voice
-ok 81 - moderators can configure the channel without joining voice
+ok 89 - moderators can configure the channel without joining voice
   ---
-  duration_ms: 2.8402
+  duration_ms: 4.1776
   type: 'test'
   ...
 # Subtest: non-moderators cannot inspect, change or disable the setting
-ok 82 - non-moderators cannot inspect, change or disable the setting
+ok 90 - non-moderators cannot inspect, change or disable the setting
   ---
-  duration_ms: 2.0829
+  duration_ms: 1.359
   type: 'test'
   ...
 # Subtest: queue replies stay in the invoking channel when logs are configured
-ok 83 - queue replies stay in the invoking channel when logs are configured
+ok 91 - queue replies stay in the invoking channel when logs are configured
   ---
-  duration_ms: 2.6378
+  duration_ms: 2.141
   type: 'test'
   ...
 # Subtest: help replies in each invoking channel despite independent log and DJ settings
-ok 84 - help replies in each invoking channel despite independent log and DJ settings
+ok 92 - help replies in each invoking channel despite independent log and DJ settings
   ---
-  duration_ms: 2.3485
+  duration_ms: 14.6749
   type: 'test'
   ...
 # Subtest: help never looks up a missing log or DJ destination
-ok 85 - help never looks up a missing log or DJ destination
+ok 93 - help never looks up a missing log or DJ destination
   ---
-  duration_ms: 0.78
+  duration_ms: 1.9228
   type: 'test'
   ...
-# Subtest: help usage errors and missing Embed Links are returned locally
-ok 86 - help usage errors and missing Embed Links are returned locally
+# Subtest: help usage errors stay local and its V2 layout works without Embed Links
+ok 94 - help usage errors stay local and its V2 layout works without Embed Links
   ---
-  duration_ms: 0.8236
+  duration_ms: 0.938
   type: 'test'
   ...
 # Subtest: custom-prefix uppercase help stays in the invoking thread with thread permissions
-ok 87 - custom-prefix uppercase help stays in the invoking thread with thread permissions
+ok 95 - custom-prefix uppercase help stays in the invoking thread with thread permissions
   ---
-  duration_ms: 0.8306
+  duration_ms: 1.7487
   type: 'test'
   ...
 # Subtest: malformed commands and validation errors stay in the invoking channel
-ok 88 - malformed commands and validation errors stay in the invoking channel
+ok 96 - malformed commands and validation errors stay in the invoking channel
   ---
-  duration_ms: 0.6195
+  duration_ms: 1.0559
   type: 'test'
   ...
 # Subtest: search progress edits one message in the invoking channel
-ok 89 - search progress edits one message in the invoking channel
+ok 97 - search progress edits one message in the invoking channel
   ---
-  duration_ms: 0.5667
+  duration_ms: 0.8349
   type: 'test'
   ...
 # Subtest: deleted or inaccessible configured channels do not silently send music elsewhere
-ok 90 - deleted or inaccessible configured channels do not silently send music elsewhere
+ok 98 - deleted or inaccessible configured channels do not silently send music elsewhere
   ---
-  duration_ms: 0.7523
+  duration_ms: 1.2542
   type: 'test'
   ...
 # Subtest: logchannel off is usable when the old destination is missing
-ok 91 - logchannel off is usable when the old destination is missing
+ok 99 - logchannel off is usable when the old destination is missing
   ---
-  duration_ms: 0.689
+  duration_ms: 0.7241
   type: 'test'
   ...
 # Subtest: changing the DJ output invalidates old controls and preserves active audio
-ok 92 - changing the DJ output invalidates old controls and preserves active audio
+ok 100 - changing the DJ output invalidates old controls and preserves active audio
   ---
-  duration_ms: 4.7077
+  duration_ms: 9.7834
   type: 'test'
   ...
 # Subtest: relocation waits for an in-flight render so an old send cannot replace the new player
-ok 93 - relocation waits for an in-flight render so an old send cannot replace the new player
+ok 101 - relocation waits for an in-flight render so an old send cannot replace the new player
   ---
-  duration_ms: 1.5114
+  duration_ms: 3.3436
   type: 'test'
   ...
 # Subtest: default binding preserves the original session output without a configured destination
-ok 94 - default binding preserves the original session output without a configured destination
+ok 102 - default binding preserves the original session output without a configured destination
   ---
-  duration_ms: 0.9038
+  duration_ms: 1.684
   type: 'test'
   ...
 # Subtest: saved JSON contains only channel preferences and no runtime player data
-ok 95 - saved JSON contains only channel preferences and no runtime player data
+ok 103 - saved JSON contains only channel preferences and no runtime player data
   ---
-  duration_ms: 85.2318
+  duration_ms: 28.4786
   type: 'test'
   ...
 # Subtest: production manager factory reloads saved routing after a restart
-ok 96 - production manager factory reloads saved routing after a restart
+ok 104 - production manager factory reloads saved routing after a restart
   ---
-  duration_ms: 26.2566
+  duration_ms: 23.2194
   type: 'test'
   ...
 # Subtest: legacy log settings load without inventing a DJ channel and migrate safely
-ok 97 - legacy log settings load without inventing a DJ channel and migrate safely
+ok 105 - legacy log settings load without inventing a DJ channel and migrate safely
   ---
-  duration_ms: 45.4091
+  duration_ms: 22.4091
   type: 'test'
   ...
 # Subtest: concurrent log and DJ updates preserve both destinations and reset independently
-ok 98 - concurrent log and DJ updates preserve both destinations and reset independently
+ok 106 - concurrent log and DJ updates preserve both destinations and reset independently
   ---
-  duration_ms: 84.8462
+  duration_ms: 17.6298
   type: 'test'
   ...
 # Subtest: DJ command supports names, status and off independently from the log channel
-ok 99 - DJ command supports names, status and off independently from the log channel
+ok 107 - DJ command supports names, status and off independently from the log channel
   ---
-  duration_ms: 14.1524
+  duration_ms: 1.2565
   type: 'test'
   ...
 # Subtest: DJ configuration requires Manage Server even if a user is in voice
-ok 100 - DJ configuration requires Manage Server even if a user is in voice
+ok 108 - DJ configuration requires Manage Server even if a user is in voice
   ---
-  duration_ms: 0.8916
+  duration_ms: 0.7996
   type: 'test'
   ...
 # Subtest: changing only the log channel does not move the embed or invalidate its controls
-ok 101 - changing only the log channel does not move the embed or invalidate its controls
+ok 109 - changing only the log channel does not move the embed or invalidate its controls
   ---
-  duration_ms: 2.2095
+  duration_ms: 1.8695
   type: 'test'
   ...
 # Subtest: play confirmation stays local, the embed stays in DJ, and notices go to logs
-ok 102 - play confirmation stays local, the embed stays in DJ, and notices go to logs
+ok 110 - play confirmation stays local, the embed stays in DJ, and notices go to logs
   ---
-  duration_ms: 3110.3664
+  duration_ms: 3111.7001
   type: 'test'
   ...
 # Subtest: volume, join and leave acknowledge locally while real notices stay in logs
-ok 103 - volume, join and leave acknowledge locally while real notices stay in logs
+ok 111 - volume, join and leave acknowledge locally while real notices stay in logs
   ---
-  duration_ms: 1.4724
+  duration_ms: 1.1624
   type: 'test'
   ...
 # Subtest: a missing log channel cannot block command replies or their local errors
-ok 104 - a missing log channel cannot block command replies or their local errors
+ok 112 - a missing log channel cannot block command replies or their local errors
   ---
-  duration_ms: 1.1315
+  duration_ms: 0.8029
   type: 'test'
   ...
 # Subtest: log-only configuration does not pull the player away from the play command channel
-ok 105 - log-only configuration does not pull the player away from the play command channel
-  ---
-  duration_ms: 0.4849
-  type: 'test'
-  ...
-# Subtest: missing DJ destination can be reset without touching the log setting
-ok 106 - missing DJ destination can be reset without touching the log setting
-  ---
-  duration_ms: 0.368
-  type: 'test'
-  ...
-# Subtest: a broken log destination cannot prevent the host from stopping outside voice
-ok 107 - a broken log destination cannot prevent the host from stopping outside voice
-  ---
-  duration_ms: 0.5227
-  type: 'test'
-  ...
-# Subtest: a missing log destination does not block play or leak playback notices into the DJ channel
-ok 108 - a missing log destination does not block play or leak playback notices into the DJ channel
-  ---
-  duration_ms: 1.8079
-  type: 'test'
-  ...
-# Subtest: normalizes accents, punctuation and whitespace
-ok 109 - normalizes accents, punctuation and whitespace
-  ---
-  duration_ms: 3.1342
-  type: 'test'
-  ...
-# Subtest: retains non-Latin song names
-ok 110 - retains non-Latin song names
-  ---
-  duration_ms: 0.3664
-  type: 'test'
-  ...
-# Subtest: prefers official close-duration audio
-ok 111 - prefers official close-duration audio
-  ---
-  duration_ms: 2.2451
-  type: 'test'
-  ...
-# Subtest: rejects unsolicited Nightcore
-ok 112 - rejects unsolicited Nightcore
-  ---
-  duration_ms: 0.2937
-  type: 'test'
-  ...
-# Subtest: rejects unsolicited Slowed
-ok 113 - rejects unsolicited Slowed
-  ---
-  duration_ms: 0.2736
-  type: 'test'
-  ...
-# Subtest: rejects unsolicited Sped Up
-ok 114 - rejects unsolicited Sped Up
-  ---
-  duration_ms: 0.2888
-  type: 'test'
-  ...
-# Subtest: rejects unsolicited Cover
-ok 115 - rejects unsolicited Cover
-  ---
-  duration_ms: 0.8377
-  type: 'test'
-  ...
-# Subtest: rejects unsolicited Karaoke
-ok 116 - rejects unsolicited Karaoke
-  ---
-  duration_ms: 0.2316
-  type: 'test'
-  ...
-# Subtest: rejects unsolicited Instrumental
-ok 117 - rejects unsolicited Instrumental
-  ---
-  duration_ms: 0.2529
-  type: 'test'
-  ...
-# Subtest: rejects unsolicited Remix
-ok 118 - rejects unsolicited Remix
-  ---
-  duration_ms: 0.5856
-  type: 'test'
-  ...
-# Subtest: rejects unsolicited Live
-ok 119 - rejects unsolicited Live
-  ---
-  duration_ms: 0.9638
-  type: 'test'
-  ...
-# Subtest: rejects unsolicited Acoustic
-ok 120 - rejects unsolicited Acoustic
-  ---
-  duration_ms: 0.2476
-  type: 'test'
-  ...
-# Subtest: allows requested versions
-ok 121 - allows requested versions
-  ---
-  duration_ms: 0.2284
-  type: 'test'
-  ...
-# Subtest: rejects unrelated first result
-ok 122 - rejects unrelated first result
-  ---
-  duration_ms: 1.2326
-  type: 'test'
-  ...
-# Subtest: rejects wrong duration and artist
-ok 123 - rejects wrong duration and artist
-  ---
-  duration_ms: 0.2706
-  type: 'test'
-  ...
-# Subtest: Spotify embed and API metadata normalize consistently
-ok 124 - Spotify embed and API metadata normalize consistently
-  ---
-  duration_ms: 0.5347
-  type: 'test'
-  ...
-# Subtest: Spotify collection context fills album and artwork
-ok 125 - Spotify collection context fills album and artwork
-  ---
-  duration_ms: 0.2106
-  type: 'test'
-  ...
-# Subtest: incomplete Spotify metadata is omitted
-ok 126 - incomplete Spotify metadata is omitted
-  ---
-  duration_ms: 0.178
-  type: 'test'
-  ...
-# Subtest: YouTube normalization rejects malformed IDs and marks live
-ok 127 - YouTube normalization rejects malformed IDs and marks live
-  ---
-  duration_ms: 0.4203
-  type: 'test'
-  ...
-# Subtest: clearcache rejects every identity except the exact owner, including server administrators
-ok 128 - clearcache rejects every identity except the exact owner, including server administrators
-  ---
-  duration_ms: 19.8841
-  type: 'test'
-  ...
-# Subtest: clearcache parses with no arguments and rejects extras
-ok 129 - clearcache parses with no arguments and rejects extras
-  ---
-  duration_ms: 0.9473
-  type: 'test'
-  ...
-# Subtest: shutdown rejects every identity except the exact owner, including server administrators
-ok 130 - shutdown rejects every identity except the exact owner, including server administrators
-  ---
-  duration_ms: 0.6935
-  type: 'test'
-  ...
-# Subtest: shutdown parses with no arguments and rejects extras
-ok 131 - shutdown parses with no arguments and rejects extras
-  ---
-  duration_ms: 0.2389
-  type: 'test'
-  ...
-# Subtest: restart rejects every identity except the exact owner, including server administrators
-ok 132 - restart rejects every identity except the exact owner, including server administrators
-  ---
-  duration_ms: 0.6032
-  type: 'test'
-  ...
-# Subtest: restart parses with no arguments and rejects extras
-ok 133 - restart parses with no arguments and rejects extras
-  ---
-  duration_ms: 0.2282
-  type: 'test'
-  ...
-# Subtest: manual cache clear removes all provider entries while preserving two guild players and their audio
-ok 134 - manual cache clear removes all provider entries while preserving two guild players and their audio
-  ---
-  duration_ms: 5.7349
-  type: 'test'
-  ...
-# Subtest: owner shutdown acknowledges before requesting process exit
-ok 135 - owner shutdown acknowledges before requesting process exit
-  ---
-  duration_ms: 1.4381
-  type: 'test'
-  ...
-# Subtest: owner restart acknowledges before requesting process exit
-ok 136 - owner restart acknowledges before requesting process exit
-  ---
-  duration_ms: 0.4618
-  type: 'test'
-  ...
-# Subtest: failed owner acknowledgement does not stop the bot and permits a later request
-ok 137 - failed owner acknowledgement does not stop the bot and permits a later request
-  ---
-  duration_ms: 0.5111
-  type: 'test'
-  ...
-# Subtest: concurrent shutdown and restart produce exactly one process action
-ok 138 - concurrent shutdown and restart produce exactly one process action
-  ---
-  duration_ms: 10.0885
-  type: 'test'
-  ...
-# Subtest: unsupported direct-process restart gives setup instructions before acknowledgement
-ok 139 - unsupported direct-process restart gives setup instructions before acknowledgement
-  ---
-  duration_ms: 0.412
-  type: 'test'
-  ...
-# Subtest: help preserves the shared design for both the owner and other users
-ok 140 - help preserves the shared design for both the owner and other users
-  ---
-  duration_ms: 1.4803
-  type: 'test'
-  ...
-# Subtest: prefix clearcache uses the invoking channel without voice, log lookup or Embed Links
-ok 141 - prefix clearcache uses the invoking channel without voice, log lookup or Embed Links
-  ---
-  duration_ms: 1.8184
-  type: 'test'
-  ...
-# Subtest: prefix shutdown uses the invoking channel without voice, log lookup or Embed Links
-ok 142 - prefix shutdown uses the invoking channel without voice, log lookup or Embed Links
-  ---
-  duration_ms: 0.451
-  type: 'test'
-  ...
-# Subtest: prefix restart uses the invoking channel without voice, log lookup or Embed Links
-ok 143 - prefix restart uses the invoking channel without voice, log lookup or Embed Links
-  ---
-  duration_ms: 0.4164
-  type: 'test'
-  ...
-# Subtest: playlist transitions, adding tracks, pause and volume all edit the same DJ message
-ok 144 - playlist transitions, adding tracks, pause and volume all edit the same DJ message
-  ---
-  duration_ms: 35.7302
-  type: 'test'
-  ...
-# Subtest: a released production manager session reuses its previous DJ message
-ok 145 - a released production manager session reuses its previous DJ message
-  ---
-  duration_ms: 6.5762
-  type: 'test'
-  ...
-# Subtest: saved message IDs survive a restart without searching or creating another message
-ok 146 - saved message IDs survive a restart without searching or creating another message
-  ---
-  duration_ms: 21.8749
-  type: 'test'
-  ...
-# Subtest: migration adopts an existing bot player and ignores user copies and other bot embeds
-ok 147 - migration adopts an existing bot player and ignores user copies and other bot embeds
-  ---
-  duration_ms: 0.9313
-  type: 'test'
-  ...
-# Subtest: deleted DJ message is replaced once even with simultaneous updates
-ok 148 - deleted DJ message is replaced once even with simultaneous updates
-  ---
-  duration_ms: 1.507
-  type: 'test'
-  ...
-# Subtest: access failures never create a duplicate DJ message
-ok 149 - access failures never create a duplicate DJ message
-  ---
-  duration_ms: 1.3249
-  type: 'test'
-  ...
-# Subtest: a slow retiring presenter cannot overwrite a new session or make another message
-ok 150 - a slow retiring presenter cannot overwrite a new session or make another message
-  ---
-  duration_ms: 3.8787
-  type: 'test'
-  ...
-# Subtest: creation in flight is shared with the next session rather than duplicated
-ok 151 - creation in flight is shared with the next session rather than duplicated
-  ---
-  duration_ms: 0.6588
-  type: 'test'
-  ...
-# Subtest: failed persistence keeps the sent message in memory so retry edits it
-ok 152 - failed persistence keeps the sent message in memory so retry edits it
-  ---
-  duration_ms: 0.5943
-  type: 'test'
-  ...
-# Subtest: changing DJ channels clears the old ID and rejects stale saves without losing log preferences
-ok 153 - changing DJ channels clears the old ID and rejects stale saves without losing log preferences
-  ---
-  duration_ms: 38.8202
-  type: 'test'
-  ...
-# Subtest: DJ persistence requires Read Message History while an ordinary log channel does not
-ok 154 - DJ persistence requires Read Message History while an ordinary log channel does not
-  ---
-  duration_ms: 1.438
-  type: 'test'
-  ...
-# Subtest: a saved message owned by another user is rejected without editing it or sending a duplicate
-ok 155 - a saved message owned by another user is rejected without editing it or sending a duplicate
-  ---
-  duration_ms: 0.5655
-  type: 'test'
-  ...
-# Subtest: a deleted saved message after restart is replaced once and the new ID is remembered
-ok 156 - a deleted saved message after restart is replaced once and the new ID is remembered
-  ---
-  duration_ms: 0.625
-  type: 'test'
-  ...
-# Subtest: guilds have separate permanent messages and disposing an unused presenter creates nothing
-ok 157 - guilds have separate permanent messages and disposing an unused presenter creates nothing
-  ---
-  duration_ms: 2.9392
-  type: 'test'
-  ...
-# Subtest: real voice audio scheduler survives a 400ms packet gap and consumes the complete stream
-ok 158 - real voice audio scheduler survives a 400ms packet gap and consumes the complete stream
-  ---
-  duration_ms: 1416.814
-  type: 'test'
-  ...
-# Subtest: premature EOF resumes the same song from heard position instead of advancing the queue
-ok 159 - premature EOF resumes the same song from heard position instead of advancing the queue
-  ---
-  duration_ms: 7.821
-  type: 'test'
-  ...
-# Subtest: runtime errors and EOF share one recovery budget across the whole track
-ok 160 - runtime errors and EOF share one recovery budget across the whole track
-  ---
-  duration_ms: 6.4612
-  type: 'test'
-  ...
-# Subtest: exhausted retries leave an empty player ready for new play requests
-ok 161 - exhausted retries leave an empty player ready for new play requests
-  ---
-  duration_ms: 3.2875
-  type: 'test'
-  ...
-# Subtest: provider access denial skips without retrying the denied source
-ok 162 - provider access denial skips without retrying the denied source
-  ---
-  duration_ms: 2.4669
-  type: 'test'
-  ...
-# Subtest: late errors from a replaced resource cannot interrupt the new resource
-ok 163 - late errors from a replaced resource cannot interrupt the new resource
-  ---
-  duration_ms: 2.7261
-  type: 'test'
-  ...
-# Subtest: natural completion after recovery advances once and preserves history
-ok 164 - natural completion after recovery advances once and preserves history
-  ---
-  duration_ms: 13.1687
-  type: 'test'
-  ...
-# Subtest: unknown durations and near-end rounding do not cause an endless replay
-ok 165 - unknown durations and near-end rounding do not cause an endless replay
-  ---
-  duration_ms: 0.3107
-  type: 'test'
-  ...
-# Subtest: stop aborts source resolution during a playback retry
-ok 166 - stop aborts source resolution during a playback retry
-  ---
-  duration_ms: 1.5606
-  type: 'test'
-  ...
-# Subtest: ready voice sessions restore their audio subscription before reuse
-ok 167 - ready voice sessions restore their audio subscription before reuse
-  ---
-  duration_ms: 0.8248
-  type: 'test'
-  ...
-# Subtest: adding tracks during playback does not restart current audio
-ok 168 - adding tracks during playback does not restart current audio
-  ---
-  duration_ms: 22.7729
-  type: 'test'
-  ...
-# Subtest: simultaneous skips only advance once
-ok 169 - simultaneous skips only advance once
-  ---
-  duration_ms: 1.7981
-  type: 'test'
-  ...
-# Subtest: simultaneous skips at the end of a queue are also coalesced
-ok 170 - simultaneous skips at the end of a queue are also coalesced
-  ---
-  duration_ms: 1.3246
-  type: 'test'
-  ...
-# Subtest: cancelled discovery cannot enqueue after a stop
-ok 171 - cancelled discovery cannot enqueue after a stop
-  ---
-  duration_ms: 1.4918
-  type: 'test'
-  ...
-# Subtest: natural idle advances once and cleans up old resource
-ok 172 - natural idle advances once and cleans up old resource
-  ---
-  duration_ms: 10.0743
-  type: 'test'
-  ...
-# Subtest: track repeat repeats naturally but explicit skip advances
-ok 173 - track repeat repeats naturally but explicit skip advances
-  ---
-  duration_ms: 3.194
-  type: 'test'
-  ...
-# Subtest: queue repeat appends completed track after upcoming tracks
-ok 174 - queue repeat appends completed track after upcoming tracks
-  ---
-  duration_ms: 3.3335
-  type: 'test'
-  ...
-# Subtest: pause, resume and volume update state without replacing current audio
-ok 175 - pause, resume and volume update state without replacing current audio
-  ---
-  duration_ms: 1.7006
-  type: 'test'
-  ...
-# Subtest: stop clears queue, stops stream and keeps persistent connection
-ok 176 - stop clears queue, stops stream and keeps persistent connection
-  ---
-  duration_ms: 0.9525
-  type: 'test'
-  ...
-# Subtest: guild queues and settings remain isolated
-ok 177 - guild queues and settings remain isolated
-  ---
-  duration_ms: 0.9982
-  type: 'test'
-  ...
-# Subtest: source failures advance gracefully and are bounded
-ok 178 - source failures advance gracefully and are bounded
-  ---
-  duration_ms: 1.1432
-  type: 'test'
-  ...
-# Subtest: audio error and idle events cannot double advance
-ok 179 - audio error and idle events cannot double advance
-  ---
-  duration_ms: 3.2291
-  type: 'test'
-  ...
-# Subtest: stop aborts in-flight source preparation
-ok 180 - stop aborts in-flight source preparation
-  ---
-  duration_ms: 1.1497
-  type: 'test'
-  ...
-# Subtest: idle timeout disconnects unless persistent mode is enabled
-ok 181 - idle timeout disconnects unless persistent mode is enabled
-  ---
-  duration_ms: 71.6818
-  type: 'test'
-  ...
-# Subtest: autoplay attempts only once and stops with no recommendation
-ok 182 - autoplay attempts only once and stops with no recommendation
-  ---
-  duration_ms: 2.1986
-  type: 'test'
-  ...
-# Subtest: lost voice cleans audio while preserving upcoming queue for reconnect
-ok 183 - lost voice cleans audio while preserving upcoming queue for reconnect
-  ---
-  duration_ms: 2.0745
-  type: 'test'
-  ...
-# Subtest: prefix defaults to > and validates custom prefixes
-ok 184 - prefix defaults to > and validates custom prefixes
-  ---
-  duration_ms: 8.7465
-  type: 'test'
-  ...
-# Subtest: ignores ordinary messages, slash syntax and empty prefixes
-ok 185 - ignores ordinary messages, slash syntax and empty prefixes
-  ---
-  duration_ms: 5.409
-  type: 'test'
-  ...
-# Subtest: play preserves full search text and public URLs
-ok 186 - play preserves full search text and public URLs
-  ---
-  duration_ms: 6.6628
-  type: 'test'
-  ...
-# Subtest: supports every prefix command with typed arguments
-ok 187 - supports every prefix command with typed arguments
-  ---
-  duration_ms: 0.7774
-  type: 'test'
-  ...
-# Subtest: custom prefix affects parsing and usage errors
-ok 188 - custom prefix affects parsing and usage errors
-  ---
-  duration_ms: 0.432
-  type: 'test'
-  ...
-# Subtest: rejects unknown, missing, excess and invalid arguments
-ok 189 - rejects unknown, missing, excess and invalid arguments
-  ---
-  duration_ms: 0.6197
-  type: 'test'
-  ...
-# Subtest: message context edits a single progress reply and suppresses mentions
-ok 190 - message context edits a single progress reply and suppresses mentions
-  ---
-  duration_ms: 1.6069
-  type: 'test'
-  ...
-# Subtest: typed options preserve false and zero
-ok 191 - typed options preserve false and zero
-  ---
-  duration_ms: 0.6243
-  type: 'test'
-  ...
-# Subtest: deleted progress responses can be safely recreated
-ok 192 - deleted progress responses can be safely recreated
-  ---
-  duration_ms: 0.5894
-  type: 'test'
-  ...
-# Subtest: help reproduces all five Discohook embeds without changing text, colours or order
-ok 193 - help reproduces all five Discohook embeds without changing text, colours or order
-  ---
-  duration_ms: 3.397
-  type: 'test'
-  ...
-# Subtest: a standalone bot mention replies locally with the exact shared prefix embed
-ok 194 - a standalone bot mention replies locally with the exact shared prefix embed
-  ---
-  duration_ms: 0.8577
-  type: 'test'
-  ...
-# Subtest: mentions ignore other users, role/everyone pings, reply pings, bots, webhooks and DMs
-ok 195 - mentions ignore other users, role/everyone pings, reply pings, bots, webhooks and DMs
-  ---
-  duration_ms: 1.0217
-  type: 'test'
-  ...
-# Subtest: mention replies respect text/thread send and Embed Links permissions
-ok 196 - mention replies respect text/thread send and Embed Links permissions
-  ---
-  duration_ms: 1.3996
-  type: 'test'
-  ...
-# Subtest: mentions share the bounded user cooldown and reply failures are contained
-ok 197 - mentions share the bounded user cooldown and reply failures are contained
-  ---
-  duration_ms: 1.1657
-  type: 'test'
-  ...
-# Subtest: message handler ignores bot, webhook and direct messages
-ok 198 - message handler ignores bot, webhook and direct messages
-  ---
-  duration_ms: 0.3382
-  type: 'test'
-  ...
-# Subtest: prefix controls enforce voice membership and shared queue methods
-ok 199 - prefix controls enforce voice membership and shared queue methods
-  ---
-  duration_ms: 3.0159
-  type: 'test'
-  ...
-# Subtest: prefix play reaches discovery with the complete query
-ok 200 - prefix play reaches discovery with the complete query
-  ---
-  duration_ms: 4.7743
-  type: 'test'
-  ...
-# Subtest: prefix settings retain Manage Server authorization
-ok 201 - prefix settings retain Manage Server authorization
-  ---
-  duration_ms: 0.5974
-  type: 'test'
-  ...
-# Subtest: malformed messages and missing Embed Links give useful replies
-ok 202 - malformed messages and missing Embed Links give useful replies
-  ---
-  duration_ms: 0.6674
-  type: 'test'
-  ...
-# Subtest: reply failures cannot crash the message handler
-ok 203 - reply failures cannot crash the message handler
-  ---
-  duration_ms: 0.4052
-  type: 'test'
-  ...
-# Subtest: button handler ignores slash and unrelated interactions
-ok 204 - button handler ignores slash and unrelated interactions
-  ---
-  duration_ms: 0.4951
-  type: 'test'
-  ...
-# Subtest: cooldown scopes users and guilds independently
-ok 205 - cooldown scopes users and guilds independently
-  ---
-  duration_ms: 0.2686
-  type: 'test'
-  ...
-# Subtest: deleted message leaves playback active and can be rebound
-ok 206 - deleted message leaves playback active and can be rebound
-  ---
-  duration_ms: 30.7804
-  type: 'test'
-  ...
-# Subtest: coalesces frequent changes into one scheduled edit
-ok 207 - coalesces frequent changes into one scheduled edit
-  ---
-  duration_ms: 132.5401
-  type: 'test'
-  ...
-# Subtest: disposal flushes the latest pending notice to logs once and ignores later notices
-ok 208 - disposal flushes the latest pending notice to logs once and ignores later notices
-  ---
-  duration_ms: 1.9462
-  type: 'test'
-  ...
-# Subtest: a notice already delivered by its timer is not repeated on disposal
-ok 209 - a notice already delivered by its timer is not repeated on disposal
-  ---
-  duration_ms: 1.9791
-  type: 'test'
-  ...
-# Subtest: failed final notice cannot prevent player controls from being cleaned up
-ok 210 - failed final notice cannot prevent player controls from being cleaned up
-  ---
-  duration_ms: 2.6699
-  type: 'test'
-  ...
-# Subtest: queue insertion caps memory and reports omitted entries
-ok 211 - queue insertion caps memory and reports omitted entries
-  ---
-  duration_ms: 6.7637
-  type: 'test'
-  ...
-# Subtest: removing a track preserves one-based queue positions and remaining order
-ok 212 - removing a track preserves one-based queue positions and remaining order
-  ---
-  duration_ms: 4.9271
-  type: 'test'
-  ...
-# Subtest: repeat modes distinguish queue completion from track repeat
-ok 213 - repeat modes distinguish queue completion from track repeat
-  ---
-  duration_ms: 4.3685
-  type: 'test'
-  ...
-# Subtest: shuffle preserves all track identities and can change order
-ok 214 - shuffle preserves all track identities and can change order
-  ---
-  duration_ms: 0.5483
-  type: 'test'
-  ...
-# Subtest: history stays bounded for autoplay while internal queue cleanup clears upcoming tracks
-ok 215 - history stays bounded for autoplay while internal queue cleanup clears upcoming tracks
-  ---
-  duration_ms: 0.6851
-  type: 'test'
-  ...
-# Subtest: removed previous is rejected by parsing and direct dispatch before state access
-ok 216 - removed previous is rejected by parsing and direct dispatch before state access
-  ---
-  duration_ms: 7.0597
-  type: 'test'
-  ...
-# Subtest: removed jump is rejected by parsing and direct dispatch before state access
-ok 217 - removed jump is rejected by parsing and direct dispatch before state access
-  ---
-  duration_ms: 2.7099
-  type: 'test'
-  ...
-# Subtest: removed move is rejected by parsing and direct dispatch before state access
-ok 218 - removed move is rejected by parsing and direct dispatch before state access
-  ---
-  duration_ms: 0.1919
-  type: 'test'
-  ...
-# Subtest: removed seek is rejected by parsing and direct dispatch before state access
-ok 219 - removed seek is rejected by parsing and direct dispatch before state access
-  ---
-  duration_ms: 0.1473
-  type: 'test'
-  ...
-# Subtest: removed 247 is rejected by parsing and direct dispatch before state access
-ok 220 - removed 247 is rejected by parsing and direct dispatch before state access
-  ---
-  duration_ms: 0.2079
-  type: 'test'
-  ...
-# Subtest: removed lyrics is rejected by parsing and direct dispatch before state access
-ok 221 - removed lyrics is rejected by parsing and direct dispatch before state access
-  ---
-  duration_ms: 0.1406
-  type: 'test'
-  ...
-# Subtest: removed clear is rejected by parsing and direct dispatch before state access
-ok 222 - removed clear is rejected by parsing and direct dispatch before state access
-  ---
-  duration_ms: 0.1402
-  type: 'test'
-  ...
-# Subtest: remove and owner-only clearcache remain available while removed methods/config are absent
-ok 223 - remove and owner-only clearcache remain available while removed methods/config are absent
-  ---
-  duration_ms: 0.5729
-  type: 'test'
-  ...
-# Subtest: shared help lists active public controls without removed commands or extra fields
-ok 224 - shared help lists active public controls without removed commands or extra fields
-  ---
-  duration_ms: 1.6851
-  type: 'test'
-  ...
-# Subtest: legacy previous button cannot access a player even with a matching current nonce
-ok 225 - legacy previous button cannot access a player even with a matching current nonce
-  ---
-  duration_ms: 0.7278
-  type: 'test'
-  ...
-# Subtest: paused interruption recovery still resumes from heard position after public seek removal
-ok 226 - paused interruption recovery still resumes from heard position after public seek removal
-  ---
-  duration_ms: 7.9039
-  type: 'test'
-  ...
-# Subtest: TTL cache isolates returned data, expires entries and bounds size
-ok 227 - TTL cache isolates returned data, expires entries and bounds size
-  ---
-  duration_ms: 26.8198
-  type: 'test'
-  ...
-# Subtest: mutex continues after a rejected operation
-ok 228 - mutex continues after a rejected operation
-  ---
-  duration_ms: 1.1699
-  type: 'test'
-  ...
-# Subtest: metadata concurrency is bounded and waiting requests can be cancelled
-ok 229 - metadata concurrency is bounded and waiting requests can be cancelled
-  ---
-  duration_ms: 0.4029
-  type: 'test'
-  ...
-# Subtest: ignored adapter signals still have a caller-side timeout
-ok 230 - ignored adapter signals still have a caller-side timeout
-  ---
-  duration_ms: 0.476
-  type: 'test'
-  ...
-# Subtest: tool execution treats metacharacters as literal arguments
-ok 231 - tool execution treats metacharacters as literal arguments
-  ---
-  duration_ms: 61.5487
-  type: 'test'
-  ...
-# Subtest: missing tools and process timeouts report useful errors
-ok 232 - missing tools and process timeouts report useful errors
-  ---
-  duration_ms: 241.3583
-  type: 'test'
-  ...
-# Subtest: authorized library denies arbitrary paths and requires stream authorization
-ok 233 - authorized library denies arbitrary paths and requires stream authorization
-  ---
-  duration_ms: 8.4736
-  type: 'test'
-  ...
-# Subtest: authorized local metadata is validated and dot-prefixed filenames remain inside the media root
-ok 234 - authorized local metadata is validated and dot-prefixed filenames remain inside the media root
-  ---
-  duration_ms: 4.675
-  type: 'test'
-  ...
-# Subtest: discovery reports Spotify text-search fallback honestly
-ok 235 - discovery reports Spotify text-search fallback honestly
-  ---
-  duration_ms: 2.8267
-  type: 'test'
-  ...
-# Subtest: Spotify search adapter failure falls back, not fabricated results
-ok 236 - Spotify search adapter failure falls back, not fabricated results
+ok 113 - log-only configuration does not pull the player away from the play command channel
   ---
   duration_ms: 0.445
   type: 'test'
   ...
-# Subtest: YouTube playlist imports report partial and omit inaccessible entries
-ok 237 - YouTube playlist imports report partial and omit inaccessible entries
+# Subtest: missing DJ destination can be reset without touching the log setting
+ok 114 - missing DJ destination can be reset without touching the log setting
   ---
-  duration_ms: 0.6916
+  duration_ms: 0.3447
   type: 'test'
   ...
-# Subtest: autoplay excludes repeated tracks and unrequested remixes
-ok 238 - autoplay excludes repeated tracks and unrequested remixes
+# Subtest: a broken log destination cannot prevent the host from stopping outside voice
+ok 115 - a broken log destination cannot prevent the host from stopping outside voice
   ---
-  duration_ms: 0.5974
+  duration_ms: 0.4812
   type: 'test'
   ...
-# Subtest: autoplay declines arbitrary channel-only metadata
-ok 239 - autoplay declines arbitrary channel-only metadata
+# Subtest: a missing log destination does not block play or leak playback notices into the DJ channel
+ok 116 - a missing log destination does not block play or leak playback notices into the DJ channel
   ---
-  duration_ms: 0.0944
+  duration_ms: 1.2523
   type: 'test'
   ...
-# Subtest: manager serializes imports per guild, isolates guilds and cancels discovery
-ok 240 - manager serializes imports per guild, isolates guilds and cancels discovery
+# Subtest: normalizes accents, punctuation and whitespace
+ok 117 - normalizes accents, punctuation and whitespace
   ---
-  duration_ms: 0.7197
+  duration_ms: 3.7011
   type: 'test'
   ...
-# Subtest: official client sends Client Credentials only to Spotify token endpoint and uses Bearer for search
-ok 241 - official client sends Client Credentials only to Spotify token endpoint and uses Bearer for search
+# Subtest: retains non-Latin song names
+ok 118 - retains non-Latin song names
   ---
-  duration_ms: 44.4795
+  duration_ms: 0.3995
   type: 'test'
   ...
-# Subtest: access tokens and successful search results are cached without exposing credentials
-ok 242 - access tokens and successful search results are cached without exposing credentials
+# Subtest: prefers official close-duration audio
+ok 119 - prefers official close-duration audio
   ---
-  duration_ms: 2.7183
+  duration_ms: 1.877
   type: 'test'
   ...
-# Subtest: ranking rejects an unsolicited cover even when Spotify returns it first
-ok 243 - ranking rejects an unsolicited cover even when Spotify returns it first
+# Subtest: rejects unsolicited Nightcore
+ok 120 - rejects unsolicited Nightcore
   ---
-  duration_ms: 1.5836
+  duration_ms: 0.3278
   type: 'test'
   ...
-# Subtest: unrelated and empty Spotify catalogs return null instead of fabricated results
-ok 244 - unrelated and empty Spotify catalogs return null instead of fabricated results
+# Subtest: rejects unsolicited Slowed
+ok 121 - rejects unsolicited Slowed
   ---
-  duration_ms: 1.5813
+  duration_ms: 0.3234
   type: 'test'
   ...
-# Subtest: concurrent metadata requests share one token acquisition
-ok 245 - concurrent metadata requests share one token acquisition
+# Subtest: rejects unsolicited Sped Up
+ok 122 - rejects unsolicited Sped Up
   ---
-  duration_ms: 2.3279
+  duration_ms: 1.6823
   type: 'test'
   ...
-# Subtest: cancelling one token waiter does not cancel another caller
-ok 246 - cancelling one token waiter does not cancel another caller
+# Subtest: rejects unsolicited Cover
+ok 123 - rejects unsolicited Cover
   ---
-  duration_ms: 2.2803
+  duration_ms: 0.3041
   type: 'test'
   ...
-# Subtest: expired tokens are replaced before subsequent calls
-ok 247 - expired tokens are replaced before subsequent calls
+# Subtest: rejects unsolicited Karaoke
+ok 124 - rejects unsolicited Karaoke
   ---
-  duration_ms: 1.9623
+  duration_ms: 0.1805
   type: 'test'
   ...
-# Subtest: a rejected access token is refreshed once with no uncontrolled retries
-ok 248 - a rejected access token is refreshed once with no uncontrolled retries
+# Subtest: rejects unsolicited Instrumental
+ok 125 - rejects unsolicited Instrumental
   ---
-  duration_ms: 1.8951
+  duration_ms: 0.2584
   type: 'test'
   ...
-# Subtest: persistent token rejection stops after the one refresh attempt
-ok 249 - persistent token rejection stops after the one refresh attempt
+# Subtest: rejects unsolicited Remix
+ok 126 - rejects unsolicited Remix
   ---
-  duration_ms: 1.524
+  duration_ms: 0.3129
   type: 'test'
   ...
-# Subtest: invalid credentials and denied app access give safe explicit errors
-ok 250 - invalid credentials and denied app access give safe explicit errors
+# Subtest: rejects unsolicited Live
+ok 127 - rejects unsolicited Live
   ---
-  duration_ms: 3.2888
+  duration_ms: 0.2316
   type: 'test'
   ...
-# Subtest: 429 honors Retry-After locally instead of repeatedly hitting Spotify
-ok 251 - 429 honors Retry-After locally instead of repeatedly hitting Spotify
+# Subtest: rejects unsolicited Acoustic
+ok 128 - rejects unsolicited Acoustic
   ---
-  duration_ms: 3.1391
+  duration_ms: 0.3905
   type: 'test'
   ...
-# Subtest: malformed responses cannot expose raw token response bodies
-ok 252 - malformed responses cannot expose raw token response bodies
+# Subtest: allows requested versions
+ok 129 - allows requested versions
   ---
-  duration_ms: 0.887
+  duration_ms: 0.3563
   type: 'test'
   ...
-# Subtest: official metadata normalizes through the existing Spotify resolver and failures retain fallback
-ok 253 - official metadata normalizes through the existing Spotify resolver and failures retain fallback
+# Subtest: rejects unrelated first result
+ok 130 - rejects unrelated first result
   ---
-  duration_ms: 3.0539
+  duration_ms: 1.4065
   type: 'test'
   ...
-# Subtest: Spotify configuration remains optional and validates only the optional market format
-ok 254 - Spotify configuration remains optional and validates only the optional market format
+# Subtest: rejects wrong duration and artist
+ok 131 - rejects wrong duration and artist
   ---
-  duration_ms: 1.3786
+  duration_ms: 0.3011
   type: 'test'
   ...
-# Subtest: direct video discovery and playback source share one extraction
-ok 255 - direct video discovery and playback source share one extraction
+# Subtest: Spotify embed and API metadata normalize consistently
+ok 132 - Spotify embed and API metadata normalize consistently
   ---
-  duration_ms: 77.3253
+  duration_ms: 0.695
   type: 'test'
   ...
-# Subtest: recent sources are cloned and reused while recovery can force fresh extraction
-ok 256 - recent sources are cloned and reused while recovery can force fresh extraction
+# Subtest: Spotify collection context fills album and artwork
+ok 133 - Spotify collection context fills album and artwork
   ---
-  duration_ms: 1.8643
+  duration_ms: 0.2287
   type: 'test'
   ...
-# Subtest: sources near signed-URL expiry are not cached
-ok 257 - sources near signed-URL expiry are not cached
+# Subtest: incomplete Spotify metadata is omitted
+ok 134 - incomplete Spotify metadata is omitted
   ---
-  duration_ms: 1.5014
+  duration_ms: 0.181
   type: 'test'
   ...
-# Subtest: restricted source results are rejected rather than cached
-ok 258 - restricted source results are rejected rather than cached
+# Subtest: YouTube normalization rejects malformed IDs and marks live
+ok 135 - YouTube normalization rejects malformed IDs and marks live
   ---
-  duration_ms: 1.6348
+  duration_ms: 0.4179
   type: 'test'
   ...
-# Subtest: concurrent video extractions share work across callers
-ok 259 - concurrent video extractions share work across callers
+# Subtest: clearcache rejects every identity except the exact owner, including server administrators
+ok 136 - clearcache rejects every identity except the exact owner, including server administrators
   ---
-  duration_ms: 4.3909
+  duration_ms: 28.4623
   type: 'test'
   ...
-# Subtest: search cache normalizes case and whitespace without changing ranking
-ok 260 - search cache normalizes case and whitespace without changing ranking
+# Subtest: clearcache parses with no arguments and rejects extras
+ok 137 - clearcache parses with no arguments and rejects extras
   ---
-  duration_ms: 12.3666
+  duration_ms: 0.9192
   type: 'test'
   ...
-# Subtest: cancelling one shared caller leaves another caller running
-ok 261 - cancelling one shared caller leaves another caller running
+# Subtest: shutdown rejects every identity except the exact owner, including server administrators
+ok 138 - shutdown rejects every identity except the exact owner, including server administrators
   ---
-  duration_ms: 13.9212
+  duration_ms: 0.766
   type: 'test'
   ...
-# Subtest: cancelling every shared caller aborts the owned metadata work
-ok 262 - cancelling every shared caller aborts the owned metadata work
+# Subtest: shutdown parses with no arguments and rejects extras
+ok 139 - shutdown parses with no arguments and rejects extras
   ---
-  duration_ms: 7.8906
+  duration_ms: 0.2503
   type: 'test'
   ...
-# Subtest: Spotify lookup and YouTube search start together and retain weighted selection
-ok 263 - Spotify lookup and YouTube search start together and retain weighted selection
+# Subtest: restart rejects every identity except the exact owner, including server administrators
+ok 140 - restart rejects every identity except the exact owner, including server administrators
   ---
-  duration_ms: 7.9312
+  duration_ms: 0.5708
   type: 'test'
   ...
-# Subtest: slow optional Spotify metadata does not block validated YouTube results indefinitely
-ok 264 - slow optional Spotify metadata does not block validated YouTube results indefinitely
+# Subtest: restart parses with no arguments and rejects extras
+ok 141 - restart parses with no arguments and rejects extras
   ---
-  duration_ms: 22.6884
+  duration_ms: 0.1989
   type: 'test'
   ...
-# Subtest: canonical artist/title search remains a fallback when initial candidates do not match
-ok 265 - canonical artist/title search remains a fallback when initial candidates do not match
+# Subtest: manual cache clear removes all provider entries while preserving two guild players and their audio
+ok 142 - manual cache clear removes all provider entries while preserving two guild players and their audio
   ---
-  duration_ms: 2.0775
+  duration_ms: 6.3478
   type: 'test'
   ...
-# Subtest: next-track warmup only prepares metadata for one upcoming track and cancels on pause
-ok 266 - next-track warmup only prepares metadata for one upcoming track and cancels on pause
+# Subtest: owner shutdown acknowledges before requesting process exit
+ok 143 - owner shutdown acknowledges before requesting process exit
   ---
-  duration_ms: 27.9113
+  duration_ms: 1.4572
   type: 'test'
   ...
-# Subtest: changing the next track aborts the obsolete metadata warmup
-ok 267 - changing the next track aborts the obsolete metadata warmup
+# Subtest: owner restart acknowledges before requesting process exit
+ok 144 - owner restart acknowledges before requesting process exit
   ---
-  duration_ms: 24.2742
+  duration_ms: 0.4467
   type: 'test'
   ...
-# Subtest: background source warmup leaves foreground capacity and is capped globally
-ok 268 - background source warmup leaves foreground capacity and is capped globally
+# Subtest: failed owner acknowledgement does not stop the bot and permits a later request
+ok 145 - failed owner acknowledgement does not stop the bot and permits a later request
   ---
-  duration_ms: 1.2457
+  duration_ms: 0.9483
   type: 'test'
   ...
-# Subtest: PM2 directly supervises the worker and respects intentional shutdown exit status
-ok 269 - PM2 directly supervises the worker and respects intentional shutdown exit status
+# Subtest: concurrent shutdown and restart produce exactly one process action
+ok 146 - concurrent shutdown and restart produce exactly one process action
   ---
-  duration_ms: 10.9525
+  duration_ms: 22.0218
   type: 'test'
   ...
-# Subtest: explicit restart starts one replacement child after the previous child closes
-ok 270 - explicit restart starts one replacement child after the previous child closes
+# Subtest: unsupported direct-process restart gives setup instructions before acknowledgement
+ok 147 - unsupported direct-process restart gives setup instructions before acknowledgement
   ---
-  duration_ms: 9.2028
+  duration_ms: 0.4441
   type: 'test'
   ...
-# Subtest: exit 0 never causes an automatic restart loop
-ok 271 - exit 0 never causes an automatic restart loop
+# Subtest: help preserves the shared design for both the owner and other users
+ok 148 - help preserves the shared design for both the owner and other users
   ---
-  duration_ms: 6.1316
+  duration_ms: 4.5033
   type: 'test'
   ...
-# Subtest: exit 1 never causes an automatic restart loop
-ok 272 - exit 1 never causes an automatic restart loop
+# Subtest: prefix clearcache uses the invoking channel without voice, log lookup or Embed Links
+ok 149 - prefix clearcache uses the invoking channel without voice, log lookup or Embed Links
   ---
-  duration_ms: 1.0312
+  duration_ms: 2.8298
   type: 'test'
   ...
-# Subtest: exit null never causes an automatic restart loop
-ok 273 - exit null never causes an automatic restart loop
+# Subtest: prefix shutdown uses the invoking channel without voice, log lookup or Embed Links
+ok 150 - prefix shutdown uses the invoking channel without voice, log lookup or Embed Links
   ---
-  duration_ms: 1.1461
+  duration_ms: 0.8557
   type: 'test'
   ...
-# Subtest: stopping during a restart delay cancels the replacement child
-ok 274 - stopping during a restart delay cancels the replacement child
+# Subtest: prefix restart uses the invoking channel without voice, log lookup or Embed Links
+ok 151 - prefix restart uses the invoking channel without voice, log lookup or Embed Links
   ---
-  duration_ms: 1.2324
+  duration_ms: 0.7441
   type: 'test'
   ...
-# Subtest: supervisor stop asks for graceful cleanup once through the private IPC channel
-ok 275 - supervisor stop asks for graceful cleanup once through the private IPC channel
+# Subtest: playlist transitions, adding tracks, pause and volume all edit the same DJ message
+ok 152 - playlist transitions, adding tracks, pause and volume all edit the same DJ message
   ---
-  duration_ms: 1.5659
+  duration_ms: 47.2031
   type: 'test'
   ...
-# Subtest: an unresponsive child has a bounded stop deadline
-ok 276 - an unresponsive child has a bounded stop deadline
+# Subtest: a released production manager session reuses its previous DJ message
+ok 153 - a released production manager session reuses its previous DJ message
   ---
-  duration_ms: 1.4165
+  duration_ms: 13.9942
   type: 'test'
   ...
-# Subtest: a closed IPC channel falls back to scoped child cleanup
-ok 277 - a closed IPC channel falls back to scoped child cleanup
+# Subtest: saved message IDs survive a restart without searching or creating another message
+ok 154 - saved message IDs survive a restart without searching or creating another message
   ---
-  duration_ms: 1.9876
+  duration_ms: 25.8245
   type: 'test'
   ...
-# Subtest: failed child creation exits with an error without retrying
-ok 278 - failed child creation exits with an error without retrying
+# Subtest: migration adopts an existing bot player and ignores user copies and other bot embeds
+ok 155 - migration adopts an existing bot player and ignores user copies and other bot embeds
   ---
-  duration_ms: 1.8025
+  duration_ms: 1.6127
   type: 'test'
   ...
-# Subtest: real fork replaces the worker on restart and stays stopped on normal shutdown
-ok 279 - real fork replaces the worker on restart and stays stopped on normal shutdown
+# Subtest: deleted DJ message is replaced once even with simultaneous updates
+ok 156 - deleted DJ message is replaced once even with simultaneous updates
   ---
-  duration_ms: 252.3877
+  duration_ms: 1.3394
   type: 'test'
   ...
-# Subtest: real worker receives graceful stop without creating a replacement
-ok 280 - real worker receives graceful stop without creating a replacement
+# Subtest: access failures never create a duplicate DJ message
+ok 157 - access failures never create a duplicate DJ message
   ---
-  duration_ms: 88.9789
+  duration_ms: 1.2354
   type: 'test'
   ...
-# Subtest: accepts valid supported URLs and strips untrusted query parameters
-ok 281 - accepts valid supported URLs and strips untrusted query parameters
+# Subtest: a slow retiring presenter cannot overwrite a new session or make another message
+ok 158 - a slow retiring presenter cannot overwrite a new session or make another message
   ---
-  duration_ms: 2.7079
+  duration_ms: 3.3079
   type: 'test'
   ...
-# Subtest: rejects unsafe input https://youtube.com.evil.test/watch?v=abcdefghijk
-ok 282 - rejects unsafe input https://youtube.com.evil.test/watch?v=abcdefghijk
+# Subtest: creation in flight is shared with the next session rather than duplicated
+ok 159 - creation in flight is shared with the next session rather than duplicated
   ---
-  duration_ms: 1.1756
+  duration_ms: 0.6574
   type: 'test'
   ...
-# Subtest: rejects unsafe input http://youtube.com/watch?v=abcdefghijk
-ok 283 - rejects unsafe input http://youtube.com/watch?v=abcdefghijk
+# Subtest: failed persistence keeps the sent message in memory so retry edits it
+ok 160 - failed persistence keeps the sent message in memory so retry edits it
   ---
-  duration_ms: 1.3357
+  duration_ms: 0.6313
   type: 'test'
   ...
-# Subtest: rejects unsafe input https://user:password@youtube.com/watch?v=abcdefghijk
-ok 284 - rejects unsafe input https://user:password@youtube.com/watch?v=abcdefghijk
+# Subtest: changing DJ channels clears the old ID and rejects stale saves without losing log preferences
+ok 161 - changing DJ channels clears the old ID and rejects stale saves without losing log preferences
   ---
-  duration_ms: 0.316
+  duration_ms: 83.1052
   type: 'test'
   ...
-# Subtest: rejects unsafe input https://youtube.com:8080/watch?v=abcdefghijk
-ok 285 - rejects unsafe input https://youtube.com:8080/watch?v=abcdefghijk
+# Subtest: DJ persistence requires Read Message History while an ordinary log channel does not
+ok 162 - DJ persistence requires Read Message History while an ordinary log channel does not
   ---
-  duration_ms: 0.3168
+  duration_ms: 0.6254
   type: 'test'
   ...
-# Subtest: rejects unsafe input https://127.0.0.1/a
-ok 286 - rejects unsafe input https://127.0.0.1/a
+# Subtest: a saved message owned by another user is rejected without editing it or sending a duplicate
+ok 163 - a saved message owned by another user is rejected without editing it or sending a duplicate
   ---
-  duration_ms: 0.2239
+  duration_ms: 0.57
   type: 'test'
   ...
-# Subtest: rejects unsafe input file:///etc/passwd
-ok 287 - rejects unsafe input file:///etc/passwd
+# Subtest: a deleted saved message after restart is replaced once and the new ID is remembered
+ok 164 - a deleted saved message after restart is replaced once and the new ID is remembered
   ---
-  duration_ms: 0.2173
+  duration_ms: 0.8924
   type: 'test'
   ...
-# Subtest: rejects unsafe input local:../secret
-ok 288 - rejects unsafe input local:../secret
+# Subtest: guilds have separate permanent messages and disposing an unused presenter creates nothing
+ok 165 - guilds have separate permanent messages and disposing an unused presenter creates nothing
   ---
-  duration_ms: 0.334
+  duration_ms: 1.5848
   type: 'test'
   ...
-# Subtest: rejects unsafe input https://open.spotify.com/track/bad
-ok 289 - rejects unsafe input https://open.spotify.com/track/bad
+# Subtest: real voice audio scheduler survives a 400ms packet gap and consumes the complete stream
+ok 166 - real voice audio scheduler survives a 400ms packet gap and consumes the complete stream
   ---
-  duration_ms: 0.3715
+  duration_ms: 1421.8023
   type: 'test'
   ...
-# Subtest: classifies searches and media IDs
-ok 290 - classifies searches and media IDs
+# Subtest: premature EOF resumes the same song from heard position instead of advancing the queue
+ok 167 - premature EOF resumes the same song from heard position instead of advancing the queue
   ---
-  duration_ms: 1.5934
+  duration_ms: 6.2452
   type: 'test'
   ...
-# Subtest: rejects empty, oversized and control-character input
-ok 291 - rejects empty, oversized and control-character input
+# Subtest: runtime errors and EOF share one recovery budget across the whole track
+ok 168 - runtime errors and EOF share one recovery budget across the whole track
   ---
-  duration_ms: 0.8169
+  duration_ms: 4.2907
   type: 'test'
   ...
-# Subtest: integer options reject fractions and invalid positions
-ok 292 - integer options reject fractions and invalid positions
+# Subtest: exhausted retries leave an empty player ready for new play requests
+ok 169 - exhausted retries leave an empty player ready for new play requests
   ---
-  duration_ms: 0.9352
+  duration_ms: 17.2058
   type: 'test'
   ...
-# Subtest: configuration validates bounds, booleans and secrets
-ok 293 - configuration validates bounds, booleans and secrets
+# Subtest: provider access denial skips without retrying the denied source
+ok 170 - provider access denial skips without retrying the denied source
   ---
-  duration_ms: 5.9409
+  duration_ms: 5.1173
   type: 'test'
   ...
-# Subtest: all 20 prefix commands have unique names and bounded arguments
-ok 294 - all 20 prefix commands have unique names and bounded arguments
+# Subtest: late errors from a replaced resource cannot interrupt the new resource
+ok 171 - late errors from a replaced resource cannot interrupt the new resource
   ---
-  duration_ms: 0.3196
+  duration_ms: 2.8729
   type: 'test'
   ...
-# Subtest: cookies are optional and configuration confines exports to secrets
-ok 295 - cookies are optional and configuration confines exports to secrets
+# Subtest: natural completion after recovery advances once and preserves history
+ok 172 - natural completion after recovery advances once and preserves history
   ---
-  duration_ms: 12.6106
+  duration_ms: 3.9046
   type: 'test'
   ...
-# Subtest: Netscape validation accepts session, expiry and HttpOnly YouTube cookies
-ok 296 - Netscape validation accepts session, expiry and HttpOnly YouTube cookies
+# Subtest: unknown durations and near-end rounding do not cause an endless replay
+ok 173 - unknown durations and near-end rounding do not cause an endless replay
   ---
-  duration_ms: 2.2056
+  duration_ms: 0.6212
   type: 'test'
   ...
-# Subtest: invalid exports and other service cookies are rejected without echoing values
-ok 297 - invalid exports and other service cookies are rejected without echoing values
+# Subtest: stop aborts source resolution during a playback retry
+ok 174 - stop aborts source resolution during a playback retry
   ---
-  duration_ms: 0.8421
+  duration_ms: 1.555
   type: 'test'
   ...
-# Subtest: expired-only exports produce a distinct actionable error
-ok 298 - expired-only exports produce a distinct actionable error
+# Subtest: ready voice sessions restore their audio subscription before reuse
+ok 175 - ready voice sessions restore their audio subscription before reuse
   ---
-  duration_ms: 0.8034
+  duration_ms: 0.5211
   type: 'test'
   ...
-# Subtest: disabled cookies do not touch the filesystem or add arguments
-ok 299 - disabled cookies do not touch the filesystem or add arguments
+# Subtest: adding tracks during playback does not restart current audio
+ok 176 - adding tracks during playback does not restart current audio
   ---
-  duration_ms: 1.2194
+  duration_ms: 26.2178
   type: 'test'
   ...
-# Subtest: inspection returns safe counts without cookie content
-ok 300 - inspection returns safe counts without cookie content
+# Subtest: simultaneous skips only advance once
+ok 177 - simultaneous skips only advance once
   ---
-  duration_ms: 31.6418
+  duration_ms: 1.8177
   type: 'test'
   ...
-# Subtest: each request gets a private temporary copy and original remains untouched
-ok 301 - each request gets a private temporary copy and original remains untouched
+# Subtest: simultaneous skips at the end of a queue are also coalesced
+ok 178 - simultaneous skips at the end of a queue are also coalesced
   ---
-  duration_ms: 26.977
+  duration_ms: 2.6626
   type: 'test'
   ...
-# Subtest: failed and cancelled tool requests remove their temporary credentials
-ok 302 - failed and cancelled tool requests remove their temporary credentials
+# Subtest: cancelled discovery cannot enqueue after a stop
+ok 179 - cancelled discovery cannot enqueue after a stop
   ---
-  duration_ms: 19.0993
+  duration_ms: 7.3997
   type: 'test'
   ...
-# Subtest: missing and oversized cookie files fail safely
-ok 303 - missing and oversized cookie files fail safely
+# Subtest: natural idle advances once and cleans up old resource
+ok 180 - natural idle advances once and cleans up old resource
   ---
-  duration_ms: 8.9799
+  duration_ms: 55.1632
   type: 'test'
   ...
-# Subtest: cookie file symlinks cannot escape the secrets folder
-ok 304 - cookie file symlinks cannot escape the secrets folder
+# Subtest: track repeat repeats naturally but explicit skip advances
+ok 181 - track repeat repeats naturally but explicit skip advances
   ---
-  duration_ms: 10.6305
+  duration_ms: 21.1809
   type: 'test'
   ...
-# Subtest: resolver passes the working cookie jar as a subprocess argument and cleans it
-ok 305 - resolver passes the working cookie jar as a subprocess argument and cleans it
+# Subtest: queue repeat appends completed track after upcoming tracks
+ok 182 - queue repeat appends completed track after upcoming tracks
   ---
-  duration_ms: 131.8413
+  duration_ms: 1.7504
   type: 'test'
   ...
-# Subtest: JSON conversion preserves session, domain and HttpOnly flags
-ok 306 - JSON conversion preserves session, domain and HttpOnly flags
+# Subtest: pause, resume and volume update state without replacing current audio
+ok 183 - pause, resume and volume update state without replacing current audio
   ---
-  duration_ms: 0.6305
+  duration_ms: 3.7158
   type: 'test'
   ...
-# Subtest: JSON conversion rejects empty templates, non-YouTube exports and malformed fields
-ok 307 - JSON conversion rejects empty templates, non-YouTube exports and malformed fields
+# Subtest: stop clears queue, stops stream and keeps persistent connection
+ok 184 - stop clears queue, stops stream and keeps persistent connection
+  ---
+  duration_ms: 0.989
+  type: 'test'
+  ...
+# Subtest: guild queues and settings remain isolated
+ok 185 - guild queues and settings remain isolated
+  ---
+  duration_ms: 2.7649
+  type: 'test'
+  ...
+# Subtest: source failures advance gracefully and are bounded
+ok 186 - source failures advance gracefully and are bounded
+  ---
+  duration_ms: 2.7585
+  type: 'test'
+  ...
+# Subtest: audio error and idle events cannot double advance
+ok 187 - audio error and idle events cannot double advance
+  ---
+  duration_ms: 4.4602
+  type: 'test'
+  ...
+# Subtest: stop aborts in-flight source preparation
+ok 188 - stop aborts in-flight source preparation
+  ---
+  duration_ms: 1.5376
+  type: 'test'
+  ...
+# Subtest: idle timeout disconnects unless persistent mode is enabled
+ok 189 - idle timeout disconnects unless persistent mode is enabled
+  ---
+  duration_ms: 73.6486
+  type: 'test'
+  ...
+# Subtest: autoplay attempts only once and stops with no recommendation
+ok 190 - autoplay attempts only once and stops with no recommendation
+  ---
+  duration_ms: 2.5637
+  type: 'test'
+  ...
+# Subtest: lost voice cleans audio while preserving upcoming queue for reconnect
+ok 191 - lost voice cleans audio while preserving upcoming queue for reconnect
+  ---
+  duration_ms: 2.5376
+  type: 'test'
+  ...
+# Subtest: prefix defaults to > and validates custom prefixes
+ok 192 - prefix defaults to > and validates custom prefixes
+  ---
+  duration_ms: 6.007
+  type: 'test'
+  ...
+# Subtest: ignores ordinary messages, slash syntax and empty prefixes
+ok 193 - ignores ordinary messages, slash syntax and empty prefixes
+  ---
+  duration_ms: 4.3633
+  type: 'test'
+  ...
+# Subtest: play preserves full search text and public URLs
+ok 194 - play preserves full search text and public URLs
+  ---
+  duration_ms: 5.4706
+  type: 'test'
+  ...
+# Subtest: supports every prefix command with typed arguments
+ok 195 - supports every prefix command with typed arguments
+  ---
+  duration_ms: 0.7224
+  type: 'test'
+  ...
+# Subtest: custom prefix affects parsing and usage errors
+ok 196 - custom prefix affects parsing and usage errors
+  ---
+  duration_ms: 0.3951
+  type: 'test'
+  ...
+# Subtest: rejects unknown, missing, excess and invalid arguments
+ok 197 - rejects unknown, missing, excess and invalid arguments
+  ---
+  duration_ms: 0.7351
+  type: 'test'
+  ...
+# Subtest: message context edits a single progress reply and suppresses mentions
+ok 198 - message context edits a single progress reply and suppresses mentions
+  ---
+  duration_ms: 1.1915
+  type: 'test'
+  ...
+# Subtest: typed options preserve false and zero
+ok 199 - typed options preserve false and zero
   ---
   duration_ms: 0.4888
   type: 'test'
   ...
-# Subtest: local JSON import atomically replaces Netscape output and preserves its input
-ok 308 - local JSON import atomically replaces Netscape output and preserves its input
+# Subtest: deleted progress responses can be safely recreated
+ok 200 - deleted progress responses can be safely recreated
   ---
-  duration_ms: 14.7394
+  duration_ms: 0.5252
+  type: 'test'
+  ...
+# Subtest: V2 help preserves all five Discohook panels, their exact text, colours and order
+ok 201 - V2 help preserves all five Discohook panels, their exact text, colours and order
+  ---
+  duration_ms: 3.5476
+  type: 'test'
+  ...
+# Subtest: a standalone bot mention replies locally with the exact shared prefix embed
+ok 202 - a standalone bot mention replies locally with the exact shared prefix embed
+  ---
+  duration_ms: 0.8351
+  type: 'test'
+  ...
+# Subtest: mentions ignore other users, role/everyone pings, reply pings, bots, webhooks and DMs
+ok 203 - mentions ignore other users, role/everyone pings, reply pings, bots, webhooks and DMs
+  ---
+  duration_ms: 0.4916
+  type: 'test'
+  ...
+# Subtest: V2 mentions respect text/thread send permissions and work without Embed Links
+ok 204 - V2 mentions respect text/thread send permissions and work without Embed Links
+  ---
+  duration_ms: 0.8312
+  type: 'test'
+  ...
+# Subtest: mentions share the bounded user cooldown and reply failures are contained
+ok 205 - mentions share the bounded user cooldown and reply failures are contained
+  ---
+  duration_ms: 1.7596
+  type: 'test'
+  ...
+# Subtest: message handler ignores bot, webhook and direct messages
+ok 206 - message handler ignores bot, webhook and direct messages
+  ---
+  duration_ms: 0.3464
+  type: 'test'
+  ...
+# Subtest: prefix controls enforce voice membership and shared queue methods
+ok 207 - prefix controls enforce voice membership and shared queue methods
+  ---
+  duration_ms: 2.8807
+  type: 'test'
+  ...
+# Subtest: prefix play reaches discovery with the complete query
+ok 208 - prefix play reaches discovery with the complete query
+  ---
+  duration_ms: 4.3533
+  type: 'test'
+  ...
+# Subtest: prefix settings retain Manage Server authorization
+ok 209 - prefix settings retain Manage Server authorization
+  ---
+  duration_ms: 0.499
+  type: 'test'
+  ...
+# Subtest: malformed messages give useful replies and V2 help does not need Embed Links
+ok 210 - malformed messages give useful replies and V2 help does not need Embed Links
+  ---
+  duration_ms: 0.5452
+  type: 'test'
+  ...
+# Subtest: reply failures cannot crash the message handler
+ok 211 - reply failures cannot crash the message handler
+  ---
+  duration_ms: 0.3322
+  type: 'test'
+  ...
+# Subtest: button handler ignores slash and unrelated interactions
+ok 212 - button handler ignores slash and unrelated interactions
+  ---
+  duration_ms: 0.5081
+  type: 'test'
+  ...
+# Subtest: cooldown scopes users and guilds independently
+ok 213 - cooldown scopes users and guilds independently
+  ---
+  duration_ms: 0.3193
+  type: 'test'
+  ...
+# Subtest: deleted message leaves playback active and can be rebound
+ok 214 - deleted message leaves playback active and can be rebound
+  ---
+  duration_ms: 19.1577
+  type: 'test'
+  ...
+# Subtest: coalesces frequent changes into one scheduled edit
+ok 215 - coalesces frequent changes into one scheduled edit
+  ---
+  duration_ms: 131.493
+  type: 'test'
+  ...
+# Subtest: disposal flushes the latest pending notice to logs once and ignores later notices
+ok 216 - disposal flushes the latest pending notice to logs once and ignores later notices
+  ---
+  duration_ms: 1.0315
+  type: 'test'
+  ...
+# Subtest: a notice already delivered by its timer is not repeated on disposal
+ok 217 - a notice already delivered by its timer is not repeated on disposal
+  ---
+  duration_ms: 1.7456
+  type: 'test'
+  ...
+# Subtest: failed final notice cannot prevent player controls from being cleaned up
+ok 218 - failed final notice cannot prevent player controls from being cleaned up
+  ---
+  duration_ms: 2.3411
+  type: 'test'
+  ...
+# Subtest: queue insertion caps memory and reports omitted entries
+ok 219 - queue insertion caps memory and reports omitted entries
+  ---
+  duration_ms: 7.624
+  type: 'test'
+  ...
+# Subtest: removing a track preserves one-based queue positions and remaining order
+ok 220 - removing a track preserves one-based queue positions and remaining order
+  ---
+  duration_ms: 6.0421
+  type: 'test'
+  ...
+# Subtest: repeat modes distinguish queue completion from track repeat
+ok 221 - repeat modes distinguish queue completion from track repeat
+  ---
+  duration_ms: 5.0118
+  type: 'test'
+  ...
+# Subtest: shuffle preserves all track identities and can change order
+ok 222 - shuffle preserves all track identities and can change order
+  ---
+  duration_ms: 0.5231
+  type: 'test'
+  ...
+# Subtest: history stays bounded for autoplay while internal queue cleanup clears upcoming tracks
+ok 223 - history stays bounded for autoplay while internal queue cleanup clears upcoming tracks
+  ---
+  duration_ms: 0.4984
+  type: 'test'
+  ...
+# Subtest: removed previous is rejected by parsing and direct dispatch before state access
+ok 224 - removed previous is rejected by parsing and direct dispatch before state access
+  ---
+  duration_ms: 11.0913
+  type: 'test'
+  ...
+# Subtest: removed jump is rejected by parsing and direct dispatch before state access
+ok 225 - removed jump is rejected by parsing and direct dispatch before state access
+  ---
+  duration_ms: 4.5313
+  type: 'test'
+  ...
+# Subtest: removed move is rejected by parsing and direct dispatch before state access
+ok 226 - removed move is rejected by parsing and direct dispatch before state access
+  ---
+  duration_ms: 0.2989
+  type: 'test'
+  ...
+# Subtest: removed seek is rejected by parsing and direct dispatch before state access
+ok 227 - removed seek is rejected by parsing and direct dispatch before state access
+  ---
+  duration_ms: 0.1765
+  type: 'test'
+  ...
+# Subtest: removed 247 is rejected by parsing and direct dispatch before state access
+ok 228 - removed 247 is rejected by parsing and direct dispatch before state access
+  ---
+  duration_ms: 0.2236
+  type: 'test'
+  ...
+# Subtest: removed lyrics is rejected by parsing and direct dispatch before state access
+ok 229 - removed lyrics is rejected by parsing and direct dispatch before state access
+  ---
+  duration_ms: 0.1545
+  type: 'test'
+  ...
+# Subtest: removed clear is rejected by parsing and direct dispatch before state access
+ok 230 - removed clear is rejected by parsing and direct dispatch before state access
+  ---
+  duration_ms: 0.132
+  type: 'test'
+  ...
+# Subtest: remove and owner-only clearcache remain available while removed methods/config are absent
+ok 231 - remove and owner-only clearcache remain available while removed methods/config are absent
+  ---
+  duration_ms: 0.711
+  type: 'test'
+  ...
+# Subtest: shared help lists active public controls without removed commands or extra fields
+ok 232 - shared help lists active public controls without removed commands or extra fields
+  ---
+  duration_ms: 3.2233
+  type: 'test'
+  ...
+# Subtest: legacy previous button cannot access a player even with a matching current nonce
+ok 233 - legacy previous button cannot access a player even with a matching current nonce
+  ---
+  duration_ms: 0.8255
+  type: 'test'
+  ...
+# Subtest: paused interruption recovery still resumes from heard position after public seek removal
+ok 234 - paused interruption recovery still resumes from heard position after public seek removal
+  ---
+  duration_ms: 10.3134
+  type: 'test'
+  ...
+# Subtest: TTL cache isolates returned data, expires entries and bounds size
+ok 235 - TTL cache isolates returned data, expires entries and bounds size
+  ---
+  duration_ms: 27.1478
+  type: 'test'
+  ...
+# Subtest: mutex continues after a rejected operation
+ok 236 - mutex continues after a rejected operation
+  ---
+  duration_ms: 1.2759
+  type: 'test'
+  ...
+# Subtest: metadata concurrency is bounded and waiting requests can be cancelled
+ok 237 - metadata concurrency is bounded and waiting requests can be cancelled
+  ---
+  duration_ms: 0.4324
+  type: 'test'
+  ...
+# Subtest: ignored adapter signals still have a caller-side timeout
+ok 238 - ignored adapter signals still have a caller-side timeout
+  ---
+  duration_ms: 0.5113
+  type: 'test'
+  ...
+# Subtest: tool execution treats metacharacters as literal arguments
+ok 239 - tool execution treats metacharacters as literal arguments
+  ---
+  duration_ms: 74.8065
+  type: 'test'
+  ...
+# Subtest: missing tools and process timeouts report useful errors
+ok 240 - missing tools and process timeouts report useful errors
+  ---
+  duration_ms: 256.1655
+  type: 'test'
+  ...
+# Subtest: authorized library denies arbitrary paths and requires stream authorization
+ok 241 - authorized library denies arbitrary paths and requires stream authorization
+  ---
+  duration_ms: 9.0481
+  type: 'test'
+  ...
+# Subtest: authorized local metadata is validated and dot-prefixed filenames remain inside the media root
+ok 242 - authorized local metadata is validated and dot-prefixed filenames remain inside the media root
+  ---
+  duration_ms: 5.4642
+  type: 'test'
+  ...
+# Subtest: discovery reports Spotify text-search fallback honestly
+ok 243 - discovery reports Spotify text-search fallback honestly
+  ---
+  duration_ms: 2.9317
+  type: 'test'
+  ...
+# Subtest: Spotify search adapter failure falls back, not fabricated results
+ok 244 - Spotify search adapter failure falls back, not fabricated results
+  ---
+  duration_ms: 0.4099
+  type: 'test'
+  ...
+# Subtest: YouTube playlist imports report partial and omit inaccessible entries
+ok 245 - YouTube playlist imports report partial and omit inaccessible entries
+  ---
+  duration_ms: 0.8009
+  type: 'test'
+  ...
+# Subtest: autoplay excludes repeated tracks and unrequested remixes
+ok 246 - autoplay excludes repeated tracks and unrequested remixes
+  ---
+  duration_ms: 0.6086
+  type: 'test'
+  ...
+# Subtest: autoplay declines arbitrary channel-only metadata
+ok 247 - autoplay declines arbitrary channel-only metadata
+  ---
+  duration_ms: 0.1029
+  type: 'test'
+  ...
+# Subtest: manager serializes imports per guild, isolates guilds and cancels discovery
+ok 248 - manager serializes imports per guild, isolates guilds and cancels discovery
+  ---
+  duration_ms: 0.7642
+  type: 'test'
+  ...
+# Subtest: official client sends Client Credentials only to Spotify token endpoint and uses Bearer for search
+ok 249 - official client sends Client Credentials only to Spotify token endpoint and uses Bearer for search
+  ---
+  duration_ms: 51.7769
+  type: 'test'
+  ...
+# Subtest: access tokens and successful search results are cached without exposing credentials
+ok 250 - access tokens and successful search results are cached without exposing credentials
+  ---
+  duration_ms: 3.0945
+  type: 'test'
+  ...
+# Subtest: ranking rejects an unsolicited cover even when Spotify returns it first
+ok 251 - ranking rejects an unsolicited cover even when Spotify returns it first
+  ---
+  duration_ms: 7.8847
+  type: 'test'
+  ...
+# Subtest: unrelated and empty Spotify catalogs return null instead of fabricated results
+ok 252 - unrelated and empty Spotify catalogs return null instead of fabricated results
+  ---
+  duration_ms: 8.5229
+  type: 'test'
+  ...
+# Subtest: concurrent metadata requests share one token acquisition
+ok 253 - concurrent metadata requests share one token acquisition
+  ---
+  duration_ms: 2.7709
+  type: 'test'
+  ...
+# Subtest: cancelling one token waiter does not cancel another caller
+ok 254 - cancelling one token waiter does not cancel another caller
+  ---
+  duration_ms: 2.2048
+  type: 'test'
+  ...
+# Subtest: expired tokens are replaced before subsequent calls
+ok 255 - expired tokens are replaced before subsequent calls
+  ---
+  duration_ms: 2.6507
+  type: 'test'
+  ...
+# Subtest: a rejected access token is refreshed once with no uncontrolled retries
+ok 256 - a rejected access token is refreshed once with no uncontrolled retries
+  ---
+  duration_ms: 1.9234
+  type: 'test'
+  ...
+# Subtest: persistent token rejection stops after the one refresh attempt
+ok 257 - persistent token rejection stops after the one refresh attempt
+  ---
+  duration_ms: 3.293
+  type: 'test'
+  ...
+# Subtest: invalid credentials and denied app access give safe explicit errors
+ok 258 - invalid credentials and denied app access give safe explicit errors
+  ---
+  duration_ms: 1.5184
+  type: 'test'
+  ...
+# Subtest: 429 honors Retry-After locally instead of repeatedly hitting Spotify
+ok 259 - 429 honors Retry-After locally instead of repeatedly hitting Spotify
+  ---
+  duration_ms: 1.5251
+  type: 'test'
+  ...
+# Subtest: malformed responses cannot expose raw token response bodies
+ok 260 - malformed responses cannot expose raw token response bodies
+  ---
+  duration_ms: 0.6557
+  type: 'test'
+  ...
+# Subtest: official metadata normalizes through the existing Spotify resolver and failures retain fallback
+ok 261 - official metadata normalizes through the existing Spotify resolver and failures retain fallback
+  ---
+  duration_ms: 2.7505
+  type: 'test'
+  ...
+# Subtest: Spotify configuration remains optional and validates only the optional market format
+ok 262 - Spotify configuration remains optional and validates only the optional market format
+  ---
+  duration_ms: 1.4664
+  type: 'test'
+  ...
+# Subtest: direct video discovery and playback source share one extraction
+ok 263 - direct video discovery and playback source share one extraction
+  ---
+  duration_ms: 17.3188
+  type: 'test'
+  ...
+# Subtest: recent sources are cloned and reused while recovery can force fresh extraction
+ok 264 - recent sources are cloned and reused while recovery can force fresh extraction
+  ---
+  duration_ms: 1.6665
+  type: 'test'
+  ...
+# Subtest: sources near signed-URL expiry are not cached
+ok 265 - sources near signed-URL expiry are not cached
+  ---
+  duration_ms: 0.8863
+  type: 'test'
+  ...
+# Subtest: restricted source results are rejected rather than cached
+ok 266 - restricted source results are rejected rather than cached
+  ---
+  duration_ms: 1.3465
+  type: 'test'
+  ...
+# Subtest: concurrent video extractions share work across callers
+ok 267 - concurrent video extractions share work across callers
+  ---
+  duration_ms: 0.86
+  type: 'test'
+  ...
+# Subtest: search cache normalizes case and whitespace without changing ranking
+ok 268 - search cache normalizes case and whitespace without changing ranking
+  ---
+  duration_ms: 0.9255
+  type: 'test'
+  ...
+# Subtest: cancelling one shared caller leaves another caller running
+ok 269 - cancelling one shared caller leaves another caller running
+  ---
+  duration_ms: 10.3325
+  type: 'test'
+  ...
+# Subtest: cancelling every shared caller aborts the owned metadata work
+ok 270 - cancelling every shared caller aborts the owned metadata work
+  ---
+  duration_ms: 3.5383
+  type: 'test'
+  ...
+# Subtest: Spotify lookup and YouTube search start together and retain weighted selection
+ok 271 - Spotify lookup and YouTube search start together and retain weighted selection
+  ---
+  duration_ms: 5.5814
+  type: 'test'
+  ...
+# Subtest: slow optional Spotify metadata does not block validated YouTube results indefinitely
+ok 272 - slow optional Spotify metadata does not block validated YouTube results indefinitely
+  ---
+  duration_ms: 19.8581
+  type: 'test'
+  ...
+# Subtest: canonical artist/title search remains a fallback when initial candidates do not match
+ok 273 - canonical artist/title search remains a fallback when initial candidates do not match
+  ---
+  duration_ms: 2.515
+  type: 'test'
+  ...
+# Subtest: next-track warmup only prepares metadata for one upcoming track and cancels on pause
+ok 274 - next-track warmup only prepares metadata for one upcoming track and cancels on pause
+  ---
+  duration_ms: 22.4835
+  type: 'test'
+  ...
+# Subtest: changing the next track aborts the obsolete metadata warmup
+ok 275 - changing the next track aborts the obsolete metadata warmup
+  ---
+  duration_ms: 32.6265
+  type: 'test'
+  ...
+# Subtest: background source warmup leaves foreground capacity and is capped globally
+ok 276 - background source warmup leaves foreground capacity and is capped globally
+  ---
+  duration_ms: 1.0247
+  type: 'test'
+  ...
+# Subtest: PM2 directly supervises the worker and respects intentional shutdown exit status
+ok 277 - PM2 directly supervises the worker and respects intentional shutdown exit status
+  ---
+  duration_ms: 11.1154
+  type: 'test'
+  ...
+# Subtest: explicit restart starts one replacement child after the previous child closes
+ok 278 - explicit restart starts one replacement child after the previous child closes
+  ---
+  duration_ms: 8.5284
+  type: 'test'
+  ...
+# Subtest: exit 0 never causes an automatic restart loop
+ok 279 - exit 0 never causes an automatic restart loop
+  ---
+  duration_ms: 6.305
+  type: 'test'
+  ...
+# Subtest: exit 1 never causes an automatic restart loop
+ok 280 - exit 1 never causes an automatic restart loop
+  ---
+  duration_ms: 1.0599
+  type: 'test'
+  ...
+# Subtest: exit null never causes an automatic restart loop
+ok 281 - exit null never causes an automatic restart loop
+  ---
+  duration_ms: 1.2961
+  type: 'test'
+  ...
+# Subtest: stopping during a restart delay cancels the replacement child
+ok 282 - stopping during a restart delay cancels the replacement child
+  ---
+  duration_ms: 1.2664
+  type: 'test'
+  ...
+# Subtest: supervisor stop asks for graceful cleanup once through the private IPC channel
+ok 283 - supervisor stop asks for graceful cleanup once through the private IPC channel
+  ---
+  duration_ms: 1.1514
+  type: 'test'
+  ...
+# Subtest: an unresponsive child has a bounded stop deadline
+ok 284 - an unresponsive child has a bounded stop deadline
+  ---
+  duration_ms: 1.0279
+  type: 'test'
+  ...
+# Subtest: a closed IPC channel falls back to scoped child cleanup
+ok 285 - a closed IPC channel falls back to scoped child cleanup
+  ---
+  duration_ms: 1.0808
+  type: 'test'
+  ...
+# Subtest: failed child creation exits with an error without retrying
+ok 286 - failed child creation exits with an error without retrying
+  ---
+  duration_ms: 1.1394
+  type: 'test'
+  ...
+# Subtest: real fork replaces the worker on restart and stays stopped on normal shutdown
+ok 287 - real fork replaces the worker on restart and stays stopped on normal shutdown
+  ---
+  duration_ms: 282.8603
+  type: 'test'
+  ...
+# Subtest: real worker receives graceful stop without creating a replacement
+ok 288 - real worker receives graceful stop without creating a replacement
+  ---
+  duration_ms: 115.2406
+  type: 'test'
+  ...
+# Subtest: accepts valid supported URLs and strips untrusted query parameters
+ok 289 - accepts valid supported URLs and strips untrusted query parameters
+  ---
+  duration_ms: 3.0204
+  type: 'test'
+  ...
+# Subtest: rejects unsafe input https://youtube.com.evil.test/watch?v=abcdefghijk
+ok 290 - rejects unsafe input https://youtube.com.evil.test/watch?v=abcdefghijk
+  ---
+  duration_ms: 1.0943
+  type: 'test'
+  ...
+# Subtest: rejects unsafe input http://youtube.com/watch?v=abcdefghijk
+ok 291 - rejects unsafe input http://youtube.com/watch?v=abcdefghijk
+  ---
+  duration_ms: 0.4265
+  type: 'test'
+  ...
+# Subtest: rejects unsafe input https://user:password@youtube.com/watch?v=abcdefghijk
+ok 292 - rejects unsafe input https://user:password@youtube.com/watch?v=abcdefghijk
+  ---
+  duration_ms: 0.2046
+  type: 'test'
+  ...
+# Subtest: rejects unsafe input https://youtube.com:8080/watch?v=abcdefghijk
+ok 293 - rejects unsafe input https://youtube.com:8080/watch?v=abcdefghijk
+  ---
+  duration_ms: 0.255
+  type: 'test'
+  ...
+# Subtest: rejects unsafe input https://127.0.0.1/a
+ok 294 - rejects unsafe input https://127.0.0.1/a
+  ---
+  duration_ms: 0.1904
+  type: 'test'
+  ...
+# Subtest: rejects unsafe input file:///etc/passwd
+ok 295 - rejects unsafe input file:///etc/passwd
+  ---
+  duration_ms: 0.165
+  type: 'test'
+  ...
+# Subtest: rejects unsafe input local:../secret
+ok 296 - rejects unsafe input local:../secret
+  ---
+  duration_ms: 0.2414
+  type: 'test'
+  ...
+# Subtest: rejects unsafe input https://open.spotify.com/track/bad
+ok 297 - rejects unsafe input https://open.spotify.com/track/bad
+  ---
+  duration_ms: 0.593
+  type: 'test'
+  ...
+# Subtest: classifies searches and media IDs
+ok 298 - classifies searches and media IDs
+  ---
+  duration_ms: 1.8553
+  type: 'test'
+  ...
+# Subtest: rejects empty, oversized and control-character input
+ok 299 - rejects empty, oversized and control-character input
+  ---
+  duration_ms: 0.3817
+  type: 'test'
+  ...
+# Subtest: integer options reject fractions and invalid positions
+ok 300 - integer options reject fractions and invalid positions
+  ---
+  duration_ms: 0.2961
+  type: 'test'
+  ...
+# Subtest: configuration validates bounds, booleans and secrets
+ok 301 - configuration validates bounds, booleans and secrets
+  ---
+  duration_ms: 2.1443
+  type: 'test'
+  ...
+# Subtest: all 20 prefix commands have unique names and bounded arguments
+ok 302 - all 20 prefix commands have unique names and bounded arguments
+  ---
+  duration_ms: 0.2624
+  type: 'test'
+  ...
+# Subtest: cookies are optional and configuration confines exports to secrets
+ok 303 - cookies are optional and configuration confines exports to secrets
+  ---
+  duration_ms: 3.8286
+  type: 'test'
+  ...
+# Subtest: Netscape validation accepts session, expiry and HttpOnly YouTube cookies
+ok 304 - Netscape validation accepts session, expiry and HttpOnly YouTube cookies
+  ---
+  duration_ms: 2.0039
+  type: 'test'
+  ...
+# Subtest: invalid exports and other service cookies are rejected without echoing values
+ok 305 - invalid exports and other service cookies are rejected without echoing values
+  ---
+  duration_ms: 0.7297
+  type: 'test'
+  ...
+# Subtest: expired-only exports produce a distinct actionable error
+ok 306 - expired-only exports produce a distinct actionable error
+  ---
+  duration_ms: 0.3286
+  type: 'test'
+  ...
+# Subtest: disabled cookies do not touch the filesystem or add arguments
+ok 307 - disabled cookies do not touch the filesystem or add arguments
+  ---
+  duration_ms: 0.5293
+  type: 'test'
+  ...
+# Subtest: inspection returns safe counts without cookie content
+ok 308 - inspection returns safe counts without cookie content
+  ---
+  duration_ms: 24.759
+  type: 'test'
+  ...
+# Subtest: each request gets a private temporary copy and original remains untouched
+ok 309 - each request gets a private temporary copy and original remains untouched
+  ---
+  duration_ms: 19.06
+  type: 'test'
+  ...
+# Subtest: failed and cancelled tool requests remove their temporary credentials
+ok 310 - failed and cancelled tool requests remove their temporary credentials
+  ---
+  duration_ms: 29.5039
+  type: 'test'
+  ...
+# Subtest: missing and oversized cookie files fail safely
+ok 311 - missing and oversized cookie files fail safely
+  ---
+  duration_ms: 21.261
+  type: 'test'
+  ...
+# Subtest: cookie file symlinks cannot escape the secrets folder
+ok 312 - cookie file symlinks cannot escape the secrets folder
+  ---
+  duration_ms: 29.6585
+  type: 'test'
+  ...
+# Subtest: resolver passes the working cookie jar as a subprocess argument and cleans it
+ok 313 - resolver passes the working cookie jar as a subprocess argument and cleans it
+  ---
+  duration_ms: 190.3513
+  type: 'test'
+  ...
+# Subtest: JSON conversion preserves session, domain and HttpOnly flags
+ok 314 - JSON conversion preserves session, domain and HttpOnly flags
+  ---
+  duration_ms: 0.6331
+  type: 'test'
+  ...
+# Subtest: JSON conversion rejects empty templates, non-YouTube exports and malformed fields
+ok 315 - JSON conversion rejects empty templates, non-YouTube exports and malformed fields
+  ---
+  duration_ms: 0.405
+  type: 'test'
+  ...
+# Subtest: local JSON import atomically replaces Netscape output and preserves its input
+ok 316 - local JSON import atomically replaces Netscape output and preserves its input
+  ---
+  duration_ms: 14.9364
   type: 'test'
   ...
 # Subtest: malformed local JSON leaves the previous valid cookie output untouched
-ok 309 - malformed local JSON leaves the previous valid cookie output untouched
+ok 317 - malformed local JSON leaves the previous valid cookie output untouched
   ---
-  duration_ms: 7.2023
+  duration_ms: 7.5242
   type: 'test'
   ...
-1..309
-# tests 309
+1..317
+# tests 317
 # suites 0
-# pass 309
+# pass 317
 # fail 0
 # cancelled 0
 # skipped 0
 # todo 0
-# duration_ms 4951.6541
+# duration_ms 5174.0426

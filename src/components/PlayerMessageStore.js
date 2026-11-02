@@ -1,6 +1,8 @@
 import { randomBytes } from 'node:crypto';
 import { Mutex } from '../utils/async.js';
 import { UserError } from '../utils/errors.js';
+import { componentsEdit } from './messages.js';
+import { isPlayerMessage } from './playerView.js';
 
 // A guild's message outlives its voice sessions. A shared lock and owner token
 // prevent a retiring presenter from replacing a newer session's display.
@@ -33,7 +35,7 @@ export class PlayerMessageStore {
     // creating another message when upgrading from channel-only settings.
     if(!channel.messages?.fetch||!botId)return null;
     const recent=await channel.messages.fetch({limit:100,cache:false});
-    return [...recent.values()].find(message=>message.author?.id===botId&&!message.webhookId&&message.embeds?.length===1&&message.embeds[0].author?.name==='MUSIC • YOUR SERVER’S LISTENING ROOM')??null;
+    return [...recent.values()].find(message=>message.author?.id===botId&&!message.webhookId&&isPlayerMessage(message))??null;
   }
   render(guild,channel,payload,owner,{create=true}={}){
     const view=this.views.get(guild.id);
@@ -46,7 +48,7 @@ export class PlayerMessageStore {
       if(!view.loaded){view.message=await this.savedMessage(guild,channel);view.loaded=true;}
       if(view.owner!==owner||!this.ownsChannel(guild.id,channel.id))return null;
       if(view.message){
-        try{await view.message.edit(payload);}
+        try{await view.message.edit(componentsEdit(view.message,payload));}
         catch(error){
           if(error.code!==10008)throw error;
           view.message=null;view.nonce=randomBytes(12).toString('hex');

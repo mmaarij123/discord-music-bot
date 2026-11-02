@@ -1,6 +1,6 @@
 # Full code audit — 2 November 2026
 
-Reviewed all 44 runtime modules and the supplied launchers, diagnostics, smoke checks and deployment configuration. The review covered command parsing/routing, exact-owner and voice permissions, per-guild queue/state transitions, recovery/stop races, persistent DJ messages, metadata/matching, local-file containment, cookie isolation, subprocess handling, cache lifetimes and shutdown supervision. Current command replies remain local; the custom Discohook help/mention designs and the permanent DJ player are preserved.
+Reviewed all runtime modules and the supplied launchers, diagnostics, smoke checks and deployment configuration. The original audit covered 44 modules; the subsequent Components V2 renderer brings the current reachable total to 45. The review covered command parsing/routing, exact-owner and voice permissions, per-guild queue/state transitions, recovery/stop races, persistent DJ messages, metadata/matching, local-file containment, cookie isolation, subprocess handling, cache lifetimes and shutdown supervision. Current command replies remain local; custom Discohook help/mention text and colours and the permanent DJ message are preserved.
 
 ## Confirmed fixes
 
@@ -21,10 +21,10 @@ Queue history, internal queue clearing, recovery offsets, optional metadata/reco
 
 | Check | Result |
 |---|---|
-| Node test suite | **309 passed**, zero failures/skips; ten new regression cases |
-| Expanded ESLint scan | **77 JavaScript files**, zero errors/warnings |
+| Node test suite | **317 passed**, zero failures/skips, including eight Components V2 regressions |
+| Expanded ESLint scan | **79 JavaScript files**, zero errors/warnings |
 | JavaScript syntax | All files passed |
-| Runtime import reachability | **44/44 modules** reachable; no orphan runtime modules |
+| Runtime import reachability | **45/45 modules** reachable; no orphan runtime modules |
 | Installed dependency tree | Six direct/optional packages present; no missing/invalid package |
 | Runtime doctor | Node 24.22.2, FFmpeg 9.0, yt-dlp 2026.10.26, Opus/DAVE and cookie format checks passed |
 | Real paced local playback | Pause, paused interruption recovery, natural completion, queue transition, complete 12-second second track and fresh playback passed |
@@ -46,3 +46,11 @@ Discord command values are not passed to those installation utilities as glob pa
 ## Deployment and privacy
 
 The validated update is deployed through the existing Windows launcher, then checked for one supervised worker and real Discord gateway ready. Existing local DJ message IDs are retained. The .env/cookie contents are checked against a private before/after hash baseline, without printing their values. Exact staged files are scanned against local secret/cookie values and prohibited paths before upload to the existing private GitHub repository. Repository privacy, final commit and file tree are verified. The release ZIP excludes runtime settings, secrets, logs, media, node_modules and Git data.
+
+## Components V2 migration
+
+The player, help, mention and queue now use native V2 containers/text displays, with Section/Thumbnail artwork and nested player buttons. The custom five help colours, prefix reminder colour and original text/order are preserved in helpPanels.json and mentionPanels.json. The old EmbedBuilder renderer was replaced by playerView.js; no new runtime dependency was needed. Text confirmations/logs and ephemeral button acknowledgements remain simple text. Help/queue/mention no longer require Embed Links to display text-only layouts.
+
+Existing DJ messages are upgraded in place, explicitly clearing legacy fields on their first V2 edit. Later V2 sends/edits omit content/embeds, lifecycle cleanup retains the container body while removing controls, and V2 responses cannot accidentally downgrade when an error is delivered. Legacy and V2 players can both be recovered from bounded channel history. Two real existing DJ messages were converted through Discord's API with their original IDs, no new messages and no migration failures. The updated worker reached gateway ready in three guilds. The automated V2 checks cover builder serialization/limits, artwork, controls, permissions, migration, sticky V2 errors and real handler pause/resume; no live user button clicks or full-song voice listening was performed. Audio/provider probes above belong to the preceding audit and were not repeated for this UI-only change.
+
+References: [Discord Components V2](https://docs.discord.com/developers/components/overview), [component structures/limits](https://docs.discord.com/developers/components/reference), [discord.js 14.27.0 ContainerBuilder](https://discord.js.org/docs/packages/discord.js/14.27.0/ContainerBuilder:Class).

@@ -13,7 +13,7 @@ Spotify supplies **metadata only**. All audio comes from a supported public YouT
 - YouTube video links and public playlists, bounded imports, lazy audio extraction, TTL search cache, and limited concurrent requests.
 - FFmpeg streaming, dynamic volume, Opus encoding, pause/resume, deterministic resource disposal, bounded error recovery, idle disconnect, and optional 24/7 connection.
 - Conservative autoplay: another track by a known artist, with recent-track/version filtering. A known matching artist/Topic channel is required. An optional recommendation adapter supports other lawful sources.
-- Compact green Now Playing embed with artwork, album, playback status, requester mention, queue count and volume. State changes update the player, with edits coalesced at least two seconds apart. Deleted player messages never interrupt audio; `>play` or `>join` can create another player.
+- Discord Components V2 player with a green container, artwork, album, playback status, requester mention, queue count, volume and nested controls. State changes update the player, with edits coalesced at least two seconds apart. Deleted player messages never interrupt audio.
 - JSON logging with token/URL redaction, configuration validation, safe subprocess argument arrays, same-voice-channel authorization, and Manage Server checks for settings.
 - A single search reply uses ``Searching of `song name` `` and then changes to ``Added `resolved song title` in the queue``. Metadata fallback details stay in debug diagnostics rather than cluttering chat. Failed searches finish with a concise not-found message; partial playlist and queue-limit notices remain visible.
 
@@ -224,9 +224,11 @@ The default prefix is `>`. Send `>help`, `>play Artist Song`, `>queue`, or `>vol
 
 The earlier slash-command migration was completed and its one-off cleanup script has been removed. Prefix commands need no deployment/registration step. The interaction handler processes music buttons only.
 
-`>help` always replies in the invoking channel or thread, including usage and permission errors. It reproduces the operator's [Discohook design](https://share.discohook.app/go/omgtuvtp) as five embeds, preserving all text, colours and ordering from `src/components/helpEmbeds.json`. The shared design displays the literal default prefix `>`; update that template separately if you change `PREFIX`. No extra help or owner sections are appended. It does not depend on the configured log or DJ channel. The bot needs Embed Links there to show the help embeds; otherwise it sends a local permission explanation.
+`>help` always replies in the invoking channel or thread, including usage and permission errors. It renders the operator's [Discohook design](https://share.discohook.app/go/omgtuvtp) as five Components V2 containers, preserving the text, exact accent colours and ordering from `src/components/helpPanels.json`. The shared design displays the literal default prefix `>`; update that template separately if you change `PREFIX`. No extra help or owner sections are appended. It does not depend on the configured log or DJ channel. Text-only help/queue/mention layouts require channel send permission, without an Embed Links requirement.
 
-Mention the bot by itself in a server channel or thread to receive the exact [prefix reminder design](https://share.discohook.app/go/kumiba4b), stored in `src/components/mentionEmbeds.json`. It replies in that channel, without using log/DJ settings or requiring voice. Extra conversation text, reply notification pings, bot/webhook messages and direct messages do not trigger it. Mention responses share the command cooldown, require Embed Links and never ping the requesting user. This supplied design also displays the literal default prefix `>`.
+Mention the bot by itself in a server channel or thread to receive the [prefix reminder design](https://share.discohook.app/go/kumiba4b), stored in `src/components/mentionPanels.json` and rendered as a V2 container with its original text/colour. It replies in that channel, without using log/DJ settings or requiring voice. Extra conversation text, reply notification pings, bot/webhook messages and direct messages do not trigger it. Mention responses share the command cooldown and never ping the requesting user. This supplied design also displays the literal default prefix `>`.
+
+The player, help, mention and queue interfaces use native Containers, Text Displays and optional Section/Thumbnail artwork, with MessageFlags.IsComponentsV2. Player buttons are nested inside the same container and retain voice/host authorization. Existing player messages upgrade in place: legacy content/embeds are cleared while their message IDs stay the same. V2 edits never switch back to legacy content; an error after a V2 reply becomes a Text Display. Plain command confirmations, search progress, logs and private button acknowledgements remain simple text. Components V2 is supported by the installed discord.js 14.27.0; no additional UI dependency is needed. See the official [Discord components overview](https://docs.discord.com/developers/components/overview) and [discord.js ContainerBuilder API](https://discord.js.org/docs/packages/discord.js/14.27.0/ContainerBuilder:Class).
 
 Join claims its session host before asynchronous setup begins. The host can cancel a pending join with `>stop`, including from outside voice; destroying the connection also cancels its readiness waiter promptly.
 
@@ -253,7 +255,7 @@ When started, logs should include `ready`. Join a voice channel and use `>play l
 | >leave | Same host/moderator authorization as stop; clear and disconnect, overriding 24/7. |
 | >autoplay on/off | Manage Server: enable/disable conservative recommendations. Default off. |
 | >logchannel [channel/off] | Manage Server: select the playback-log channel, show its setting, or reset it. |
-| >djchannel [channel/off] | Manage Server: select the player-embed channel independently, show its setting, or reset it. |
+| >djchannel [channel/off] | Manage Server: select the player channel independently, show its setting, or reset it. |
 | >clearcache | Bot owner only: clear all built-in metadata/search/audio-link caches across servers without stopping playback or clearing queues. |
 | >shutdown | Bot owner only: gracefully stop audio, leave voice in all servers and shut down the application. |
 | >restart | Bot owner only: cleanly stop the worker and launch a fresh process; all in-memory queues reset. |
@@ -468,7 +470,7 @@ Music Bot/
     commands/parsePrefix.js     Typed argument parsing and usage
     commands/messageContext.js  Single-message reply/progress adapter
     events/                     Message, button and voice-state handlers
-    components/                 Embeds, buttons, coalesced message presenter
+    components/                 V2 containers, panels, buttons and message presenter
     music/
       MusicManager.js           Bounded guild ownership and discovery jobs
       GuildPlayer.js            Serialized playback state and lifecycle

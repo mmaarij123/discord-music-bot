@@ -1,6 +1,6 @@
 import { randomBytes } from 'node:crypto';
-import { playerEmbed } from './playerEmbed.js';
-import { playerButtons } from './playerButtons.js';
+import { playerMessage } from './playerView.js';
+import { componentsEdit } from './messages.js';
 import { Mutex } from '../utils/async.js';
 export class PlayerPresenter {
   constructor(player,logger,{messageStore}={}) {
@@ -17,7 +17,7 @@ export class PlayerPresenter {
       if(this.disposed)return;
       clearTimeout(this.timer);this.timer=null;
       const previous=this.message;this.message=null;this.channel=channel;this.nonce=randomBytes(6).toString('hex');
-      if(previous)await previous.edit({components:[]}).catch(error=>this.logger.debug('old_player_controls_cleanup_failed',{code:error.code}));
+      if(previous)await previous.edit(componentsEdit(previous,playerMessage(this.player,this.nonce,{controls:false}))).catch(error=>this.logger.debug('old_player_controls_cleanup_failed',{code:error.code}));
     });
     this.schedule();
   }
@@ -28,14 +28,14 @@ export class PlayerPresenter {
   }
   render() { return this.lock.run(async()=>{
     if (this.disposed || !this.channel) return;
-    const payload={embeds:[playerEmbed(this.player)],components:playerButtons(this.player,this.nonce),allowedMentions:{parse:[]}};
+    const payload=playerMessage(this.player,this.nonce);
     this.lastEdit=Date.now();
     if(this.messageStore?.ownsChannel(this.player.guild.id,this.channel.id)){
       this.message=await this.messageStore.render(this.player.guild,this.channel,payload,this.messageOwner);
       return;
     }
     if (this.message) {
-      try { await this.message.edit(payload); }
+      try { await this.message.edit(componentsEdit(this.message,payload)); }
       catch (error) {
         if (error.code===10008) { this.message=null; this.channel=null; }
         else throw error;
@@ -65,10 +65,10 @@ export class PlayerPresenter {
     await this.flushNotice();
     await this.lock.run(async()=>{
       if(this.channel&&this.messageStore?.ownsChannel(this.player.guild.id,this.channel.id)){
-        await this.messageStore.render(this.player.guild,this.channel,{embeds:[playerEmbed(this.player)],components:[],allowedMentions:{parse:[]}},this.messageOwner,{create:false});
+        await this.messageStore.render(this.player.guild,this.channel,playerMessage(this.player,this.nonce,{controls:false}),this.messageOwner,{create:false});
         return;
       }
-      if (this.message) await this.message.edit({embeds:[playerEmbed(this.player)],components:[]}).catch(()=>{});
+      if (this.message) await this.message.edit(componentsEdit(this.message,playerMessage(this.player,this.nonce,{controls:false}))).catch(()=>{});
     });
   }
 }

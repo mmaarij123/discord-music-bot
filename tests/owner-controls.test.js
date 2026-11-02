@@ -79,7 +79,7 @@ test('help preserves the shared design for both the owner and other users',async
   let expected;
   for(const id of [OWNER_USER_ID,'server-admin']){
     const i=context(id);await execute(i,{get:()=>undefined},'help');
-    const help=i.replies[0].embeds.map(embed=>embed.toJSON());
+    const help=i.replies[0].components.map(component=>component.toJSON());
     if(expected)assert.deepEqual(help,expected);else expected=help;
     for(const action of ownerCommands)assert.equal(JSON.stringify(help).includes(action),false);
     assert.equal(help.length,5);

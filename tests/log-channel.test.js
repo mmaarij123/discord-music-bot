@@ -13,7 +13,7 @@ import { messageHandler } from '../src/events/messageCreate.js';
 import { messageContext } from '../src/commands/messageContext.js';
 import { loadConfig } from '../src/config/config.js';
 import { voiceStateHandler } from '../src/events/voiceStateUpdate.js';
-import { fixture,logger,track } from './helpers.js';
+import { fixture,logger,track,componentText,flattenComponents } from './helpers.js';
 
 const GUILD='111111111111111111',OTHER_GUILD='222222222222222222',SOURCE='333333333333333333',OUTPUT='444444444444444444',SECOND='555555555555555555';
 async function folder(t){
@@ -110,7 +110,7 @@ test('non-moderators cannot inspect, change or disable the setting',async t=>{
 test('queue replies stay in the invoking channel when logs are configured',async t=>{
   const f=setup(t),music=fixture({id:GUILD});f.manager.players.set(GUILD,music.player);
   await f.manager.settings.setLogChannel(GUILD,OUTPUT);await f.run('>queue');
-  assert.equal(f.source.messages.length,1);assert.equal(f.output.messages.length,0);assert.ok(f.source.messages[0].embeds.length);
+  assert.equal(f.source.messages.length,1);assert.equal(f.output.messages.length,0);assert.ok(f.source.messages[0].components.length);
   assert.deepEqual(f.source.messages[0].allowedMentions,{parse:[],repliedUser:false});
 });
 
@@ -121,8 +121,8 @@ test('help replies in each invoking channel despite independent log and DJ setti
   await messageHandler(f.manager,logger,{cooldown:()=>{}})(second);
   assert.equal(f.source.messages.length,1);assert.equal(f.other.messages.length,1);assert.equal(f.output.messages.length,0);
   for(const output of [f.source,f.other]){
-    assert.equal(output.messages[0].embeds[0].toJSON().title,'**Your Prefix is **`>`');
-    assert.equal(output.messages[0].embeds.length,5);
+    assert.equal(output.messages[0].components[0].toJSON().components[0].content,'**Your Prefix is **`>`');
+    assert.equal(output.messages[0].components.length,5);
     assert.deepEqual(output.messages[0].allowedMentions,{parse:[],repliedUser:false});
   }
   assert.equal(f.manager.players.size,0);assert.equal(f.manager.presenters.size,0);
@@ -132,15 +132,15 @@ test('help never looks up a missing log or DJ destination',async t=>{
   const f=setup(t);await f.manager.settings.setLogChannel(GUILD,OUTPUT);await f.manager.settings.setDjChannel(GUILD,SECOND);
   f.channels.delete(OUTPUT);f.channels.delete(SECOND);
   f.guild.channels.fetch=()=>assert.fail('Help tried to resolve an unrelated channel');
-  await f.run('>help');assert.equal(f.source.messages.length,1);assert.ok(f.source.messages[0].embeds.length);
+  await f.run('>help');assert.equal(f.source.messages.length,1);assert.ok(f.source.messages[0].components.length);
   assert.equal(f.output.messages.length,0);assert.equal(f.other.messages.length,0);
 });
 
-test('help usage errors and missing Embed Links are returned locally',async t=>{
+test('help usage errors stay local and its V2 layout works without Embed Links',async t=>{
   const f=setup(t);await f.manager.settings.setLogChannel(GUILD,OUTPUT);
   await f.run('>help extra');assert.match(f.source.messages[0].content,/Usage: >help/);
   f.source.permissions.has=values=>![values].flat().includes(PermissionFlagsBits.EmbedLinks);
-  await f.run('>help');assert.match(f.source.messages[1].content,/Embed Links/);
+  await f.run('>help');assert.equal(f.source.messages[1].components.length,5);
   assert.equal(f.output.messages.length,0);
 });
 
@@ -149,9 +149,9 @@ test('custom-prefix uppercase help stays in the invoking thread with thread perm
   f.source.isThread=()=>true;
   f.source.permissions.has=values=>![values].flat().includes(PermissionFlagsBits.SendMessages);
   await f.run('!!HELP');assert.equal(f.source.messages.length,1);assert.equal(f.output.messages.length,0);
-  const embeds=f.source.messages[0].embeds.map(embed=>embed.toJSON());
-  assert.equal(embeds[0].title,'**Your Prefix is **`>`');
-  assert.ok(embeds[1].description.startsWith('`Play`'));assert.equal(embeds.length,5);
+  const panels=f.source.messages[0].components.map(component=>component.toJSON());
+  assert.equal(panels[0].components[0].content,'**Your Prefix is **`>`');
+  assert.ok(panels[1].components[1].content.startsWith('`Play`'));assert.equal(panels.length,5);
 });
 test('malformed commands and validation errors stay in the invoking channel',async t=>{
   const f=setup(t);await f.manager.settings.setLogChannel(GUILD,OUTPUT);await f.run('>volume bad');await f.run('>unknown');
@@ -170,7 +170,7 @@ test('deleted or inaccessible configured channels do not silently send music els
 });
 test('logchannel off is usable when the old destination is missing',async t=>{
   const f=setup(t);await f.manager.settings.setLogChannel(GUILD,OUTPUT);f.channels.delete(OUTPUT);await f.run('>logchannel off');
-  assert.equal(f.manager.settings.getLogChannel(GUILD),null);await f.run('>help');assert.ok(f.source.messages.at(-1).embeds.length);
+  assert.equal(f.manager.settings.getLogChannel(GUILD),null);await f.run('>help');assert.ok(f.source.messages.at(-1).components.length);
 });
 test('changing the DJ output invalidates old controls and preserves active audio',async t=>{
   const f=setup(t),music=fixture({id:GUILD});await music.player.enqueue([track('A')],music.channel);
@@ -178,7 +178,7 @@ test('changing the DJ output invalidates old controls and preserves active audio
   presenter.bind(f.source);await presenter.render();const handle=music.player.handle,nonce=presenter.nonce;
   await f.manager.setDjChannel(f.guild,f.output,f.source);await presenter.render();
   assert.equal(music.player.handle,handle);assert.equal(music.player.current.title,'A');assert.notEqual(presenter.nonce,nonce);
-  assert.deepEqual(f.source.edits.at(-1).components,[]);assert.equal(f.output.messages.length,1);assert.equal(presenter.channel,f.output);
+  assert.equal(flattenComponents(f.source.edits.at(-1)).some(component=>component.type===2),false);assert.ok(componentText(f.source.edits.at(-1)).includes('**A**'));assert.equal(f.output.messages.length,1);assert.equal(presenter.channel,f.output);
 });
 test('relocation waits for an in-flight render so an old send cannot replace the new player',async t=>{
   const music=fixture({id:GUILD}),presenter=new PlayerPresenter(music.player,logger);t.after(async()=>{await music.player.destroy();await presenter.dispose();});
@@ -244,7 +244,7 @@ test('play confirmation stays local, the embed stays in DJ, and notices go to lo
   await f.run('>play Artist Song');await presenter.render();
   assert.equal(f.source.messages.length,1);assert.equal(f.source.messages[0].content,'Searching of `Artist Song`');
   assert.equal(f.source.edits.at(-1).content,'Added `Song` in the queue');assert.equal(f.output.messages.length,0);
-  assert.equal(f.other.messages.length,1);assert.ok(f.other.messages[0].embeds.length);assert.equal(f.other.messages[0].content,undefined);
+  assert.equal(f.other.messages.length,1);assert.ok(f.other.messages[0].components.length);assert.equal(f.other.messages[0].content,undefined);
   presenter.notice('Playback notice');await new Promise(resolve=>{setTimeout(resolve,3100);});
   assert.equal(f.output.messages[0].content,'Playback notice');assert.equal(f.other.messages.length,1);
   const handle=music.player.handle;await f.run('>nowplaying');
@@ -272,7 +272,7 @@ test('a missing log channel cannot block command replies or their local errors',
   f.member.voice.channel={id:'voice',type:ChannelType.GuildVoice,full:false,permissionsFor:()=>({has:()=>true})};
   for(const command of ['>volume 35','>queue','>pause','>volume invalid'])await f.run(command);
   assert.equal(f.source.messages.length,4);assert.match(f.source.messages[0].content,/35%/);
-  assert.ok(f.source.messages[1].embeds);assert.match(f.source.messages[2].content,/No playing/);assert.match(f.source.messages[3].content,/Usage/);
+  assert.ok(f.source.messages[1].components);assert.match(f.source.messages[2].content,/No playing/);assert.match(f.source.messages[3].content,/Usage/);
   assert.equal(f.output.messages.length,0);
 });
 test('log-only configuration does not pull the player away from the play command channel',async t=>{

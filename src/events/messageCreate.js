@@ -1,9 +1,10 @@
-import { EmbedBuilder, PermissionFlagsBits } from 'discord.js';
-import mentionEmbeds from '../components/mentionEmbeds.json' with { type: 'json' };
+import { PermissionFlagsBits } from 'discord.js';
+import mentionPanels from '../components/mentionPanels.json' with { type: 'json' };
+import { panelsMessage } from '../components/messages.js';
 import { parsePrefix } from '../commands/parsePrefix.js';
 import { messageContext } from '../commands/messageContext.js';
 import { execute } from '../commands/execute.js';
-import { publicError, UserError } from '../utils/errors.js';
+import { publicError } from '../utils/errors.js';
 import { createCooldown } from '../utils/cooldown.js';
 
 export function messageHandler(manager, logger, { cooldown = createCooldown() } = {}) {
@@ -25,15 +26,12 @@ export function messageHandler(manager, logger, { cooldown = createCooldown() } 
       }
       if(mentioned){
         action='mention';
-        if(!permissions.has(PermissionFlagsBits.EmbedLinks))throw new UserError('The bot needs Embed Links permission here to show its prefix.');
         cooldown(message.guildId,message.author.id);
-        await message.reply({embeds:mentionEmbeds.map(embed=>new EmbedBuilder(embed)),allowedMentions:{parse:[],repliedUser:false},failIfNotExists:false});
+        await message.reply({...panelsMessage(mentionPanels),failIfNotExists:false});
         return;
       }
       const head=message.content.slice(prefix.length).trim().split(/\s+/,1)[0]?.toLowerCase();
       if(!head)return;
-      const needsEmbeds=['help','queue'].includes(head)||(head==='nowplaying'&&!manager.settings?.getDjChannel(message.guildId));
-      if(needsEmbeds&&!permissions.has(PermissionFlagsBits.EmbedLinks))throw new UserError('The bot needs Embed Links permission here to show this reply.');
       cooldown(message.guildId, message.author.id);
       const parsed = parsePrefix(message.content, prefix);
       if (!parsed) return;
