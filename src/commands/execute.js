@@ -48,7 +48,7 @@ export async function execute(interaction,manager,action=interaction.commandName
   const option=interaction.options;
   if(['logchannel','djchannel'].includes(action))return channelSettings(interaction,manager,reply,action==='djchannel'?'dj':'log');
   if (action==='help') {
-    return reply(panelsMessage(helpPanels));
+    return reply(panelsMessage(helpPanels,{combine:true}));
   }
   if (action==='play') {
     const query=option.getString('query',true);

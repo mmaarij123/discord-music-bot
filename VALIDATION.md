@@ -347,3 +347,11 @@ Removed the remaining DJ-player accent setter, optional panel colour support and
 All **317 automated tests passed**, zero failures/skips. Existing V2 assertions now require every container to omit an accent, including the player and mention response; stale panel colour data is ignored. The **79-file static scan** passed with zero errors/warnings and all JavaScript syntax checks passed. No new tests or dependencies were added for this cosmetic change.
 
 With the old worker stopped, both saved DJ messages were updated in place through Discord's API: 2 updated, zero new messages and zero failures. Returned component trees were checked to contain no numeric accent colour. The updated bot reached real gateway ready in three guilds with one supervisor and one worker. No live command/voice playback test was sent for this colour-only change.
+
+## Single help box with dividers — 2 November 2026
+
+Combined the five help sections into one unaccented Components V2 Container with four native Separator components between sections. Each section keeps its existing heading, command text and ordering; no commands or messages were added. Mention, queue, DJ rendering, logs and local reply routing retain their existing behavior. The combined body uses nine child components and stays within Discord's component/text limits.
+
+All **317 automated tests passed**, zero failures/skips. Existing help assertions now verify one container, exact section text/order, four visible native dividers, absent accent colour and local/thread routing for both the owner and other users. No new tests or dependencies were added for this presentation change. No live Discord test command or voice probe was sent.
+
+The 79-file static scan passed with zero warnings/errors and all syntax checks passed. The bot restarted successfully with one supervisor/worker and real Discord gateway ready in three guilds; stderr was empty. Staged files were scanned for local secrets and prohibited paths before private-repository upload.

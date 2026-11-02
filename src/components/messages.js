@@ -1,11 +1,19 @@
-import { ContainerBuilder, TextDisplayBuilder, MessageFlags, MessageFlagsBitField } from 'discord.js';
+import { ContainerBuilder, TextDisplayBuilder, SeparatorBuilder, SeparatorSpacingSize, MessageFlags, MessageFlagsBitField } from 'discord.js';
 
 export const textDisplay=content=>new TextDisplayBuilder().setContent(content);
 export function componentsMessage(components){
   return {flags:MessageFlags.IsComponentsV2,components,allowedMentions:{parse:[],repliedUser:false}};
 }
 export function textMessage(content){return componentsMessage([new ContainerBuilder().addTextDisplayComponents(textDisplay(content))]);}
-export function panelsMessage(panels){
+export function panelsMessage(panels,{combine=false}={}){
+  if(combine){
+    const container=new ContainerBuilder();
+    for(const [index,panel] of panels.entries()){
+      if(index)container.addSeparatorComponents(new SeparatorBuilder().setDivider(true).setSpacing(SeparatorSpacingSize.Small));
+      container.addTextDisplayComponents(textDisplay([panel.title,panel.description].filter(Boolean).join('\n')));
+    }
+    return componentsMessage([container]);
+  }
   return componentsMessage(panels.map(panel=>{
     const container=new ContainerBuilder().addTextDisplayComponents(textDisplay(panel.title));
     if(panel.description)container.addTextDisplayComponents(textDisplay(panel.description));

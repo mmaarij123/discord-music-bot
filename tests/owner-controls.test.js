@@ -82,7 +82,7 @@ test('help preserves the shared design for both the owner and other users',async
     const help=i.replies[0].components.map(component=>component.toJSON());
     if(expected)assert.deepEqual(help,expected);else expected=help;
     for(const action of ownerCommands)assert.equal(JSON.stringify(help).includes(action),false);
-    assert.equal(help.length,5);
+    assert.equal(help.length,1);
   }
 });
 

@@ -62,3 +62,7 @@ All command responses, including error and ephemeral button responses, now use u
 ## All colours removed
 
 The latest presentation update removes all remaining container colour assignment, including the automatic DJ player and the custom mention reminder. The panel factory no longer applies any saved/custom palette. Current player/help/mention/queue/command boxes all omit accents; original text, plain logs and permanent message IDs remain intact. Earlier references to preserved player/mention colours are historical and superseded. Validation passed 317 tests, the 79-file static scan and syntax checks. Both existing DJ messages were updated and their returned component trees verified unaccented before the bot restarted successfully in three guilds. No dependencies changed and no real command/voice playback probe was run for this cosmetic update.
+
+## Single help container
+
+Help now renders all five original sections inside one unaccented V2 container, separated by four native dividers. Existing text/order, command visibility and reply routing are preserved. All 317 tests passed with updated layout assertions. This change does not alter player/log rendering, dependency versions or audio behavior; earlier references to five separate help containers are historical.

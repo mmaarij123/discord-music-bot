@@ -122,7 +122,7 @@ test('help replies in each invoking channel despite independent log and DJ setti
   assert.equal(f.source.messages.length,1);assert.equal(f.other.messages.length,1);assert.equal(f.output.messages.length,0);
   for(const output of [f.source,f.other]){
     assert.equal(output.messages[0].components[0].toJSON().components[0].content,'**Your Prefix is **`>`');
-    assert.equal(output.messages[0].components.length,5);
+    assert.equal(output.messages[0].components.length,1);
     assert.deepEqual(output.messages[0].allowedMentions,{parse:[],repliedUser:false});
   }
   assert.equal(f.manager.players.size,0);assert.equal(f.manager.presenters.size,0);
@@ -140,7 +140,7 @@ test('help usage errors stay local and its V2 layout works without Embed Links',
   const f=setup(t);await f.manager.settings.setLogChannel(GUILD,OUTPUT);
   await f.run('>help extra');assert.match(componentText(f.source.messages[0]),/Usage: >help/);
   f.source.permissions.has=values=>![values].flat().includes(PermissionFlagsBits.EmbedLinks);
-  await f.run('>help');assert.equal(f.source.messages[1].components.length,5);
+  await f.run('>help');assert.equal(f.source.messages[1].components.length,1);
   assert.equal(f.output.messages.length,0);
 });
 
@@ -151,7 +151,7 @@ test('custom-prefix uppercase help stays in the invoking thread with thread perm
   await f.run('!!HELP');assert.equal(f.source.messages.length,1);assert.equal(f.output.messages.length,0);
   const panels=f.source.messages[0].components.map(component=>component.toJSON());
   assert.equal(panels[0].components[0].content,'**Your Prefix is **`>`');
-  assert.ok(panels[1].components[1].content.startsWith('`Play`'));assert.equal(panels.length,5);
+  assert.ok(componentText(f.source.messages[0]).includes('`Play`'));assert.equal(panels.length,1);
 });
 test('malformed commands and validation errors stay in the invoking channel',async t=>{
   const f=setup(t);await f.manager.settings.setLogChannel(GUILD,OUTPUT);await f.run('>volume bad');await f.run('>unknown');

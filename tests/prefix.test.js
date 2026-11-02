@@ -62,12 +62,14 @@ test('deleted progress responses can be safely recreated',async()=>{
   await context.editReply('Searching');m.response.edit=async()=>{const error=Error('deleted');error.code=10008;throw error;};
   await context.editReply('Done');assert.equal(m.replies.length,2);
 });
-test('V2 help preserves all five panels and their text/order without an accent colour',async()=>{
+test('V2 help combines all five sections in one unaccented box with native dividers',async()=>{
   const m=message();await messageHandler({config:{prefix:'>'},get:()=>undefined},logger)(m);
   assert.equal(m.replies.length,1);const panels=m.replies[0].components.map(component=>component.toJSON());
   assert.equal(m.replies[0].flags,MessageFlags.IsComponentsV2);assert.equal(m.replies[0].embeds,undefined);assert.equal(m.replies[0].content,undefined);
-  for(const panel of panels)assert.equal(panel.accent_color,undefined);
-  for(const [index,panel] of panels.entries())assert.deepEqual(panel.components.map(component=>component.content),[helpPanels[index].title,helpPanels[index].description].filter(Boolean));
+  assert.equal(panels.length,1);assert.equal(panels[0].accent_color,undefined);
+  assert.deepEqual(panels[0].components.filter(component=>component.type===10).map(component=>component.content),helpPanels.map(panel=>[panel.title,panel.description].filter(Boolean).join('\n')));
+  const dividers=panels[0].components.filter(component=>component.type===14);
+  assert.equal(dividers.length,4);assert.ok(dividers.every(component=>component.divider===true));
   assert.ok(flattenComponents(m.replies[0]).length<=40);
 });
 
