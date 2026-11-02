@@ -7,7 +7,12 @@ export class Mutex {
   }
 }
 export async function withAbort(promise,signal) {
-  signal?.throwIfAborted();
+  if(signal?.aborted){
+    // The caller may already have started a rejecting operation. Observe it
+    // even when cancellation wins before we attach the normal race handlers.
+    Promise.resolve(promise).catch(()=>{});
+    throw signal.reason;
+  }
   if(!signal)return promise;
   let abort;
   const cancelled=new Promise((resolve,reject)=>{abort=()=>reject(signal.reason);signal.addEventListener('abort',abort,{once:true});});

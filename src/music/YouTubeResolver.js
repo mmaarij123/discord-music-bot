@@ -10,9 +10,10 @@ export function normalizeYouTube(data) {
   const id = data.id;
   if (!/^[\w-]{11}$/.test(id ?? '') || typeof data.title!=='string'||!data.title.trim()) return null;
   const title=typeof data.track==='string'&&data.track.trim()?data.track:data.title;
+  const duration=Number(data.duration);
   return { id, title:title.trim(), artist:typeof data.artist==='string'?data.artist:undefined,
     channel:typeof data.channel==='string'?data.channel:typeof data.uploader==='string'?data.uploader:undefined,
-    duration: Number(data.duration) || undefined, artwork: data.thumbnail ?? data.thumbnails?.at(-1)?.url,
+    duration:Number.isFinite(duration)&&duration>0?duration:undefined, artwork: data.thumbnail ?? data.thumbnails?.at(-1)?.url,
     source: 'youtube', sourceUrl: `https://www.youtube.com/watch?v=${id}`, youtubeUrl: `https://www.youtube.com/watch?v=${id}`,
     verified: data.channel_is_verified === true, live: data.is_live === true || ['is_live','is_upcoming'].includes(data.live_status) };
 }

@@ -32,7 +32,7 @@ export class MusicManager {
     const settings=await GuildSettings.open(config.settingsFile);
     return new MusicManager(config,logger,{discovery:new DiscoveryService(spotify,youtube,local,config),audio:new AudioManager(config,youtube,local),autoplay:new AutoplayManager(youtube,recommendations),settings,caches:[youtube.cache,youtube.sourceCache,spotify.cache,official?.cache].filter(Boolean)});
   }
-  constructor(config,logger,services) { Object.assign(this,{config,logger,...services});this.settings=services.settings??new GuildSettings();this.messageStore=new PlayerMessageStore(this.settings);this.players=new Map(); this.presenters=new Map(); this.imports=new Map(); this.closing=false; this.stopCacheCleanup=startCacheCleanup(services.caches??[]); }
+  constructor(config,logger,services) { Object.assign(this,{config,logger,...services});this.settings=services.settings??new GuildSettings();this.messageStore=new PlayerMessageStore(this.settings);this.players=new Map(); this.presenters=new Map(); this.imports=new Map();this.cleanups=new Set(); this.closing=false; this.stopCacheCleanup=startCacheCleanup(services.caches??[]); }
   async outputChannel(guild,fallback){
     return this.destinationChannel(guild,fallback,'log');
   }
@@ -47,8 +47,11 @@ export class MusicManager {
     return requireLogChannel(guild,channel,{history:kind==='dj'});
   }
   async bindPresenter(guild,fallback){
-    const channel=await this.djChannel(guild,fallback),notices=await this.outputChannel(guild,fallback),presenter=this.presenters.get(guild.id);
+    const channel=await this.djChannel(guild,fallback),presenter=this.presenters.get(guild.id);
     if(!presenter)return;
+    let notices=null;
+    try{notices=await this.outputChannel(guild,fallback);}
+    catch(error){this.logger.warn('notice_channel_unavailable',{guildId:guild.id,error});}
     presenter.setNoticeChannel(notices);
     if(this.settings.getDjChannel(guild.id)&&presenter.channel&&presenter.channel.id!==channel.id)await presenter.relocate(channel);
     else presenter.bind(channel);
@@ -64,7 +67,7 @@ export class MusicManager {
     await this.settings.setDjChannel(guild.id,channel?.id??null);
     const presenter=this.presenters.get(guild.id);
     if(presenter){
-      if(!presenter.noticeChannel)presenter.setNoticeChannel(fallback);
+      if(presenter.noticeChannel===undefined)presenter.setNoticeChannel(fallback);
       const target=channel??fallback;
       if(presenter.channel?.id!==target.id)await presenter.relocate(target);else presenter.bind(target);
     }
@@ -87,7 +90,13 @@ export class MusicManager {
     this.players.delete(player.guild.id);
     const presenter=this.presenters.get(player.guild.id); this.presenters.delete(player.guild.id);
     // Release runs inside the player's mutex. Cleanup queues behind that operation.
-    Promise.all([player.destroy(),presenter?.dispose()]).catch(error=>this.logger.warn('session_release_failed',{error}));
+    const cleanup=Promise.allSettled([player.destroy(),presenter?.dispose()]).then(results=>{
+      for(const result of results)if(result.status==='rejected')this.logger.warn('session_release_failed',{error:result.reason});
+    }).finally(()=>{
+      this.messageStore.release(player.guild.id,presenter?.messageOwner);
+      this.cleanups.delete(cleanup);
+    });
+    this.cleanups.add(cleanup);
   }
   cancelImport(guildId) { this.imports.get(guildId)?.abort(); }
   clearCaches() {
@@ -108,7 +117,9 @@ export class MusicManager {
     this.closing=true; this.stopCacheCleanup(); for(const controller of this.imports.values())controller.abort();
     await Promise.allSettled([...this.players.values()].map(p=>p.destroy()));
     await Promise.allSettled([...this.presenters.values()].map(p=>p.dispose()));
+    await Promise.all([...this.cleanups]);
     this.audio.dispose(); this.players.clear(); this.presenters.clear();
+    this.messageStore.views.clear();
     this.clearCaches();
   }
 }

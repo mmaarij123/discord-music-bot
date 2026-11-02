@@ -1,56 +1,48 @@
 # Full code audit — 2 November 2026
 
-The audit reviewed all 43 runtime modules: command parsing/dispatch, exact-owner controls, same-voice/session-host permissions, queue and playback transitions, source matching/discovery, FFmpeg/yt-dlp subprocess lifecycle, connection recovery, caching, credential handling, log/DJ/help routing, shutdown/restart supervision, Windows launchers and deployment configuration. Historical changes are recorded in VALIDATION.md.
+Reviewed all 44 runtime modules and the supplied launchers, diagnostics, smoke checks and deployment configuration. The review covered command parsing/routing, exact-owner and voice permissions, per-guild queue/state transitions, recovery/stop races, persistent DJ messages, metadata/matching, local-file containment, cookie isolation, subprocess handling, cache lifetimes and shutdown supervision. Current command replies remain local; the custom Discohook help/mention designs and the permanent DJ player are preserved.
 
-## Confirmed issue and fix
+## Confirmed fixes
 
-Help was routed through the configured music log destination. A deleted/inaccessible log channel could also prevent help from working, and placing help among text-only local replies without a separate permission check would lose its clear Embed Links error.
+- Released-session cleanup was not tracked after its player/presenter left the manager maps. Shutdown could finish before a pending final notice or presenter cleanup. The manager now tracks every release, waits for both cleanup operations even if one fails, and drains that work before audio/client shutdown.
+- Cached Discord message references and owner tokens survived session release indefinitely. They are now removed after cleanup when the retiring presenter still owns the entry. A newer session's ownership is preserved; saved DJ message IDs remain on disk and are fetched again when needed.
+- A missing/inaccessible log channel prevented player binding, blocking otherwise valid play/join requests. Log lookup failures now produce a structured local warning and disable that notice destination while playback and the DJ player continue. Notices are not redirected into the DJ/command channel. Selecting a working log channel restores delivery.
+- Failed empty join requests retained their host/session. They now release those resources, allowing the next session to claim its actual host. A successful voice join is preserved if only its text acknowledgement fails.
+- An already-cancelled withAbort call ignored an operation that had already begun, potentially leaving its rejection unhandled. It now observes that operation while returning the cancellation reason. Subprocess failure handling is idempotent, preventing repeated termination launches for oversized output; it also preserves falsy abort reasons.
+- Invalid YouTube/local-library durations could enter timing as negative/infinite values. They now normalize to unknown. Invalid local titles are rejected before playback, malformed optional metadata is normalized, a missing media root has a useful error, and safe filenames beginning with two dots are accepted without weakening traversal checks.
 
-The message router now treats help as a local reply and checks Embed Links in the invoking channel. Normal help, malformed help usage and permission failures stay in that channel/thread. Help never resolves the configured log or DJ destination. Existing play confirmations and owner/setup acknowledgements remain local; other music-control replies and playback notices retain their configured log routing, and the automatic player remains in its DJ destination.
+## Dead code and duplication removed
 
-Four new tests cover two invoking channels with independent log/DJ settings, missing destinations without any channel lookup, local usage/Embed Links errors, and custom-prefix uppercase help in a thread with Send Messages in Threads permission. The pre-existing queue/log tests still exercise the unchanged music routing. No additional confirmed blocking runtime defect was found during this review; the dependency limitation below remains open.
+The generated command-description strings became unused when help switched to the operator's fixed Discohook JSON; those duplicate strings and the unused description field were removed. Owner-command membership is now derived from the existing ownerOnly definitions instead of maintained in a second list. Local discovery now uses metadata from the same validated manifest read, removing the second read and the window where metadata could change between validation and return. Session message references are released rather than retained as unused runtime state.
 
-## Current code and checks
+Queue history, internal queue clearing, recovery offsets, optional metadata/recommendation adapters, the portable Opus fallback, cache TTLs and persistent message IDs remain active and were retained. No dependency was removed solely to make npm audit appear clean. No runtime dependency versions changed.
+
+## Executed validation
 
 | Check | Result |
 |---|---|
-| Automated Node tests | **279 passed**, zero failures/skips |
-| Expanded ESLint 10.14.0 scan | **75 JavaScript files**, zero errors/warnings |
-| Syntax checks | All JavaScript files passed |
-| Runtime ESM reachability | **43/43 modules** reachable from wrapper/worker entrypoints, no orphan modules or unused exports |
-| Command surface | **20 commands**, five player buttons; removed commands remain rejected |
-| Installed package tree | All six direct/optional packages present, no missing/invalid dependency reported |
-| Runtime doctor | Node 24.22.2, FFmpeg 9.0, yt-dlp 2026.10.26, Opus/DAVE and cookie-file format checks passed |
-| Real local paced playback | Pause, paused interruption recovery, natural completion, queue transition, full 12-second next track and fresh playback passed |
-| Real Spotify metadata | Authentication and official search passed without exposing credentials/tokens |
-| Real permitted YouTube audio | Blender Creative Commons source passed extraction → FFmpeg → ten Opus packets, then disposal |
+| Node test suite | **309 passed**, zero failures/skips; ten new regression cases |
+| Expanded ESLint scan | **77 JavaScript files**, zero errors/warnings |
+| JavaScript syntax | All files passed |
+| Runtime import reachability | **44/44 modules** reachable; no orphan runtime modules |
+| Installed dependency tree | Six direct/optional packages present; no missing/invalid package |
+| Runtime doctor | Node 24.22.2, FFmpeg 9.0, yt-dlp 2026.10.26, Opus/DAVE and cookie format checks passed |
+| Real paced local playback | Pause, paused interruption recovery, natural completion, queue transition, complete 12-second second track and fresh playback passed |
+| Real Spotify checks | Client Credentials authentication/search, one public track and 50 accessible public playlist entries passed |
+| Real YouTube checks | Search/weighted matching and permitted Blender source extraction → FFmpeg → ten Opus packets passed |
+| Windows launchers | Read-only start/stop checks passed without starting a duplicate or stopping the running bot |
+| Historical private paths | No actual .env, cookie export, node_modules, log or key paths found in Git history |
 
-Evidence: [unit tests](validation/automated-tests.tap), [static scan](validation/static-audit.json), [reachability](validation/reachability.json), [dependency scan](validation/dependency-audit.json).
+Evidence: [test run](validation/automated-tests.tap), [static analysis](validation/static-audit.json), [reachability](validation/reachability.json), [fresh dependency audit](validation/dependency-audit.json). The controlled local interruption warning during the paced test is intentional. Public-provider results apply to this host/time; 50 accessible playlist entries are not a completeness guarantee.
 
-The review retained active functionality rather than deleting code based only on feature names. Internal queue clearing is used for stop/shutdown; history is bounded and supports autoplay; recovery offsets and paused-state restoration are used after interruptions even though public seek was removed. The three process/cache controls still accept only the exact ID 1037886658462371860, without server-admin exceptions. Manual disconnect remains terminal, transient reconnection is bounded, and shutdown exits are not automatically restarted by the standalone wrapper. PM2 runtime execution was not performed; the supplied configuration is checked by tests.
+Discord messages, channel permissions and queue controls were mocked in automated tests. Provider/local probes sent no Discord messages or voice packets, and a ten-packet source probe is not a full-song listening test. Gateway ready verifies login rather than audible voice delivery. PM2 behavior is configuration/test covered; PM2 itself was not run on this Windows host. Ubuntu CI was not executed locally.
 
-## Dependency finding still open
+## Open upstream dependency finding
 
-The fresh npm audit reports **7 moderate affected-package findings, zero high/critical**, propagated from one [minimatch advisory](https://github.com/advisories/GHSA-g3hv-75wg-m249) through glob/rimraf and the native Opus installer. npm reports no automatic compatible fix. The installed callable/callback-based installer chain is not compatible with a blind major-version override. Native Opus is actually used for encoding and was retained; its portable fallback remains useful too.
+The fresh npm audit still reports **7 moderate affected-package findings, zero high/critical**, propagated from the [minimatch advisory](https://github.com/advisories/GHSA-g3hv-75wg-m249) through glob/rimraf in the native Opus installation chain. npm reports no automatic compatible fix. A blind major override breaks the callable/callback APIs used by the older chain, so none was applied. Native Opus is used at runtime and retained for encoding efficiency; the portable fallback remains available.
 
-Discord searches/URLs/queue values are not passed as glob patterns to those installation utilities. That reduces the observed application exposure, while npm's finding remains unresolved. No incompatible force override, dependency-source patch or audit suppression was applied. The strict CI npm-audit step still reports/fails on these findings. No runtime dependency was added or upgraded for this routing fix.
+Discord command values are not passed to those installation utilities as glob patterns, which limits the observed application exposure but does not resolve the package advisory. The strict CI audit step remains enabled and will report/fail on this finding. Dependency versions were not changed or audit results suppressed.
 
 ## Deployment and privacy
 
-The bot is restarted after validation and checked for gateway ready with one supervised worker. The Windows launcher and exact-project stop helper remain available. The private .env and cookie exports are checked against a local before/after hash baseline, without displaying their contents. The staged source is scanned against known local credential/cookie values and prohibited paths before upload to the existing private repository; remote privacy, commit and file tree are verified. The release ZIP is rebuilt to match the scanned tracked files. Runtime data, media, logs and actual secret files remain excluded.
-
-Discord sends, permission/channel lookups and help routing were mocked in automated tests. Provider probes and the paced local audio test sent no server messages or voice packets. Gateway ready confirms login rather than full-track human listening, and no real help message was posted in the user's server during validation.
-
-## Help presentation follow-up
-
-The subsequent cosmetic update shows the prefix once above short English command descriptions, without the previous title, Try it/Sources fields or repeated prefixes/arguments. Existing current-command, removed-command, owner visibility and channel-routing checks were updated; **279 tests**, syntax checks and the **75-file static scan** passed. Playback, permissions and runtime dependencies were not changed. See VALIDATION.md for the exact scope.
-
-## Original Discohook design follow-up
-
-Help now uses the operator's five exact shared Discohook embeds from src/components/helpEmbeds.json. It preserves the supplied text, colours and ordering without additional sections for any user. Existing tests were updated to check the design, removed-command absence and local/channel routing; all 279 tests and syntax checks passed. The actual response was also compared against the original decoded share payload. The bot was already offline after an owner shutdown and was left offline; no live Discord help message was sent. Earlier help presentation descriptions above are historical and superseded by this design.
-
-## Permanent DJ message and command routing follow-up
-
-The next update fixes per-session player-message replacement. PlayerMessageStore now persists the configured DJ message ID, reuses it across voice sessions/application restarts and serializes edits across retiring/new presenters. Version 1/2 settings migrate to version 3; one bounded history lookup adopts an existing bot-owned player. Confirmed message deletion gets a single replacement; access failures leave the existing message identity intact. DJ message restoration requires Read Message History. All prefix responses/errors now stay in the invoking channel, while asynchronous playback/recovery/disconnect notices retain log-channel routing. The unused response-channel override was removed.
-
-Validation passed 299 tests, 77-file static analysis with zero warnings/errors, syntax checks and reachability for all 44 runtime modules. Real read-only Discord history lookup adopted both configured DJ players locally, and deployment reached gateway ready in three guilds. No live test messages or voice traffic were generated. The historical help/routing sections above describe earlier releases; current routing and permanence are documented in README.md and the latest VALIDATION.md entry. Dependency versions and the previously reported upstream moderate audit findings are unchanged; no fresh dependency audit is claimed for this UI/lifecycle change.
+The validated update is deployed through the existing Windows launcher, then checked for one supervised worker and real Discord gateway ready. Existing local DJ message IDs are retained. The .env/cookie contents are checked against a private before/after hash baseline, without printing their values. Exact staged files are scanned against local secret/cookie values and prohibited paths before upload to the existing private GitHub repository. Repository privacy, final commit and file tree are verified. The release ZIP excludes runtime settings, secrets, logs, media, node_modules and Git data.

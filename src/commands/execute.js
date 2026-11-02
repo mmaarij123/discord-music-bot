@@ -107,11 +107,15 @@ export async function execute(interaction,manager,action=interaction.commandName
   if(action==='join'){
     textAccess(interaction,await manager.djChannel?.(interaction.guild,interaction.channel)??interaction.channel);
     player=manager.get(interaction.guild,true);player.claimHost(interaction.user.id);
-    const releaseIdle=player.holdIdleTimeout();
+    const releaseIdle=player.holdIdleTimeout(),wasConnected=Boolean(player.voice.channelId);
+    let connected=false;
     try{
       await manager.bindPresenter?.(interaction.guild,interaction.channel);
-      await player.join(access.channel);return await reply('Connected to your voice channel.');
-    }finally{releaseIdle();}
+      await player.join(access.channel);connected=true;return await reply('Connected to your voice channel.');
+    }finally{
+      releaseIdle();
+      if(!connected&&!wasConnected&&!player.closed&&!player.current&&!player.queue.length)await player.stop(true);
+    }
   }
   if(action==='stop'||action==='leave') {
     if(player&&player.ownerId!==interaction.user.id){

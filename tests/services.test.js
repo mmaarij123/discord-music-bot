@@ -47,6 +47,18 @@ test('authorized library denies arbitrary paths and requires stream authorizatio
     await assert.rejects(local.entry('local','bad'),/within MEDIA_ROOT/);await assert.rejects(local.entry('stream','bad'),/authorized/);await assert.rejects(local.entry('local','toString'),/not in/);
   }finally{await rm(root,{recursive:true,force:true});}
 });
+
+test('authorized local metadata is validated and dot-prefixed filenames remain inside the media root',async()=>{
+  const root=await mkdtemp(path.join(tmpdir(),'music-library-metadata-'));
+  try{
+    await writeFile(path.join(root,'..song.wav'),'sample');const manifest=path.join(root,'media.json');
+    await writeFile(manifest,JSON.stringify({local:{good:{title:' Good ',file:'..song.wav',duration:-1,artist:{bad:true}},bad:{title:42,file:'..song.wav'}}}));
+    const local=new LocalMediaResolver({mediaRoot:root,manifest});
+    const {tracks}=await local.resolve('local','good');assert.equal(tracks[0].title,'Good');assert.equal(tracks[0].duration,undefined);assert.equal(tracks[0].artist,'Authorized library');
+    await assert.rejects(local.resolve('local','bad'),/valid title/);
+    const absent=new LocalMediaResolver({mediaRoot:path.join(root,'absent'),manifest});await assert.rejects(absent.entry('local','good'),/MEDIA_ROOT folder/);
+  }finally{assert.ok(path.resolve(root).startsWith(path.resolve(tmpdir())+path.sep));await rm(root,{recursive:true,force:true});}
+});
 test('discovery reports Spotify text-search fallback honestly',async()=>{
   const spotify=new SpotifyResolver(loadConfig({}),new Semaphore(1));
   const discovery=new DiscoveryService(spotify,{search:async()=>[{title:'Song',artist:'Artist',source:'youtube'}]},null);

@@ -10,6 +10,7 @@ import { createLogger } from '../src/utils/logger.js';
 import { runTool } from '../src/utils/process.js';
 import { execute } from '../src/commands/execute.js';
 import { ChannelType } from 'discord.js';
+import { withAbort } from '../src/utils/async.js';
 
 function joinContext(){
   const channel={id:'voice',type:ChannelType.GuildVoice,full:false,permissionsFor:()=>({has:()=>true})};
@@ -91,4 +92,68 @@ test('logger redacts nested credentials and source URLs',t=>{
 test('logger bounds circular object traversal instead of crashing playback',t=>{
   let output='';t.mock.method(process.stdout,'write',value=>{output+=value;return true;});
   const value={};value.self=value;assert.doesNotThrow(()=>createLogger().warn('cycle',{value}));assert.ok(output.includes('[truncated]'));
+});
+
+test('shutdown waits for released-session notices and then drops cached Discord message references',async()=>{
+  let release,disposed=false,finished=false;
+  const pending=new Promise(resolve=>{release=resolve;});
+  const manager=new MusicManager(loadConfig({}),logger,{audio:{dispose(){disposed=true;}}});
+  const player=manager.get({id:'released'},true),presenter=manager.presenters.get('released');
+  presenter.setNoticeChannel({send:async()=>pending});presenter.notice('Final disconnect');
+  manager.release(player);
+  assert.equal(manager.players.size,0);assert.equal(manager.cleanups.size,1);
+  const closing=manager.destroy().then(()=>{finished=true;});
+  try{
+    await settle();assert.equal(finished,false);assert.equal(disposed,false);
+  }finally{release();await closing;}
+  assert.equal(disposed,true);assert.equal(manager.cleanups.size,0);assert.equal(manager.messageStore.views.size,0);
+});
+
+test('a failed released-player cleanup still waits for its final presenter cleanup',async()=>{
+  let release,finished=false;const warnings=[],pending=new Promise(resolve=>{release=resolve;});
+  const manager=new MusicManager(loadConfig({}),{...logger,warn:event=>warnings.push(event)},{audio:{dispose(){}}});
+  const player=manager.get({id:'released'},true),presenter=manager.presenters.get('released');
+  player.destroy=async()=>{throw Error('Controlled cleanup failure');};
+  presenter.setNoticeChannel({send:async()=>pending});presenter.notice('Final disconnect');
+  manager.release(player);const closing=manager.destroy().then(()=>{finished=true;});
+  try{await settle();assert.equal(finished,false);}finally{release();await closing;}
+  assert.deepEqual(warnings,['session_release_failed']);assert.equal(manager.cleanups.size,0);
+});
+
+test('failed empty joins release their claimed host and session instead of retaining stale ownership',async()=>{
+  const manager=new MusicManager(loadConfig({}),logger,{audio:{dispose(){}}});
+  manager.bindPresenter=async()=>{throw new UserError('DJ unavailable');};
+  try{
+    await assert.rejects(execute(joinContext(),manager,'join'),/DJ unavailable/);
+    assert.equal(manager.players.has('guild'),false);
+    const next=manager.get({id:'guild'},true);assert.equal(next.ownerId,null);next.claimHost('new-host');assert.equal(next.ownerId,'new-host');
+  }finally{await manager.destroy();}
+});
+
+test('a successful join remains connected if only its reply delivery fails',async t=>{
+  const f=fixture();t.after(()=>f.player.destroy());const input=joinContext();input.editReply=async()=>{throw Error('Reply failed');};
+  await assert.rejects(execute(input,{get:()=>f.player},'join'),/Reply failed/);
+  assert.equal(f.player.voice.channelId,'voice');assert.equal(f.player.closed,false);assert.equal(f.player.idleHolds,0);
+});
+
+test('already-cancelled waits still observe a rejected operation without an unhandled rejection',async()=>{
+  const reason=Error('Cancelled'),signal=AbortSignal.abort(reason);let observed=false;
+  const operation={then(_resolve,reject){observed=true;reject(Error('Late provider rejection'));}};
+  await assert.rejects(withAbort(operation,signal),error=>error===reason);await settle();assert.equal(observed,true);
+});
+
+test('invalid YouTube durations cannot enter playback timing or matching as negative/infinite values',()=>{
+  for(const duration of [-10,Infinity,-Infinity,'not a duration',0])assert.equal(normalizeYouTube({id:'abcdefghijk',title:'Song',duration}).duration,undefined);
+  assert.equal(normalizeYouTube({id:'abcdefghijk',title:'Song',duration:'180'}).duration,180);
+});
+
+test('oversized tool output is rejected and its subprocess is closed',async()=>{
+  await assert.rejects(runTool(process.execPath,['-e',"process.stdout.write('x'.repeat(65536));setTimeout(()=>{},30000)"],{maxBytes:32,timeoutMs:5000}),/Metadata exceeded/);
+});
+
+test('tool cancellation preserves even a falsy abort reason',async()=>{
+  const controller=new AbortController();
+  const running=runTool(process.execPath,['-e','setTimeout(()=>{},30000)'],{signal:controller.signal});
+  const checked=running.then(()=>assert.fail('Cancelled tool unexpectedly succeeded'),reason=>assert.equal(reason,0));
+  controller.abort(0);await checked;
 });

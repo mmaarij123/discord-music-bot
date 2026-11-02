@@ -13,6 +13,7 @@ export class PlayerMessageStore {
     return view.owner;
   }
   ownsChannel(guildId,channelId){return Boolean(channelId&&this.settings.getDjChannel(guildId)===channelId);}
+  release(guildId,owner){if(this.views.get(guildId)?.owner===owner)this.views.delete(guildId);}
   async savedMessage(guild,channel){
     const saved=this.settings.getDjMessage(guild.id);
     const botId=guild.members.me?.id??channel.client?.user?.id;

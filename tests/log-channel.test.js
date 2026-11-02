@@ -291,3 +291,17 @@ test('a broken log destination cannot prevent the host from stopping outside voi
   f.member.permissions.has=()=>false;f.source.permissions.has=value=>value!==PermissionFlagsBits.EmbedLinks;
   await f.run('>stop');assert.equal(music.player.voice.channelId,null);assert.ok(music.player.closed);assert.match(f.source.messages.at(-1).content,/left voice/);
 });
+
+test('a missing log destination does not block play or leak playback notices into the DJ channel',async t=>{
+  const f=setup(t),music=fixture({id:GUILD}),presenter=new PlayerPresenter(music.player,logger);
+  f.manager.players.set(GUILD,music.player);f.manager.presenters.set(GUILD,presenter);
+  f.manager.discovery={resolve:async()=>({tracks:[track('Song')],notices:[]})};
+  await f.manager.settings.setDjChannel(GUILD,SECOND);await f.manager.settings.setLogChannel(GUILD,OUTPUT);f.channels.delete(OUTPUT);
+  f.member.voice.channel={id:'voice',type:ChannelType.GuildVoice,full:false,permissionsFor:()=>({has:()=>true})};
+  await f.run('>play Artist Song');await presenter.render();
+  assert.equal(music.player.current.title,'Song');assert.match(f.source.edits.at(-1).content,/Added `Song`/);
+  assert.equal(presenter.noticeTarget,null);presenter.notice('Provider interrupted');await presenter.flushNotice();
+  assert.equal(f.source.messages.length,1);assert.equal(f.other.messages.length,1);assert.equal(f.output.messages.length,0);
+  await f.manager.setLogChannel(f.guild,f.other,f.source);presenter.notice('Recovered notice');await presenter.flushNotice();
+  assert.equal(f.other.messages.at(-1).content,'Recovered notice');
+});

@@ -1,69 +1,72 @@
 {
-  "checkedAt": "2026-11-01T22:30:37.879Z",
+  "auditReportVersion": 2,
   "vulnerabilities": {
-    "info": 0,
-    "low": 0,
-    "moderate": 7,
-    "high": 0,
-    "critical": 0,
-    "total": 7
-  },
-  "findings": [
-    {
+    "@discordjs/node-pre-gyp": {
       "name": "@discordjs/node-pre-gyp",
       "severity": "moderate",
       "isDirect": false,
-      "range": "*",
       "via": [
         "rimraf"
       ],
       "effects": [
         "@discordjs/opus"
       ],
+      "range": "*",
+      "nodes": [
+        "node_modules/@discordjs/node-pre-gyp"
+      ],
       "fixAvailable": false
     },
-    {
+    "@discordjs/opus": {
       "name": "@discordjs/opus",
       "severity": "moderate",
       "isDirect": true,
-      "range": ">=0.3.1",
       "via": [
         "@discordjs/node-pre-gyp"
       ],
       "effects": [
         "prism-media"
       ],
+      "range": ">=0.3.1",
+      "nodes": [
+        "node_modules/@discordjs/opus"
+      ],
       "fixAvailable": false
     },
-    {
+    "@discordjs/voice": {
       "name": "@discordjs/voice",
       "severity": "moderate",
       "isDirect": true,
-      "range": "*",
       "via": [
         "prism-media"
       ],
       "effects": [],
+      "range": "*",
+      "nodes": [
+        "node_modules/@discordjs/voice"
+      ],
       "fixAvailable": false
     },
-    {
+    "glob": {
       "name": "glob",
       "severity": "moderate",
       "isDirect": false,
-      "range": "3.0.0 - 13.0.6",
       "via": [
         "minimatch"
       ],
       "effects": [
         "rimraf"
       ],
+      "range": "3.0.0 - 13.0.6",
+      "nodes": [
+        "node_modules/glob"
+      ],
       "fixAvailable": false
     },
-    {
+    "minimatch": {
       "name": "minimatch",
       "severity": "moderate",
       "isDirect": false,
-      "range": "<11.0.1",
       "via": [
         {
           "source": 1244012,
@@ -85,33 +88,61 @@
       "effects": [
         "glob"
       ],
+      "range": "<11.0.1",
+      "nodes": [
+        "node_modules/minimatch"
+      ],
       "fixAvailable": false
     },
-    {
+    "prism-media": {
       "name": "prism-media",
       "severity": "moderate",
       "isDirect": false,
-      "range": "1.2.3 - 1.3.5",
       "via": [
         "@discordjs/opus"
       ],
       "effects": [
         "@discordjs/voice"
       ],
+      "range": "1.2.3 - 1.3.5",
+      "nodes": [
+        "node_modules/@discordjs/voice/node_modules/prism-media"
+      ],
       "fixAvailable": false
     },
-    {
+    "rimraf": {
       "name": "rimraf",
       "severity": "moderate",
       "isDirect": false,
-      "range": "2.3.0 - 3.0.2 || >=4.2.0",
       "via": [
         "glob"
       ],
       "effects": [
         "@discordjs/node-pre-gyp"
       ],
+      "range": "2.3.0 - 3.0.2 || >=4.2.0",
+      "nodes": [
+        "node_modules/rimraf"
+      ],
       "fixAvailable": false
     }
-  ]
+  },
+  "metadata": {
+    "vulnerabilities": {
+      "info": 0,
+      "low": 0,
+      "moderate": 7,
+      "high": 0,
+      "critical": 0,
+      "total": 7
+    },
+    "dependencies": {
+      "prod": 34,
+      "dev": 0,
+      "optional": 75,
+      "peer": 3,
+      "peerOptional": 0,
+      "total": 108
+    }
+  }
 }

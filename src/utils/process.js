@@ -24,9 +24,9 @@ export function runTool(file, args, { signal, timeoutMs = 45000, maxBytes = 8*10
   return new Promise((resolve, reject) => {
     signal?.throwIfAborted();
     const child = spawnTool(file,args);
-    let stdout = '', stderr = '', bytes = 0, failure;
+    let stdout = '', stderr = '', bytes = 0, failure, failed=false;
     const decoder = new StringDecoder('utf8');
-    const fail = error => { failure ??= error; killProcess(child); };
+    const fail = error => { if(failed)return;failed=true;failure=error;killProcess(child); };
     const abort = () => fail(signal.reason);
     signal?.addEventListener('abort', abort, { once: true });
     const timer = setTimeout(() => fail(new UserError('The media tool timed out. Try a smaller request or another source.','TOOL_TIMEOUT')), timeoutMs);
@@ -41,7 +41,7 @@ export function runTool(file, args, { signal, timeoutMs = 45000, maxBytes = 8*10
     child.on('close', code => {
       clearTimeout(timer); signal?.removeEventListener('abort', abort);
       stdout += decoder.end();
-      if (failure) reject(failure);
+      if (failed) reject(failure);
       else if (code !== 0 && !(allowPartial && stdout.trim())) reject(providerError(stderr));
       else resolve({ stdout, partial: code !== 0 });
     });

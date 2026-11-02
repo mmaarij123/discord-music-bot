@@ -9,8 +9,9 @@ export class PlayerPresenter {
     this.onChange=()=>this.schedule(); this.onNotice=message=>this.notice(message);
     player.on('change',this.onChange); player.on('notice',this.onNotice);
   }
-  bind(channel) { if (!this.channel) this.channel=channel;if(!this.noticeChannel)this.noticeChannel=channel;this.schedule(); }
+  bind(channel) { if (!this.channel) this.channel=channel;if(this.noticeChannel===undefined)this.noticeChannel=channel;this.schedule(); }
   setNoticeChannel(channel){this.noticeChannel=channel;}
+  get noticeTarget(){return this.noticeChannel===undefined?this.channel:this.noticeChannel;}
   async relocate(channel){
     await this.lock.run(async()=>{
       if(this.disposed)return;
@@ -44,14 +45,14 @@ export class PlayerPresenter {
   notice(message) {
     if(this.disposed)return;
     this.pendingNotice=message;
-    if (this.noticeTimer || !(this.noticeChannel??this.channel)) return;
+    if (this.noticeTimer || !this.noticeTarget) return;
     this.noticeTimer=setTimeout(()=>{
       void this.flushNotice();
     },3000); this.noticeTimer.unref();
   }
   async flushNotice() {
     clearTimeout(this.noticeTimer);this.noticeTimer=null;
-    const message=this.pendingNotice,channel=this.noticeChannel??this.channel;
+    const message=this.pendingNotice,channel=this.noticeTarget;
     this.pendingNotice=null;
     if(!message||!channel)return;
     try{await channel.send({content:message.slice(0,1900),allowedMentions:{parse:[]}});}
