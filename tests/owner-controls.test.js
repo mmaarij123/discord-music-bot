@@ -75,12 +75,14 @@ test('unsupported direct-process restart gives setup instructions before acknowl
   assert.equal(lifecycle.pending,null);
 });
 
-test('help shows owner controls only to the exact owner and fits the embed limit',async()=>{
+test('help preserves the shared design for both the owner and other users',async()=>{
+  let expected;
   for(const id of [OWNER_USER_ID,'server-admin']){
     const i=context(id);await execute(i,{get:()=>undefined},'help');
-    const help=i.replies[0].embeds[0].toJSON().description;
-    for(const action of ownerCommands)assert.equal(help.includes(`**${action}**`),id===OWNER_USER_ID);
-    assert.ok(help.length<=4096);
+    const help=i.replies[0].embeds.map(embed=>embed.toJSON());
+    if(expected)assert.deepEqual(help,expected);else expected=help;
+    for(const action of ownerCommands)assert.equal(JSON.stringify(help).includes(action),false);
+    assert.equal(help.length,5);
   }
 });
 

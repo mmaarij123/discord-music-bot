@@ -44,3 +44,7 @@ Discord sends, permission/channel lookups and help routing were mocked in automa
 ## Help presentation follow-up
 
 The subsequent cosmetic update shows the prefix once above short English command descriptions, without the previous title, Try it/Sources fields or repeated prefixes/arguments. Existing current-command, removed-command, owner visibility and channel-routing checks were updated; **279 tests**, syntax checks and the **75-file static scan** passed. Playback, permissions and runtime dependencies were not changed. See VALIDATION.md for the exact scope.
+
+## Original Discohook design follow-up
+
+Help now uses the operator's five exact shared Discohook embeds from src/components/helpEmbeds.json. It preserves the supplied text, colours and ordering without additional sections for any user. Existing tests were updated to check the design, removed-command absence and local/channel routing; all 279 tests and syntax checks passed. The actual response was also compared against the original decoded share payload. The bot was already offline after an owner shutdown and was left offline; no live Discord help message was sent. Earlier help presentation descriptions above are historical and superseded by this design.

@@ -1,11 +1,12 @@
 import { ChannelType, PermissionFlagsBits, EmbedBuilder, escapeMarkdown } from 'discord.js';
-import { commands, commandMap } from './definitions.js';
+import { commandMap } from './definitions.js';
+import helpEmbeds from '../components/helpEmbeds.json' with { type: 'json' };
 import { playerEmbed, duration } from '../components/playerEmbed.js';
 import { UserError } from '../utils/errors.js';
 import { integer, classifyInput } from '../utils/validators.js';
 import { performance } from 'node:perf_hooks';
 import { channelSettings } from './channelSettings.js';
-import { OWNER_USER_ID, ownerCommands, requireOwner } from '../config/owner.js';
+import { ownerCommands, requireOwner } from '../config/owner.js';
 const readOnly=new Set(['help','queue','nowplaying','logchannel','djchannel']);
 const songLabel=value=>`\`${String(value).replace(/`/g,'ˋ').replace(/[\r\n]/g,' ').slice(0,500)}\``;
 export async function voiceAccess(interaction,player) {
@@ -46,8 +47,7 @@ export async function execute(interaction,manager,action=interaction.commandName
   const option=interaction.options;
   if(['logchannel','djchannel'].includes(action))return channelSettings(interaction,manager,reply,action==='djchannel'?'dj':'log');
   if (action==='help') {
-    const help=commands.filter(command=>!command.ownerOnly||interaction.user?.id===OWNER_USER_ID).map(command=>`**${command.name}** — ${command.description}`).join('\n');
-    return reply({embeds:[new EmbedBuilder().setColor(0x1db954).setDescription(`Your prefix is: \`${prefix}\`\n\n${help}`)]});
+    return reply({embeds:helpEmbeds.map(embed=>new EmbedBuilder(embed))});
   }
   if (action==='play') {
     const query=option.getString('query',true);

@@ -121,7 +121,8 @@ test('help replies in each invoking channel despite independent log and DJ setti
   await messageHandler(f.manager,logger,{cooldown:()=>{}})(second);
   assert.equal(f.source.messages.length,1);assert.equal(f.other.messages.length,1);assert.equal(f.output.messages.length,0);
   for(const output of [f.source,f.other]){
-    assert.ok(output.messages[0].embeds[0].toJSON().description.startsWith('Your prefix is: `>`'));
+    assert.equal(output.messages[0].embeds[0].toJSON().title,'**Your Prefix is **`>`');
+    assert.equal(output.messages[0].embeds.length,5);
     assert.deepEqual(output.messages[0].allowedMentions,{parse:[],repliedUser:false});
   }
   assert.equal(f.manager.players.size,0);assert.equal(f.manager.presenters.size,0);
@@ -148,8 +149,9 @@ test('custom-prefix uppercase help stays in the invoking thread with thread perm
   f.source.isThread=()=>true;
   f.source.permissions.has=values=>![values].flat().includes(PermissionFlagsBits.SendMessages);
   await f.run('!!HELP');assert.equal(f.source.messages.length,1);assert.equal(f.output.messages.length,0);
-  const description=f.source.messages[0].embeds[0].toJSON().description;
-  assert.ok(description.startsWith('Your prefix is: `!!`'));assert.ok(description.includes('**play**'));assert.equal(description.includes('!!play'),false);
+  const embeds=f.source.messages[0].embeds.map(embed=>embed.toJSON());
+  assert.equal(embeds[0].title,'**Your Prefix is **`>`');
+  assert.ok(embeds[1].description.startsWith('`Play`'));assert.equal(embeds.length,5);
 });
 test('malformed commands and validation errors also route to the configured channel',async t=>{
   const f=setup(t);await f.manager.settings.setLogChannel(GUILD,OUTPUT);await f.run('>volume bad');await f.run('>unknown');
