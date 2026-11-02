@@ -100,12 +100,12 @@ test('other-guild, voice and inaccessible channels cannot be configured',async t
 });
 test('moderators can configure the channel without joining voice',async t=>{
   const f=setup(t);await f.run('>logchannel #music-logs');assert.equal(f.manager.settings.getLogChannel(GUILD),OUTPUT);
-  assert.match(f.source.messages.at(-1).content,new RegExp(OUTPUT));assert.equal(f.output.messages.length,0);
+  assert.match(componentText(f.source.messages.at(-1)),new RegExp(OUTPUT));assert.equal(f.output.messages.length,0);
 });
 test('non-moderators cannot inspect, change or disable the setting',async t=>{
   const f=setup(t);await f.manager.settings.setLogChannel(GUILD,OUTPUT);f.member.permissions.has=()=>false;
   for(const command of ['>logchannel','>logchannel #other','>logchannel off'])await f.run(command);
-  assert.equal(f.manager.settings.getLogChannel(GUILD),OUTPUT);assert.ok(f.source.messages.every(value=>value.content.includes('Manage Server')));
+  assert.equal(f.manager.settings.getLogChannel(GUILD),OUTPUT);assert.ok(f.source.messages.every(value=>componentText(value).includes('Manage Server')));
 });
 test('queue replies stay in the invoking channel when logs are configured',async t=>{
   const f=setup(t),music=fixture({id:GUILD});f.manager.players.set(GUILD,music.player);
@@ -138,7 +138,7 @@ test('help never looks up a missing log or DJ destination',async t=>{
 
 test('help usage errors stay local and its V2 layout works without Embed Links',async t=>{
   const f=setup(t);await f.manager.settings.setLogChannel(GUILD,OUTPUT);
-  await f.run('>help extra');assert.match(f.source.messages[0].content,/Usage: >help/);
+  await f.run('>help extra');assert.match(componentText(f.source.messages[0]),/Usage: >help/);
   f.source.permissions.has=values=>![values].flat().includes(PermissionFlagsBits.EmbedLinks);
   await f.run('>help');assert.equal(f.source.messages[1].components.length,5);
   assert.equal(f.output.messages.length,0);
@@ -155,7 +155,7 @@ test('custom-prefix uppercase help stays in the invoking thread with thread perm
 });
 test('malformed commands and validation errors stay in the invoking channel',async t=>{
   const f=setup(t);await f.manager.settings.setLogChannel(GUILD,OUTPUT);await f.run('>volume bad');await f.run('>unknown');
-  assert.equal(f.source.messages.length,2);assert.equal(f.output.messages.length,0);assert.match(f.source.messages[0].content,/Usage/);
+  assert.equal(f.source.messages.length,2);assert.equal(f.output.messages.length,0);assert.match(componentText(f.source.messages[0]),/Usage/);
 });
 test('search progress edits one message in the invoking channel',async t=>{
   const f=setup(t),context=messageContext(f.message('>play Song'),parsePrefix('>play Song'));
@@ -165,7 +165,7 @@ test('search progress edits one message in the invoking channel',async t=>{
 test('deleted or inaccessible configured channels do not silently send music elsewhere',async t=>{
   const f=setup(t);await f.manager.settings.setLogChannel(GUILD,OUTPUT);f.channels.delete(OUTPUT);
   await assert.rejects(f.manager.outputChannel(f.guild,f.source),{code:'LOG_CHANNEL'});
-  await f.run('>queue');assert.equal(f.output.messages.length,0);assert.match(f.source.messages[0].content,/No music session/);
+  await f.run('>queue');assert.equal(f.output.messages.length,0);assert.match(componentText(f.source.messages[0]),/No music session/);
   assert.equal(f.manager.settings.getLogChannel(GUILD),OUTPUT);
 });
 test('logchannel off is usable when the old destination is missing',async t=>{
@@ -220,12 +220,12 @@ test('DJ command supports names, status and off independently from the log chann
   const f=setup(t);assert.equal(parsePrefix('>djchannel #other').values.channel,'#other');
   await f.run('>logchannel #music-logs');await f.run('>djchannel #other');
   assert.equal(f.manager.settings.getLogChannel(GUILD),OUTPUT);assert.equal(f.manager.settings.getDjChannel(GUILD),SECOND);
-  await f.run('>djchannel');assert.match(f.source.messages.at(-1).content,new RegExp(SECOND));
+  await f.run('>djchannel');assert.match(componentText(f.source.messages.at(-1)),new RegExp(SECOND));
   await f.run('>djchannel off');assert.equal(f.manager.settings.getDjChannel(GUILD),null);assert.equal(f.manager.settings.getLogChannel(GUILD),OUTPUT);
 });
 test('DJ configuration requires Manage Server even if a user is in voice',async t=>{
   const f=setup(t);f.member.permissions.has=()=>false;await f.run('>djchannel #other');
-  assert.equal(f.manager.settings.getDjChannel(GUILD),null);assert.match(f.source.messages.at(-1).content,/Manage Server/);
+  assert.equal(f.manager.settings.getDjChannel(GUILD),null);assert.match(componentText(f.source.messages.at(-1)),/Manage Server/);
 });
 test('changing only the log channel does not move the embed or invalidate its controls',async t=>{
   const f=setup(t),music=fixture({id:GUILD}),presenter=new PlayerPresenter(music.player,logger);
@@ -242,13 +242,13 @@ test('play confirmation stays local, the embed stays in DJ, and notices go to lo
   // The command channel only needs text replies when a separate DJ channel is set.
   f.source.permissions.has=value=>value!==PermissionFlagsBits.EmbedLinks;
   await f.run('>play Artist Song');await presenter.render();
-  assert.equal(f.source.messages.length,1);assert.equal(f.source.messages[0].content,'Searching of `Artist Song`');
-  assert.equal(f.source.edits.at(-1).content,'Added `Song` in the queue');assert.equal(f.output.messages.length,0);
+  assert.equal(f.source.messages.length,1);assert.equal(componentText(f.source.messages[0]),'Searching of `Artist Song`');
+  assert.equal(componentText(f.source.edits.at(-1)),'Added `Song` in the queue');assert.equal(f.output.messages.length,0);
   assert.equal(f.other.messages.length,1);assert.ok(f.other.messages[0].components.length);assert.equal(f.other.messages[0].content,undefined);
   presenter.notice('Playback notice');await new Promise(resolve=>{setTimeout(resolve,3100);});
   assert.equal(f.output.messages[0].content,'Playback notice');assert.equal(f.other.messages.length,1);
   const handle=music.player.handle;await f.run('>nowplaying');
-  assert.equal(f.other.messages.length,1);assert.match(f.source.messages.at(-1).content,/music player is in/);assert.equal(f.output.messages.length,1);assert.equal(music.player.handle,handle);
+  assert.equal(f.other.messages.length,1);assert.match(componentText(f.source.messages.at(-1)),/music player is in/);assert.equal(f.output.messages.length,1);assert.equal(music.player.handle,handle);
 });
 
 test('volume, join and leave acknowledge locally while real notices stay in logs',async t=>{
@@ -258,8 +258,12 @@ test('volume, join and leave acknowledge locally while real notices stay in logs
   f.member.voice.channel={id:'voice',type:ChannelType.GuildVoice,full:false,permissionsFor:()=>({has:()=>true})};
   f.source.permissions.has=values=>![values].flat().includes(PermissionFlagsBits.EmbedLinks);
   for(const command of ['>join','>volume 42','>leave'])await f.run(command);
-  assert.equal(f.source.messages.length,3);assert.match(f.source.messages[0].content,/Connected/);
-  assert.match(f.source.messages[1].content,/Volume set to 42/);assert.match(f.source.messages[2].content,/left voice/);
+  assert.equal(f.source.messages.length,3);assert.match(componentText(f.source.messages[0]),/Connected/);
+  assert.match(componentText(f.source.messages[1]),/Volume set to 42/);assert.match(componentText(f.source.messages[2]),/left voice/);
+  for(const reply of f.source.messages){
+    assert.equal(reply.content,undefined);assert.equal(reply.embeds,undefined);
+    for(const container of reply.components){assert.equal(container.toJSON().type,17);assert.equal(container.toJSON().accent_color,undefined);}
+  }
   assert.equal(f.output.messages.length,0);
   presenter.notice('Playback interrupted');await presenter.flushNotice();
   assert.equal(f.output.messages.length,1);assert.equal(f.output.messages[0].content,'Playback interrupted');
@@ -271,8 +275,8 @@ test('a missing log channel cannot block command replies or their local errors',
   f.manager.outputChannel=()=>assert.fail('A command reply tried to resolve logs');
   f.member.voice.channel={id:'voice',type:ChannelType.GuildVoice,full:false,permissionsFor:()=>({has:()=>true})};
   for(const command of ['>volume 35','>queue','>pause','>volume invalid'])await f.run(command);
-  assert.equal(f.source.messages.length,4);assert.match(f.source.messages[0].content,/35%/);
-  assert.ok(f.source.messages[1].components);assert.match(f.source.messages[2].content,/No playing/);assert.match(f.source.messages[3].content,/Usage/);
+  assert.equal(f.source.messages.length,4);assert.match(componentText(f.source.messages[0]),/35%/);
+  assert.ok(f.source.messages[1].components);assert.match(componentText(f.source.messages[2]),/No playing/);assert.match(componentText(f.source.messages[3]),/Usage/);
   assert.equal(f.output.messages.length,0);
 });
 test('log-only configuration does not pull the player away from the play command channel',async t=>{
@@ -289,7 +293,7 @@ test('a broken log destination cannot prevent the host from stopping outside voi
   const f=setup(t),music=fixture({id:GUILD});f.manager.players.set(GUILD,music.player);music.player.claimHost('666666666666666666');
   await music.player.enqueue([track('Song')],music.channel);await f.manager.settings.setLogChannel(GUILD,OUTPUT);f.channels.delete(OUTPUT);
   f.member.permissions.has=()=>false;f.source.permissions.has=value=>value!==PermissionFlagsBits.EmbedLinks;
-  await f.run('>stop');assert.equal(music.player.voice.channelId,null);assert.ok(music.player.closed);assert.match(f.source.messages.at(-1).content,/left voice/);
+  await f.run('>stop');assert.equal(music.player.voice.channelId,null);assert.ok(music.player.closed);assert.match(componentText(f.source.messages.at(-1)),/left voice/);
 });
 
 test('a missing log destination does not block play or leak playback notices into the DJ channel',async t=>{
@@ -299,7 +303,7 @@ test('a missing log destination does not block play or leak playback notices int
   await f.manager.settings.setDjChannel(GUILD,SECOND);await f.manager.settings.setLogChannel(GUILD,OUTPUT);f.channels.delete(OUTPUT);
   f.member.voice.channel={id:'voice',type:ChannelType.GuildVoice,full:false,permissionsFor:()=>({has:()=>true})};
   await f.run('>play Artist Song');await presenter.render();
-  assert.equal(music.player.current.title,'Song');assert.match(f.source.edits.at(-1).content,/Added `Song`/);
+  assert.equal(music.player.current.title,'Song');assert.match(componentText(f.source.edits.at(-1)),/Added `Song`/);
   assert.equal(presenter.noticeTarget,null);presenter.notice('Provider interrupted');await presenter.flushNotice();
   assert.equal(f.source.messages.length,1);assert.equal(f.other.messages.length,1);assert.equal(f.output.messages.length,0);
   await f.manager.setLogChannel(f.guild,f.other,f.source);presenter.notice('Recovered notice');await presenter.flushNotice();

@@ -8,7 +8,7 @@ import { interactionHandler } from '../src/events/interactionCreate.js';
 import { voiceStateHandler } from '../src/events/voiceStateUpdate.js';
 import { VoiceSession } from '../src/music/VoiceSession.js';
 import { withAbort } from '../src/utils/async.js';
-import { fixture,logger,track,settle } from './helpers.js';
+import { fixture,logger,track,settle ,componentText} from './helpers.js';
 
 function context(user='host',channelId=null,moderator=false){
   const channel=channelId?{id:channelId,type:ChannelType.GuildVoice,full:false,permissionsFor:()=>({has:()=>true})}:null;
@@ -49,7 +49,7 @@ test('stop button uses host authorization without requiring voice membership',as
   const f=await playing(t),i=context();let reply;
   Object.assign(i,{isButton:()=>true,customId:'music:current:stop',message:{id:'player'},deferReply:async()=>{i.deferred=true;},editReply:async payload=>{reply=payload;}});
   f.manager.presenters=new Map([['guild',{nonce:'current',message:{id:'player'}}]]);
-  await interactionHandler(f.manager,logger)(i);assert.match(reply.content,/left voice/);assert.equal(f.player.voice.channelId,null);
+  await interactionHandler(f.manager,logger)(i);assert.match(componentText(reply),/left voice/);assert.equal(f.player.voice.channelId,null);
 });
 test('host is assigned before discovery so stop can cancel an in-flight first play',async t=>{
   const f=fixture();t.after(()=>f.player.destroy());const controller=new AbortController(),i=context('host','voice');

@@ -2,6 +2,7 @@ import { MessageFlags } from 'discord.js';
 import { execute } from '../commands/execute.js';
 import { UserError, publicError } from '../utils/errors.js';
 import { createCooldown } from '../utils/cooldown.js';
+import { commandMessage } from '../components/messages.js';
 export function interactionHandler(manager,logger,{cooldown=createCooldown()}={}) {
   return async interaction=>{
     if(!interaction.isButton()||!interaction.customId.startsWith('music:'))return;
@@ -18,9 +19,9 @@ export function interactionHandler(manager,logger,{cooldown=createCooldown()}={}
     }catch(error){
       logger.warn('interaction_failed',{guildId:interaction.guildId,command:interaction.commandName,error});
       try{
-        const payload={content:publicError(error),embeds:[],allowedMentions:{parse:[]}};
+        const payload=commandMessage(publicError(error));
         if(interaction.deferred||interaction.replied)await interaction.editReply(payload);
-        else await interaction.reply({...payload,flags:MessageFlags.Ephemeral});
+        else await interaction.reply({...payload,flags:payload.flags|MessageFlags.Ephemeral});
       }catch(replyError){logger.debug('interaction_expired',{code:replyError.code});}
     }
   };

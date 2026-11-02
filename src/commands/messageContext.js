@@ -1,10 +1,9 @@
 import { Mutex } from '../utils/async.js';
 import { UserError } from '../utils/errors.js';
-import { componentsEdit, isComponentsV2, textMessage } from '../components/messages.js';
+import { commandMessage } from '../components/messages.js';
 
 export function messageContext(message, parsed, prefix = '>') {
   let response;
-  let responseV2=false;
   const lock = new Mutex();
   const get = (name, required, type) => {
     const value = parsed.values[name];
@@ -30,17 +29,12 @@ export function messageContext(message, parsed, prefix = '>') {
       getBoolean: (name, required = false) => get(name, required, 'boolean')
     },
     editReply: payload => lock.run(async () => {
-      let safe=typeof payload==='string'?{content:payload}:{...payload};
-      if(responseV2&&!isComponentsV2(safe))safe=textMessage(safe.content||'The operation failed. Try again.');
-      const v2=isComponentsV2(safe);
-      if(!v2)safe={content:null,embeds:[],...safe};
-      safe.allowedMentions={parse:[],repliedUser:false};
+      const safe=commandMessage(payload);
       if (response) {
-        try { response = await response.edit(componentsEdit(response,safe,responseV2));responseV2=v2;return response; }
+        try { response = await response.edit(safe);return response; }
         catch (error) { if (error.code !== 10008) throw error; response = null; }
       }
       response=await message.reply({...safe,failIfNotExists:false});
-      responseV2=v2;
       return response;
     })
   };

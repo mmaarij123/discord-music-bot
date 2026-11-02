@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { Client,MessagePayload,MessageFlags,ChannelType } from 'discord.js';
 import { playerMessage,isPlayerMessage } from '../src/components/playerView.js';
-import { panelsMessage,textMessage,componentsEdit } from '../src/components/messages.js';
+import { panelsMessage,textMessage,componentsEdit,commandMessage } from '../src/components/messages.js';
 import { PlayerMessageStore } from '../src/components/PlayerMessageStore.js';
 import { GuildSettings } from '../src/config/GuildSettings.js';
 import { messageContext } from '../src/commands/messageContext.js';
@@ -50,6 +50,9 @@ test('legacy-to-V2 edits clear old fields while subsequent V2 sends and edits om
   const client=new Client({intents:[]});
   try{
     const payload=panelsMessage([{title:'Title',description:'Body',color:16711904}]);assertV2(payload);
+    const command=commandMessage(payload);assertV2(command);
+    assert.equal(command.components[0].toJSON().accent_color,undefined);
+    assert.equal(payload.components[0].toJSON().accent_color,16711904,'Normalizing a command must not recolour the separate player/mention data');
     const upgraded=componentsEdit({flags:0},payload);
     assert.equal(upgraded.content,null);assert.deepEqual(upgraded.embeds,[]);assert.deepEqual(upgraded.attachments,[]);
     const body=MessagePayload.create({client},upgraded).resolveBody().body;
@@ -69,11 +72,11 @@ test('an error after a V2 progress response remains V2 instead of attempting an 
   assert.equal(componentText(edits[0]),'Could not play this track.');
 });
 
-test('an existing plain progress message can migrate in place and stay V2 on later errors',async()=>{
+test('search progress and later errors use one V2 box from the first response',async()=>{
   const edits=[],reply={edit:async payload=>{edits.push(payload);return reply;}};let sends=0;
   const context=messageContext({reply:async()=>{sends++;return reply;}},{values:{}});
   await context.editReply('Searching');await context.editReply(textMessage('Ready'));await context.editReply('Error');
-  assert.equal(sends,1);assert.deepEqual(edits[0].embeds,[]);assert.equal(edits[0].content,null);
+  assert.equal(sends,1);assertV2(edits[0]);assert.equal(componentText(edits[0]),'Ready');
   assertV2(edits[1]);assert.equal(componentText(edits[1]),'Error');
 });
 
@@ -100,6 +103,7 @@ test('buttons nested inside a V2 container execute pause and resume with normal 
     const interaction={customId:button.custom_id,isButton:()=>true,inGuild:()=>true,guildId:'guild',user:{id:'listener'},message:{id:'player'},
       guild:{id:'guild',members:{me:{voice:{}},fetch:async()=>member}},options:{},deferReply:async options=>{assert.equal(options.flags,MessageFlags.Ephemeral);interaction.deferred=true;},
       editReply:async payload=>{reply=payload;}};
-    await handler(interaction);assert.equal(f.player.state,action==='pause'?'paused':'playing');assert.equal(reply.content,action==='pause'?'Paused.':'Resumed.');
+    await handler(interaction);assert.equal(f.player.state,action==='pause'?'paused':'playing');assert.equal(componentText(reply),action==='pause'?'Paused.':'Resumed.');
+    assertV2(reply);assert.equal(reply.components[0].toJSON().type,17);assert.equal(reply.components[0].toJSON().accent_color,undefined);
   }
 });

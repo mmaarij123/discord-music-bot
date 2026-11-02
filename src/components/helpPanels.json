@@ -1,26 +1,21 @@
 [
   {
-    "title": "**Your Prefix is **`>`",
-    "color": 16711904
+    "title": "**Your Prefix is **`>`"
   },
   {
     "title": "**Playback Controls**",
-    "description": "`Play` Search for a song and start playing, or add it to the queue.\n`Pause` Temporarily pause the currently playing song.\n`Resume` Continue playback from where you left off.\n`Skip` Skip the current song and play the next one.\n`Stop` Stop playback, clear the queue, and disconnect from voice.\n`NowPlaying` View the current song and its playback details.\n`AutoPlay` Automatically discover and play related songs when the queue ends.",
-    "color": 7405312
+    "description": "`Play` Search for a song and start playing, or add it to the queue.\n`Pause` Temporarily pause the currently playing song.\n`Resume` Continue playback from where you left off.\n`Skip` Skip the current song and play the next one.\n`Stop` Stop playback, clear the queue, and disconnect from voice.\n`NowPlaying` View the current song and its playback details.\n`AutoPlay` Automatically discover and play related songs when the queue ends."
   },
   {
     "title": "**Queue Management**",
-    "description": "`Queue` View all upcoming songs in your listening queue.\n`Shuffle` Randomize the order of upcoming songs.\n`Remove` Remove a specific song from the queue.\n`Loop` Repeat the current song or the entire queue.",
-    "color": 65515
+    "description": "`Queue` View all upcoming songs in your listening queue.\n`Shuffle` Randomize the order of upcoming songs.\n`Remove` Remove a specific song from the queue.\n`Loop` Repeat the current song or the entire queue."
   },
   {
     "title": "**Voice & Audio**",
-    "description": "`Join` Connect the bot to your current voice channel.\n`Leave` Disconnect from voice and clear the current queue.\n`Volume` Adjust the playback volume between 0% and 100%.",
-    "color": 16711762
+    "description": "`Join` Connect the bot to your current voice channel.\n`Leave` Disconnect from voice and clear the current queue.\n`Volume` Adjust the playback volume between 0% and 100%."
   },
   {
     "title": "**Channel Configuration**",
-    "description": "`LogChannel` Set a dedicated channel for music activity logs and playback updates.\n`DJChannel` Set a dedicated channel for the interactive music player and its controls.",
-    "color": 7471104
+    "description": "`LogChannel` Set a dedicated channel for music activity logs and playback updates.\n`DJChannel` Set a dedicated channel for the interactive music player and its controls."
   }
 ]

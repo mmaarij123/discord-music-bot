@@ -1,6 +1,6 @@
 import { PermissionFlagsBits } from 'discord.js';
 import mentionPanels from '../components/mentionPanels.json' with { type: 'json' };
-import { panelsMessage } from '../components/messages.js';
+import { panelsMessage, commandMessage } from '../components/messages.js';
 import { parsePrefix } from '../commands/parsePrefix.js';
 import { messageContext } from '../commands/messageContext.js';
 import { execute } from '../commands/execute.js';
@@ -41,7 +41,7 @@ export function messageHandler(manager, logger, { cooldown = createCooldown() } 
     } catch (error) {
       logger.warn('prefix_command_failed', { guildId: message.guildId, command: action, error });
       try {
-        const payload = { content: publicError(error), embeds: [], allowedMentions: { parse: [], repliedUser: false } };
+        const payload=commandMessage(publicError(error));
         if (context) await context.editReply(payload);
         else await message.reply({...payload,failIfNotExists:false});
       } catch (replyError) { logger.debug('prefix_reply_failed', { code: replyError.code }); }

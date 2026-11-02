@@ -2,7 +2,7 @@ import { ChannelType, PermissionFlagsBits, escapeMarkdown } from 'discord.js';
 import { commandMap } from './definitions.js';
 import helpPanels from '../components/helpPanels.json' with { type: 'json' };
 import { playerMessage, duration } from '../components/playerView.js';
-import { panelsMessage } from '../components/messages.js';
+import { panelsMessage, commandMessage } from '../components/messages.js';
 import { UserError } from '../utils/errors.js';
 import { integer, classifyInput } from '../utils/validators.js';
 import { performance } from 'node:perf_hooks';
@@ -33,7 +33,7 @@ export async function execute(interaction,manager,action=interaction.commandName
   if (!interaction.inGuild()) throw new UserError('Music commands are available in servers only.');
   const prefix=interaction.commandPrefix ?? manager.config?.prefix ?? '>';
   if(!commandMap.has(action))throw new UserError(`Unknown music command. Use ${prefix}help.`);
-  const reply=content=>interaction.editReply(typeof content==='string' ? {content,allowedMentions:{parse:[]}} : content);
+  const reply=content=>interaction.editReply(commandMessage(content));
   if(ownerCommands.has(action)){
     requireOwner(interaction.user?.id);
     if(action==='clearcache'){
@@ -159,7 +159,7 @@ export async function execute(interaction,manager,action=interaction.commandName
       const page=option.getInteger('page')??1, pages=Math.max(1,Math.ceil(player.queue.length/10));
       integer(page,1,pages,'Page');
       const lines=player.queue.tracks.slice((page-1)*10,page*10).map((track,index)=>`**${(page-1)*10+index+1}.** ${escapeMarkdown(track.title.slice(0,120))} • ${duration(track.duration)}`);
-      return reply(panelsMessage([{color:0x1db954,title:`**Up next • ${player.queue.length} tracks**`,description:`${lines.join('\n')||'The upcoming queue is empty.'}\n\nPage ${page}/${pages} • Repeat ${player.queue.loop}`} ]));
+      return reply(panelsMessage([{title:`**Up next • ${player.queue.length} tracks**`,description:`${lines.join('\n')||'The upcoming queue is empty.'}\n\nPage ${page}/${pages} • Repeat ${player.queue.loop}`} ]));
     }
     default: throw new UserError(`Unknown music command. Use ${prefix}help.`);
   }

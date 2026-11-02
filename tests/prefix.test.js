@@ -7,7 +7,7 @@ import { messageHandler } from '../src/events/messageCreate.js';
 import { interactionHandler } from '../src/events/interactionCreate.js';
 import { createCooldown } from '../src/utils/cooldown.js';
 import { loadConfig } from '../src/config/config.js';
-import { fixture,logger,flattenComponents } from './helpers.js';
+import { fixture,logger,flattenComponents ,componentText} from './helpers.js';
 import helpPanels from '../src/components/helpPanels.json' with { type: 'json' };
 
 function message(content='>help') {
@@ -62,11 +62,11 @@ test('deleted progress responses can be safely recreated',async()=>{
   await context.editReply('Searching');m.response.edit=async()=>{const error=Error('deleted');error.code=10008;throw error;};
   await context.editReply('Done');assert.equal(m.replies.length,2);
 });
-test('V2 help preserves all five Discohook panels, their exact text, colours and order',async()=>{
+test('V2 help preserves all five panels and their text/order without an accent colour',async()=>{
   const m=message();await messageHandler({config:{prefix:'>'},get:()=>undefined},logger)(m);
   assert.equal(m.replies.length,1);const panels=m.replies[0].components.map(component=>component.toJSON());
   assert.equal(m.replies[0].flags,MessageFlags.IsComponentsV2);assert.equal(m.replies[0].embeds,undefined);assert.equal(m.replies[0].content,undefined);
-  assert.deepEqual(panels.map(panel=>panel.accent_color),[16711904,7405312,65515,16711762,7471104]);
+  for(const panel of panels)assert.equal(panel.accent_color,undefined);
   for(const [index,panel] of panels.entries())assert.deepEqual(panel.components.map(component=>component.content),[helpPanels[index].title,helpPanels[index].description].filter(Boolean));
   assert.ok(flattenComponents(m.replies[0]).length<=40);
 });
@@ -114,7 +114,7 @@ test('mentions share the bounded user cooldown and reply failures are contained'
   const m=message('<@123456789012345678>');m.client={user:{id:'123456789012345678'}};
   const handler=messageHandler({},logger);
   await handler(m);await handler(m);
-  assert.equal(m.replies[0].components.length,1);assert.match(m.replies[1].content,/Please wait/);
+  assert.equal(m.replies[0].components.length,1);assert.match(componentText(m.replies[1]),/Please wait/);
   m.reply=async()=>{throw Error('Reply unavailable');};
   await assert.doesNotReject(messageHandler({},logger,{cooldown:()=>{}})(m));
 });
@@ -127,22 +127,22 @@ test('prefix controls enforce voice membership and shared queue methods',async t
   const f=fixture();t.after(()=>f.player.destroy());const m=message('>volume 25');
   const manager={config:{prefix:'>'},get:()=>f.player};await messageHandler(manager,logger)(m);assert.equal(f.player.volume,25);
   const other=message('>skip');other.member.voice.channel=null;
-  await messageHandler(manager,logger)(other);assert.match(other.replies[0].content,/Join a voice channel/);
+  await messageHandler(manager,logger)(other);assert.match(componentText(other.replies[0]),/Join a voice channel/);
 });
 test('prefix play reaches discovery with the complete query',async t=>{
   const f=fixture();t.after(()=>f.player.destroy());const m=message('>play Artist Long Song Name');let query;
   const manager={config:{prefix:'>'},get:()=>f.player,presenters:new Map(),import:async(_id,fn)=>fn(new AbortController().signal),
     discovery:{resolve:async text=>{query=text;return {tracks:[{title:'Song',source:'local',mediaId:'Song'}],notices:[]};}}};
   await messageHandler(manager,logger)(m);assert.equal(query,'Artist Long Song Name');assert.equal(f.player.current.title,'Song');
-  assert.equal(m.replies[0].content,'Searching of `Artist Long Song Name`');assert.equal(m.edits.at(-1).content,'Added `Song` in the queue');
+  assert.equal(componentText(m.replies[0]),'Searching of `Artist Long Song Name`');assert.equal(componentText(m.edits.at(-1)),'Added `Song` in the queue');
 });
 test('prefix settings retain Manage Server authorization',async()=>{
   const m=message('>autoplay on');m.member.permissions={has:()=>false};
-  await messageHandler({config:{prefix:'>'},get:()=>undefined},logger)(m);assert.match(m.replies[0].content,/Manage Server/);
+  await messageHandler({config:{prefix:'>'},get:()=>undefined},logger)(m);assert.match(componentText(m.replies[0]),/Manage Server/);
 });
 test('malformed messages give useful replies and V2 help does not need Embed Links',async()=>{
   const manager={config:{prefix:'>'},get:()=>undefined};
-  const bad=message('>volume nope');await messageHandler(manager,logger)(bad);assert.match(bad.replies[0].content,/Usage: >volume/);
+  const bad=message('>volume nope');await messageHandler(manager,logger)(bad);assert.match(componentText(bad.replies[0]),/Usage: >volume/);
   const missing=message();missing.permissions.has=value=>value!==PermissionFlagsBits.EmbedLinks;
   await messageHandler(manager,logger)(missing);assert.equal(missing.replies[0].flags,MessageFlags.IsComponentsV2);
 });

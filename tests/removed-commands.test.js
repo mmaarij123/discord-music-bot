@@ -41,7 +41,7 @@ test('legacy previous button cannot access a player even with a matching current
   const interaction={isButton:()=>true,inGuild:()=>true,customId:'music:nonce:previous',guildId:'guild',user:{id:OWNER_USER_ID},message:{id:'player'},
     deferReply:async()=>{interaction.deferred=true;},editReply:async payload=>{reply=payload;}};
   await interactionHandler({presenters:new Map([['guild',{nonce:'nonce',message:{id:'player'}}]]),get:()=>assert.fail('Removed button accessed player')},logger)(interaction);
-  assert.match(reply.content,/Unknown player control/);
+  assert.match(componentText(reply),/Unknown player control/);
 });
 
 test('paused interruption recovery still resumes from heard position after public seek removal',async t=>{

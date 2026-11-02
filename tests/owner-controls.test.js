@@ -9,7 +9,7 @@ import { messageHandler } from '../src/events/messageCreate.js';
 import { MusicManager } from '../src/music/MusicManager.js';
 import { TTLCache } from '../src/utils/cache.js';
 import { loadConfig } from '../src/config/config.js';
-import { fixture, logger, track, settle } from './helpers.js';
+import { fixture, logger, track, settle ,componentText} from './helpers.js';
 
 function context(userId=OWNER_USER_ID) {
   const replies=[];
@@ -40,15 +40,15 @@ test('manual cache clear removes all provider entries while preserving two guild
   const manager=new MusicManager(loadConfig({}),logger,{caches,audio:{dispose(){}}});
   manager.players.set('guild',a.player);manager.players.set('second',b.player);t.after(()=>manager.destroy());
   const i=context();await execute(i,manager,'clearcache');
-  assert.match(i.replies[0].content,/Cleared 8/);
+  assert.match(componentText(i.replies[0]),/Cleared 8/);
   for(const cache of caches)assert.equal(cache.items.size,0);
   for(const f of [a,b]){assert.equal(f.player.state,'playing');assert.equal(f.player.queue.length,1);assert.equal(f.handles[0].disposed,false);}
-  await execute(i,manager,'clearcache');assert.match(i.replies[1].content,/Cleared 0/);
+  await execute(i,manager,'clearcache');assert.match(componentText(i.replies[1]),/Cleared 0/);
 });
 
 for(const action of ['shutdown','restart'])test(`owner ${action} acknowledges before requesting process exit`,async()=>{
   const calls=[],i=context();
-  i.editReply=async payload=>{calls.push('reply');assert.match(payload.content,action==='shutdown'?/Shutting down/:/Restarting/);};
+  i.editReply=async payload=>{calls.push('reply');assert.match(componentText(payload),action==='shutdown'?/Shutting down/:/Restarting/);};
   const lifecycle=new ProcessLifecycle({canRestart:true,shutdown:async(reason,code)=>{calls.push('shutdown');assert.equal(reason,`owner_${action}`);assert.equal(code,action==='restart'?RESTART_EXIT_CODE:0);}});
   await execute(i,{lifecycle,get:()=>assert.fail('Process control must work without a session')},action);
   assert.deepEqual(calls,['reply','shutdown']);
@@ -97,6 +97,6 @@ for(const action of ownerCommands)test(`prefix ${action} uses the invoking chann
     await messageHandler(manager,logger,{cooldown:()=>{}})(message);
     assert.equal(replies.length,1);
     if(id===OWNER_USER_ID)assert.deepEqual(calls,[action]);
-    else{assert.deepEqual(calls,[]);assert.match(replies[0].content,/Only the bot owner/);}
+    else{assert.deepEqual(calls,[]);assert.match(componentText(replies[0]),/Only the bot owner/);}
   }
 });

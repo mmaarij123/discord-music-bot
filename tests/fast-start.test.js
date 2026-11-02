@@ -8,7 +8,7 @@ import { Semaphore,withAbort } from '../src/utils/async.js';
 import { UserError } from '../src/utils/errors.js';
 import { EventEmitter } from 'node:events';
 import { VoiceSession } from '../src/music/VoiceSession.js';
-import { fixture,track,logger,settle } from './helpers.js';
+import { fixture,track,logger,settle ,componentText} from './helpers.js';
 
 function deferred(){let resolve,reject;const promise=new Promise((a,b)=>{resolve=a;reject=b;});return {promise,resolve,reject};}
 const video={id:'abcdefghijk',title:'Song',url:'https://r1.googlevideo.com/audio?expire=9999999999',duration:180};
@@ -62,7 +62,7 @@ function harness(t,overrides={}){
   const guild={id:'guild',members:{fetch:async()=>member,me:{voice:{}}}};
   const controller=new AbortController(),replies=[];
   const interaction={guildId:'guild',guild,user:{id:'111111111111111111',username:'Listener'},channel:{isTextBased:()=>true,isThread:()=>false,permissionsFor:()=>({has:()=>true})},
-    inGuild:()=>true,options:{getString:()=> 'Artist Song'},editReply:async payload=>{replies.push(payload.content);}};
+    inGuild:()=>true,options:{getString:()=> 'Artist Song'},editReply:async payload=>{replies.push(componentText(payload));}};
   const manager={config:loadConfig({}),get:()=>f.player,presenters:new Map(),logger,import:async(_id,fn)=>fn(controller.signal),
     discovery:{resolve:async()=>({tracks:[track('Song')],notices:[]})},...overrides};
   return {...f,interaction,manager,member,controller,replies};
