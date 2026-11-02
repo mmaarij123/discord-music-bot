@@ -78,7 +78,7 @@ test('a standalone bot mention replies locally with the exact shared prefix embe
     await messageHandler(manager,logger)(m);
     assert.equal(m.replies.length,1);
     const panel=m.replies[0].components[0].toJSON();
-    assert.equal(panel.accent_color,16711904);assert.equal(panel.components[0].content,'**Your Prefix is **`>`');
+    assert.equal(panel.accent_color,undefined);assert.equal(panel.components[0].content,'**Your Prefix is **`>`');
     assert.equal(m.replies[0].flags,MessageFlags.IsComponentsV2);assert.equal(m.replies[0].embeds,undefined);
     assert.deepEqual(m.replies[0].allowedMentions,{parse:[],repliedUser:false});
   }

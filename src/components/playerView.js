@@ -12,7 +12,7 @@ function safeUrl(value) { try { const url=new URL(value); return url.protocol===
 export function playerMessage(session,nonce,{controls=true}={}) {
   const prefix=session.config.prefix ?? '>';
   const track=session.current;
-  const container=new ContainerBuilder().setAccentColor(0x1db954).addTextDisplayComponents(textDisplay(PLAYER_HEADING));
+  const container=new ContainerBuilder().addTextDisplayComponents(textDisplay(PLAYER_HEADING));
   if(!track){
     container.addTextDisplayComponents(textDisplay(`**${session.state==='disconnected'?'Disconnected':'Ready for the next track'}**`),
       textDisplay(session.queue.length?`${session.queue.length} tracks waiting. Use ${prefix}play or ${prefix}skip to continue.`:`Use ${prefix}play to discover music or select your authorized library.`),

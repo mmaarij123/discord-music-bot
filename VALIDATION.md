@@ -339,3 +339,11 @@ Actual playback/recovery/disconnect logs remain plain text; PlayerPresenter noti
 All **317 automated tests passed**, zero failures/skips. Existing output/authorization/routing checks were updated to inspect text inside containers, with explicit assertions for absent command accents, idempotent formatting, unchanged source colour data, private button responses and plain logs. **79 JavaScript files** passed expanded static analysis with zero warnings/errors, all syntax checks passed and **45/45 runtime modules** remain reachable. No dependency versions changed. No live test commands or voice playback were sent for this presentation update.
 
 Deployment reached real Discord gateway ready in three guilds with one supervisor and one worker; stderr was empty. Private-file hashes and both permanent DJ message IDs matched their baseline. No Discord test messages were posted.
+
+## Remove every embed/container colour — 2 November 2026
+
+Removed the remaining DJ-player accent setter, optional panel colour support and the saved mention colour. All player states, snapshots, help/queue, mention reminders and command responses now omit accent colours. Original text/layout, button behavior, plain logs and permanent message IDs are preserved. Previous custom palettes are intentionally no longer applied anywhere in the renderers.
+
+All **317 automated tests passed**, zero failures/skips. Existing V2 assertions now require every container to omit an accent, including the player and mention response; stale panel colour data is ignored. The **79-file static scan** passed with zero errors/warnings and all JavaScript syntax checks passed. No new tests or dependencies were added for this cosmetic change.
+
+With the old worker stopped, both saved DJ messages were updated in place through Discord's API: 2 updated, zero new messages and zero failures. Returned component trees were checked to contain no numeric accent colour. The updated bot reached real gateway ready in three guilds with one supervisor and one worker. No live command/voice playback test was sent for this colour-only change.

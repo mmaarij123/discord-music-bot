@@ -13,6 +13,7 @@ function assertV2(payload){
   assert.equal(payload.flags,MessageFlags.IsComponentsV2);
   assert.equal(Object.hasOwn(payload,'content'),false);assert.equal(Object.hasOwn(payload,'embeds'),false);
   const all=flattenComponents(payload);assert.ok(all.length<=40);
+  for(const component of all.filter(item=>item.type===17))assert.equal(component.accent_color,undefined);
   assert.ok(all.filter(component=>component.type===10).reduce((length,component)=>length+component.content.length,0)<=4000);
   for(const component of payload.components)component.toJSON();
 }
@@ -24,7 +25,7 @@ test('V2 player contains artwork, requester, live state and the five working con
   const all=flattenComponents(payload);assert.equal(all.filter(component=>component.type===2).length,5);
   assert.equal(all.find(component=>component.type===11).media.url,'https://example.org/art.jpg');
   assert.ok(componentText(payload).includes('<@1037886658462371860>'));assert.ok(componentText(payload).includes('Playing'));
-  assert.equal(payload.components[0].toJSON().accent_color,0x1db954);assert.equal(isPlayerMessage({components:payload.components}),true);
+  assert.equal(payload.components[0].toJSON().accent_color,undefined);assert.equal(isPlayerMessage({components:payload.components}),true);
   await f.player.pause();assert.ok(flattenComponents(playerMessage(f.player,'nonce')).some(component=>component.custom_id==='music:nonce:resume'));
 });
 
@@ -52,12 +53,12 @@ test('legacy-to-V2 edits clear old fields while subsequent V2 sends and edits om
     const payload=panelsMessage([{title:'Title',description:'Body',color:16711904}]);assertV2(payload);
     const command=commandMessage(payload);assertV2(command);
     assert.equal(command.components[0].toJSON().accent_color,undefined);
-    assert.equal(payload.components[0].toJSON().accent_color,16711904,'Normalizing a command must not recolour the separate player/mention data');
+    assert.equal(payload.components[0].toJSON().accent_color,undefined,'Old palette data must not add a colour to any panel');
     const upgraded=componentsEdit({flags:0},payload);
     assert.equal(upgraded.content,null);assert.deepEqual(upgraded.embeds,[]);assert.deepEqual(upgraded.attachments,[]);
     const body=MessagePayload.create({client},upgraded).resolveBody().body;
     assert.equal(body.flags,MessageFlags.IsComponentsV2);assert.equal(body.content,'');assert.deepEqual(body.embeds,[]);
-    assert.equal(body.components[0].type,17);assert.equal(body.components[0].accent_color,16711904);
+    assert.equal(body.components[0].type,17);assert.equal(body.components[0].accent_color,undefined);
     const edited=componentsEdit({flags:MessageFlags.IsComponentsV2},payload);assertV2(edited);
     const cleanBody=MessagePayload.create({client},edited).resolveBody().body;
     assert.equal(cleanBody.content,undefined);assert.equal(cleanBody.embeds,undefined);

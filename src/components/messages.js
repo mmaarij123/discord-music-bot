@@ -8,7 +8,6 @@ export function textMessage(content){return componentsMessage([new ContainerBuil
 export function panelsMessage(panels){
   return componentsMessage(panels.map(panel=>{
     const container=new ContainerBuilder().addTextDisplayComponents(textDisplay(panel.title));
-    if(panel.color!==undefined)container.setAccentColor(panel.color);
     if(panel.description)container.addTextDisplayComponents(textDisplay(panel.description));
     return container;
   }));
