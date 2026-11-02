@@ -75,6 +75,52 @@ test('help reproduces all five Discohook embeds without changing text, colours o
   assert.ok(embeds[1].description.startsWith('`Play` Search for a song and start playing, or add it to the queue.'));
   assert.ok(embeds.reduce((length,embed)=>length+embed.title.length+(embed.description?.length??0),0)<=6000);
 });
+
+test('a standalone bot mention replies locally with the exact shared prefix embed',async()=>{
+  for(const content of ['<@123456789012345678>','<@!123456789012345678>','  <@123456789012345678>\n']){
+    const m=message(content);m.client={user:{id:'123456789012345678'}};
+    const manager={config:{prefix:'>'},get:()=>assert.fail('Mention accessed a player'),outputChannel:()=>assert.fail('Mention looked up logs or DJ settings')};
+    await messageHandler(manager,logger)(m);
+    assert.equal(m.replies.length,1);
+    assert.deepEqual(m.replies[0].embeds.map(embed=>embed.toJSON()),[{title:'**Your Prefix is **`>`',color:16711904}]);
+    assert.deepEqual(m.replies[0].allowedMentions,{parse:[],repliedUser:false});
+  }
+});
+
+test('mentions ignore other users, role/everyone pings, reply pings, bots, webhooks and DMs',async()=>{
+  for(const change of [
+    {content:'<@222222222222222222>'},{content:'<@&123456789012345678>'},{content:'@everyone'},
+    {content:'hello',mentions:{repliedUser:{id:'123456789012345678'}}},{content:'hello <@123456789012345678>'},
+    {author:{id:'other-bot',bot:true}},{webhookId:'hook'},{inGuild:()=>false}
+  ]){
+    const m=Object.assign(message('<@123456789012345678>'),change);m.client={user:{id:'123456789012345678'}};
+    await messageHandler({get:()=>assert.fail('Ignored mention touched music')},logger)(m);
+    assert.equal(m.replies.length,0);
+  }
+});
+
+test('mention replies respect text/thread send and Embed Links permissions',async()=>{
+  for(const isThread of [false,true]){
+    const m=message('<@123456789012345678>');m.client={user:{id:'123456789012345678'}};
+    m.channel.isThread=()=>isThread;
+    const send=isThread?PermissionFlagsBits.SendMessagesInThreads:PermissionFlagsBits.SendMessages;
+    m.permissions.has=values=>![values].flat().includes(send);
+    await messageHandler({},logger)(m);assert.equal(m.replies.length,0);
+    m.permissions.has=values=>![values].flat().includes(PermissionFlagsBits.EmbedLinks);
+    await messageHandler({},logger)(m);assert.match(m.replies[0].content,/Embed Links/);
+    m.permissions.has=values=>![values].flat().includes(isThread?PermissionFlagsBits.SendMessages:PermissionFlagsBits.SendMessagesInThreads);
+    await messageHandler({},logger)(m);assert.equal(m.replies[1].embeds.length,1);
+  }
+});
+
+test('mentions share the bounded user cooldown and reply failures are contained',async()=>{
+  const m=message('<@123456789012345678>');m.client={user:{id:'123456789012345678'}};
+  const handler=messageHandler({},logger);
+  await handler(m);await handler(m);
+  assert.equal(m.replies[0].embeds.length,1);assert.match(m.replies[1].content,/Please wait/);
+  m.reply=async()=>{throw Error('Reply unavailable');};
+  await assert.doesNotReject(messageHandler({},logger,{cooldown:()=>{}})(m));
+});
 test('message handler ignores bot, webhook and direct messages',async()=>{
   for(const change of [{author:{id:'bot',bot:true}},{webhookId:'hook'},{inGuild:()=>false},{content:'ordinary message'}]){
     const m=Object.assign(message(),change);await messageHandler({config:{prefix:'>'},get:()=>assert.fail('ignored message')},logger)(m);assert.equal(m.replies.length,0);

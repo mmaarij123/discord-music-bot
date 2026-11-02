@@ -1,4 +1,5 @@
-import { PermissionFlagsBits } from 'discord.js';
+import { EmbedBuilder, PermissionFlagsBits } from 'discord.js';
+import mentionEmbeds from '../components/mentionEmbeds.json' with { type: 'json' };
 import { parsePrefix } from '../commands/parsePrefix.js';
 import { messageContext } from '../commands/messageContext.js';
 import { execute } from '../commands/execute.js';
@@ -11,7 +12,10 @@ const stopCommands=new Set(['stop','leave']);
 export function messageHandler(manager, logger, { cooldown = createCooldown() } = {}) {
   const prefix = manager.config?.prefix ?? '>';
   return async message => {
-    if (!message.inGuild() || message.author.bot || message.webhookId || !message.content?.startsWith(prefix)) return;
+    if (!message.inGuild() || message.author.bot || message.webhookId) return;
+    const botId=message.client?.user?.id??message.guild.members.me?.id;
+    const mentioned=Boolean(botId&&[`<@${botId}>`,`<@!${botId}>`].includes(message.content?.trim()));
+    if(!mentioned&&!message.content?.startsWith(prefix))return;
     let context;
     let action;
     let output=message.channel;
@@ -21,6 +25,13 @@ export function messageHandler(manager, logger, { cooldown = createCooldown() } 
       const send = message.channel.isThread() ? PermissionFlagsBits.SendMessagesInThreads : PermissionFlagsBits.SendMessages;
       if (!permissions?.has([PermissionFlagsBits.ViewChannel, send])) {
         logger.warn('prefix_reply_permission_missing', { guildId: message.guildId });
+        return;
+      }
+      if(mentioned){
+        action='mention';
+        if(!permissions.has(PermissionFlagsBits.EmbedLinks))throw new UserError('The bot needs Embed Links permission here to show its prefix.');
+        cooldown(message.guildId,message.author.id);
+        await message.reply({embeds:mentionEmbeds.map(embed=>new EmbedBuilder(embed)),allowedMentions:{parse:[],repliedUser:false},failIfNotExists:false});
         return;
       }
       const head=message.content.slice(prefix.length).trim().split(/\s+/,1)[0]?.toLowerCase();
