@@ -75,12 +75,26 @@ test('unsupported direct-process restart gives setup instructions before acknowl
   assert.equal(lifecycle.pending,null);
 });
 
-test('help preserves the shared design for both the owner and other users',async()=>{
+test('help shows all playlist actions below Playback Controls only to the beta owner',async()=>{
   let expected;
-  for(const id of [OWNER_USER_ID,'server-admin']){
-    const i=context(id);await execute(i,{get:()=>undefined},'help');
+  for(const id of [OWNER_USER_ID,'server-admin','listener',null]){
+    const i=context(id);i.commandPrefix='!!';await execute(i,{get:()=>undefined},'help');
     const help=i.replies[0].components.map(component=>component.toJSON());
-    if(expected)assert.deepEqual(help,expected);else expected=help;
+    const sections=help[0].components.filter(component=>component.type===10);
+    const beta=id===OWNER_USER_ID;
+    assert.equal(sections[0].content,'**Your Prefix is **`!!`');
+    assert.equal(sections.length,beta?6:5);
+    assert.equal(help[0].components.filter(component=>component.type===14).length,beta?5:4);
+    assert.equal(help[0].accent_color,undefined);
+    if(beta){
+      assert.ok(sections[1].content.startsWith('**Playback Controls**'));
+      assert.ok(sections[2].content.startsWith('**Playlist • Beta**'));
+      assert.ok(sections[3].content.startsWith('**Queue Management**'));
+      assert.deepEqual([...sections[2].content.matchAll(/^`Playlist ([a-z]+)[^`]*` /gm)].map(match=>match[1]),['create','add','save','import','play','show','list','remove','delete']);
+      assert.ok(componentText(i.replies[0]).length<=4000);
+    }else assert.equal(componentText(i.replies[0]).includes('Playlist'),false);
+    const shared=sections.filter(component=>!component.content.startsWith('**Playlist • Beta**'));
+    if(expected)assert.deepEqual(shared,expected);else expected=shared;
     for(const action of ownerCommands)assert.equal(JSON.stringify(help).includes(action),false);
     assert.equal(help.length,1);
   }

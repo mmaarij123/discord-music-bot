@@ -7,7 +7,7 @@ import { UserError } from '../utils/errors.js';
 import { integer, classifyInput } from '../utils/validators.js';
 import { performance } from 'node:perf_hooks';
 import { channelSettings } from './channelSettings.js';
-import { ownerCommands, requireOwner } from '../config/owner.js';
+import { OWNER_USER_ID, ownerCommands, requireOwner } from '../config/owner.js';
 import { guildPrefix, prefixPanels } from '../config/prefix.js';
 import { playlistCommand } from './playlist.js';
 const readOnly=new Set(['help','queue','nowplaying','logchannel','djchannel']);
@@ -114,7 +114,8 @@ export async function execute(interaction,manager,action=interaction.commandName
   const option=interaction.options;
   if(['logchannel','djchannel'].includes(action))return channelSettings(interaction,manager,reply,action==='djchannel'?'dj':'log');
   if (action==='help') {
-    return reply(panelsMessage(prefixPanels(helpPanels,prefix),{combine:true}));
+    const panels=helpPanels.filter(panel=>!panel.betaOnly||interaction.user?.id===OWNER_USER_ID);
+    return reply(panelsMessage(prefixPanels(panels,prefix),{combine:true}));
   }
   if (action==='play') {
     const query=option.getString('query',true),parsed=classifyInput(query);

@@ -67,7 +67,7 @@ test('V2 help combines all five sections in one unaccented box with native divid
   assert.equal(m.replies.length,1);const panels=m.replies[0].components.map(component=>component.toJSON());
   assert.equal(m.replies[0].flags,MessageFlags.IsComponentsV2);assert.equal(m.replies[0].embeds,undefined);assert.equal(m.replies[0].content,undefined);
   assert.equal(panels.length,1);assert.equal(panels[0].accent_color,undefined);
-  assert.deepEqual(panels[0].components.filter(component=>component.type===10).map(component=>component.content),helpPanels.map(panel=>[panel.title,panel.description].filter(Boolean).join('\n')));
+  assert.deepEqual(panels[0].components.filter(component=>component.type===10).map(component=>component.content),helpPanels.filter(panel=>!panel.betaOnly).map(panel=>[panel.title,panel.description].filter(Boolean).join('\n')));
   const dividers=panels[0].components.filter(component=>component.type===14);
   assert.equal(dividers.length,4);assert.ok(dividers.every(component=>component.divider===true));
   assert.ok(flattenComponents(m.replies[0]).length<=40);
