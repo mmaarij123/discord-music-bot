@@ -9,10 +9,17 @@ export function parsePrefix(content, prefix = '>') {
   const name = head[1].toLowerCase();
   const command = commandMap.get(name);
   if (!command) throw new UserError(`Unknown music command. Use ${prefix}help.`);
-  const fail = message => { throw new UserError(`${message} Usage: ${usage(command, prefix)}`); };
+  let selected=command;
+  const fail = message => { throw new UserError(`${message} Usage: ${usage(selected, prefix)}`); };
   let remainder = head[2]?.trim() ?? '';
   const values = {};
-  for (const argument of command.args) {
+  if(command.subcommands){
+    const sub=/^(\S+)(?:\s+([\s\S]*))?$/.exec(remainder),action=sub?.[1]?.toLowerCase();
+    const definition=command.subcommands.find(item=>item.name===action);
+    if(!definition)fail('Choose a valid playlist action.');
+    selected={...definition,name:`${name} ${action}`};values.action=action;remainder=sub?.[2]?.trim()??'';
+  }
+  for (const argument of selected.args) {
     let raw;
     if (argument.rest) { raw = remainder; remainder = ''; }
     else {

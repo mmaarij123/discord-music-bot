@@ -27,8 +27,11 @@ export function youtubeUrl(input) {
   return { type: 'video', id, url: `https://www.youtube.com/watch?v=${id}` };
 }
 export function classifyInput(input) {
-  const value = input?.trim();
+  let value = input?.trim();
   if (!value || value.length > 500 || /[\x00-\x1f]/.test(value)) throw new UserError('Enter 1–500 characters without control characters.');
+  // Discord's suppressed-embed link syntax must retain URL routing.
+  if(/^<https:\/\/[^<>]+>$/.test(value))value=value.slice(1,-1);
+  if(/^(?:(?:www|m|music)\.)?youtube\.com\/|^youtu\.be\//i.test(value))value=`https://${value}`;
   const media = value.match(/^(local|stream):([a-zA-Z0-9_-]{1,80})$/);
   if (media) return { type: media[1], id: media[2] };
   if (/^https?:|^[a-z]+:\/\//i.test(value)) {

@@ -6,18 +6,19 @@ Spotify supplies **metadata only**. All audio comes from a supported public YouT
 
 ## What works
 
-- All 21 prefix commands (default `>`), including three controls restricted to the configured bot owner, plus five functional player buttons.
+- All 22 prefix commands (default `>`), including three controls restricted to the configured bot owner, plus five functional player buttons.
 - Independent bounded queues and history per server; concurrent skips advance once; adding tracks leaves current playback running.
 - Song/artist searches with weighted matching, official/Topic preferences, duration comparison, and rejection of unwanted covers, live performances, remixes, karaoke, nightcore, slowed and sped-up versions.
 - Spotify track, album, and public playlist metadata through `spotify-url-info`. Public collections can be partial; imports always say so. No full Spotify audio or previews are played.
-- YouTube video links and public playlists, bounded imports, lazy audio extraction, TTL search cache, and limited concurrent requests.
+- Direct YouTube video links bypass Spotify/text matching, including Discord `<link>` syntax and supported links pasted without https://. One extraction is reused for playback while its short-lived audio cache is valid. Public playlists use bounded imports and lazy per-track extraction.
+- Private-beta personal playlists: one unnamed saved playlist per Discord user across every server; all nine playlist actions are currently restricted to Discord user 1037886658462371860.
 - FFmpeg streaming, dynamic volume, Opus encoding, pause/resume, deterministic resource disposal, bounded error recovery, idle disconnect, and optional 24/7 connection.
 - Conservative autoplay: another track by a known artist, with recent-track/version filtering. A known matching artist/Topic channel is required. An optional recommendation adapter supports other lawful sources.
 - Discord Components V2 player with an unaccented container, artwork, album, playback status, requester mention, queue count, volume and nested controls. State changes update the player, with edits coalesced at least two seconds apart. Deleted player messages never interrupt audio.
 - JSON logging with token/URL redaction, configuration validation, safe subprocess argument arrays, same-voice-channel authorization, and Manage Server checks for settings.
-- A single search reply uses ``Searching of `song name` `` and then changes to ``Added `resolved song title` in the queue``. Metadata fallback details stay in debug diagnostics rather than cluttering chat. Failed searches finish with a concise not-found message; partial playlist and queue-limit notices remain visible.
+- Direct video links show `Preparing YouTube audio…` while validating/extracting the exact video; provider and voice-handshake time still apply. A single text-search reply uses ``Searching of `song name` `` and then changes to ``Added `resolved song title` in the queue``. Metadata fallback details stay in debug diagnostics rather than cluttering chat. Failed searches finish with a concise not-found message; partial playlist and queue-limit notices remain visible.
 
-**Explicit limitations:** Public Spotify text search has no supported built-in API-free endpoint. Plain-text input uses YouTube metadata unless you configure optional official Spotify credentials or a trusted Spotify search adapter; fallback details are available in debug diagnostics. Public metadata may change or be inaccessible by region. YouTube delivery may fail on some networks/VPS IP ranges. The bot reports such failures and can continue with your authorized library. 24/7 keeps a connection while the application runs; it cannot provide uptime while your host is offline. Queues, history and playback settings reset on restart/session release; the independent log/DJ channel destinations are saved separately on disk.
+**Explicit limitations:** Public Spotify text search has no supported built-in API-free endpoint. Plain-text input uses YouTube metadata unless you configure optional official Spotify credentials or a trusted Spotify search adapter; fallback details are available in debug diagnostics. Public metadata may change or be inaccessible by region. YouTube delivery may fail on some networks/VPS IP ranges. The bot reports such failures and can continue with your authorized library. 24/7 keeps a connection while the application runs; it cannot provide uptime while your host is offline. Queues, history and playback settings reset on restart/session release; saved playlists and independent prefix/log/DJ channel preferences persist separately on disk.
 
 See [AUDIT.md](AUDIT.md) for the current code/dependency audit and [VALIDATION.md](VALIDATION.md) for the checks executed and remaining live Discord checks. A real Discord token and server are required to validate login, prefix handling and voice delivery; these are not simulated claims.
 
@@ -173,6 +174,7 @@ Copy `.env.example` to `.env`. Never commit `.env`, tokens, private media, or pr
 | DEFAULT_VOLUME | 70 | Initial volume, integer 0–100. |
 | MAX_QUEUE_LENGTH | 500 | Maximum upcoming entries per guild, 1–5000. Current track is separate. |
 | MAX_PLAYLIST_TRACKS | 100 | Import cap, 1–1000. Spotify's public library usually exposes at most 100; raising this does not retrieve hidden entries. |
+| MAX_SAVED_PLAYLIST_TRACKS | 500 | Tracks in each personal saved playlist, 1–1000. Separate from the per-import cap and live queue cap. |
 | IDLE_TIMEOUT_SECONDS | 300 | Delay before leaving after playback ends with 24/7 off; 10–86400. |
 | AUTOPLAY_ENABLED | false | Initial autoplay setting for each new guild session. |
 | ENABLE_247_MODE | false | Operator-only initial persistent connection setting; no Discord toggle command. Joins only when commanded. |
@@ -257,6 +259,7 @@ When started, logs should include `ready`. Join a voice channel and use `>play l
 | >logchannel [channel/off] | Manage Server: select the playback-log channel, show its setting, or reset it. |
 | >djchannel [channel/off] | Manage Server: select the player channel independently, show its setting, or reset it. |
 | >prefix [characters] | Show the current server prefix; Administrator only to change it to 1–2 characters. No voice connection needed. |
+| >playlist action | Private beta: one unnamed personal playlist; owner ID 1037886658462371860 only. See the playlist commands below. |
 | >clearcache | Bot owner only: clear all built-in metadata/search/audio-link caches across servers without stopping playback or clearing queues. |
 | >shutdown | Bot owner only: gracefully stop audio, leave voice in all servers and shut down the application. |
 | >restart | Bot owner only: cleanly stop the worker and launch a fresh process; all in-memory queues reset. |
@@ -303,6 +306,28 @@ The configured DJ channel has one permanent player message: song/playlist transi
 Changing the log destination moves notices only. Changing the DJ destination invalidates old controls and selects a player in the new channel while leaving audio playing. With a DJ destination set, `>nowplaying` replies locally with that channel rather than posting another player. Configuration errors explain how to repair/reset the destination, and player controls still enforce voice/session-host permissions.
 
 The prefix, both destinations and the DJ player message ID are stored independently per server in versioned `data/guild-settings.json` with serialized atomic writes and survive restarts; ordinary queues/history/voice settings remain in memory. The data directory is private runtime state and excluded from Git and release ZIPs. Keep a private backup if you move hosts. To recover from a deleted destination or removed channel permissions, fix them or run the matching `>logchannel off` / `>djchannel off` in a channel where the bot can reply. Version 1/2/3 settings load and migrate safely to version 4 on the next setting change, preserving existing channel and player IDs. No additional music API keys or external database are required.
+
+### Personal playlist beta
+
+Only Discord user **1037886658462371860** can use any playlist action, including viewing/listing. Administrator and Manage Server permissions do not bypass the beta gate. There is no public enable switch in this release. Playlist commands are intentionally absent from public help while access is restricted.
+
+Each user has **one unnamed playlist globally for this bot instance**, independent of server queues. You cannot create a second playlist or supply a name. After deleting it, you may create a new empty one. Use your server’s current prefix instead of `>` if it has changed.
+
+| Command | Behavior |
+|---|---|
+| `>playlist create` | Create your one playlist. No name argument. |
+| `>playlist add <song/link>` | Find and save one song, Spotify track, YouTube video, or authorized library ID. |
+| `>playlist save` | Save the currently playing song in this server. |
+| `>playlist import <Spotify playlist URL>` | Import accessible public metadata; report added, duplicate, invalid returned entries and capacity omissions. |
+| `>playlist play` | Add saved songs to this server’s normal queue, preserving current playback. Requires normal voice access. |
+| `>playlist show [page]` | Show ten saved songs per page with stable one-based positions. |
+| `>playlist list` | Show whether you have a playlist and its track count. |
+| `>playlist remove <position>` | Remove one saved song. |
+| `>playlist delete` | Delete your saved playlist. |
+
+Storage commands require no voice connection; `save` needs an active song, and `play` enforces the usual same-voice-channel permissions. Responses stay boxed in the command channel. Import progress edits the same reply. Accessible Spotify metadata can be incomplete or capped; hidden/private/unavailable tracks are never claimed as imported. Imported entries are validated individually and duplicates skipped. Audio matching and source availability are checked when tracks reach playback, rather than extracting every imported track upfront. Failed imports preserve the existing playlist. Deleting/recreating a playlist while an import runs prevents its stale results being written into the new playlist.
+
+Saved playlists live in private `data/playlists.json` with serialized atomic writes, a configurable per-user track cap, a 10,000-user and 16 MiB total-file cap. Only metadata and canonical source/library identifiers are stored; extracted audio URLs, requesters, cookies and headers are discarded. Keep a private backup when moving hosts; do not copy this data to another bot unintentionally. `/data/` is excluded from Git and release ZIPs. Restart, stop and cache clearing preserve playlists. In-memory playback queues remain separate per server and reset on restart.
 
 ## 8. Authorized local and direct-stream fallback
 
@@ -467,8 +492,10 @@ Music Bot/
     config/config.js            Validated environment configuration
     config/GuildSettings.js     Atomic server prefixes, channels and DJ message IDs
     config/prefix.js            Shared prefix validation and per-server lookup
-    commands/definitions.js     All 21 prefix definitions
+    commands/definitions.js     All 22 prefix definitions
     commands/execute.js         Shared prefix/button business logic
+    commands/playlist.js        Owner-only playlist beta actions
+    music/PlaylistStore.js      Global per-user atomic playlist storage
     commands/parsePrefix.js     Typed argument parsing and usage
     commands/messageContext.js  Single-message reply/progress adapter
     events/                     Message, button and voice-state handlers

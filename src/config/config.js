@@ -19,6 +19,8 @@ export function loadConfig(env = process.env) {
   const config = {
     projectRoot:root,cookiesRoot:resolve('./secrets'),
     settingsFile:resolve('./data/guild-settings.json'),
+    playlistsFile:resolve('./data/playlists.json'),
+    maxSavedTracks:number('MAX_SAVED_PLAYLIST_TRACKS',500,1,1000),
     youtubeCookiesFile:env.YOUTUBE_COOKIES_FILE?.trim()?resolve(env.YOUTUBE_COOKIES_FILE.trim()):undefined,
     token: env.DISCORD_TOKEN ?? '', prefix: env.PREFIX ?? '>',
     volume: number('DEFAULT_VOLUME',70,0,100), maxQueue: number('MAX_QUEUE_LENGTH',500,1,5000),

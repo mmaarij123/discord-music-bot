@@ -33,7 +33,7 @@ test('shared help lists active public controls without removed commands or extra
   for(const name of removed)assert.equal(listed.includes(name),false);
   assert.ok(listed.includes('remove'));
   assert.equal(payload.embeds,undefined);
-  assert.deepEqual([...listed].sort(),commands.filter(command=>!command.ownerOnly&&command.name!=='help').map(command=>command.name).sort());
+  assert.deepEqual([...listed].sort(),commands.filter(command=>!command.ownerOnly&&!command.beta&&command.name!=='help').map(command=>command.name).sort());
 });
 
 test('legacy previous button cannot access a player even with a matching current nonce',async()=>{

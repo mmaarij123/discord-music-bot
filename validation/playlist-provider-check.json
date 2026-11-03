@@ -1,0 +1,26 @@
+{
+  "checkedAt": "2026-11-03T15:35:50.863Z",
+  "results": [
+    {
+      "probe": "Permitted Blender CC direct YouTube link to Opus",
+      "passed": true,
+      "extractions": 1,
+      "discoveryMs": 6305,
+      "totalMs": 6662,
+      "packets": 10
+    },
+    {
+      "probe": "Public Spotify accessible playlist metadata import in isolated memory store",
+      "passed": true,
+      "accessibleTracks": 50,
+      "added": 50,
+      "duplicatesOnReimport": 50,
+      "notices": [
+        "Imported 50 accessible Spotify tracks. Public collection metadata can be incomplete (library limit: 100); completeness is not guaranteed."
+      ],
+      "completePlaylistVerified": false
+    }
+  ],
+  "discordVoiceTested": false,
+  "realSavedPlaylistsModified": false
+}

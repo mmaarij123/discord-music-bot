@@ -19,6 +19,18 @@ test('direct video discovery and playback source share one extraction',async()=>
   const result=await resolver.resolveInput('https://www.youtube.com/watch?v=abcdefghijk');
   const source=await resolver.audio(result.tracks[0]);assert.equal(calls,1);assert.equal(source.duration,180);
 });
+
+test('supported pasted YouTube video forms bypass Spotify and YouTube searches',async()=>{
+  for(const input of ['https://youtu.be/abcdefghijk?si=share','<https://www.youtube.com/watch?v=abcdefghijk>',
+    'youtube.com/watch?v=abcdefghijk','www.youtube.com/watch?v=abcdefghijk','music.youtube.com/watch?v=abcdefghijk','youtu.be/abcdefghijk']){
+    const resolver=youtube();let calls=0;
+    resolver.search=()=>assert.fail('A direct video must not search');
+    resolver.json=async args=>{calls++;assert.ok(args.includes('--no-playlist'));assert.equal(args.at(-1),'https://www.youtube.com/watch?v=abcdefghijk');return {data:data()};};
+    const discovery=new DiscoveryService({search:()=>assert.fail('A video URL must not use Spotify discovery')},resolver,null);
+    const result=await discovery.resolve(input);await resolver.audio({...result.tracks[0]});
+    assert.equal(calls,1);assert.equal(result.tracks[0].youtubeUrl,'https://www.youtube.com/watch?v=abcdefghijk');
+  }
+});
 test('recent sources are cloned and reused while recovery can force fresh extraction',async()=>{
   const resolver=youtube();let calls=0;
   resolver.json=async()=>{calls++;return {data:data()};};
