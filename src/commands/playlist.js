@@ -4,14 +4,16 @@ import { UserError } from '../utils/errors.js';
 import { classifyInput,integer } from '../utils/validators.js';
 import { duration } from '../components/playerView.js';
 import { panelsMessage } from '../components/messages.js';
+import { commandMap } from './definitions.js';
 
 export async function playlistCommand(interaction,manager,reply,play){
   // The beta gate applies to every subcommand, including reads, across all guilds.
   requireOwner(interaction.user.id);
-  const store=manager.playlists,userId=interaction.user.id,action=interaction.options.getString('action',true);
+  const userId=interaction.user.id,action=interaction.options.getString('action',true);
+  if(!commandMap.get('playlist').subcommands.some(command=>command.name===action))throw new UserError('Unknown playlist action.');
+  const store=manager.playlists;
   if(!store)throw new UserError('Playlist storage is unavailable in this runtime.');
   if(action==='create'){await store.create(userId);return reply('Your playlist is ready. You can have one unnamed playlist across all servers. (Beta)');}
-  if(action==='list'){const saved=store.get(userId);return reply(saved?`You have one playlist with ${saved.tracks.length} saved tracks. (Beta)`:'You do not have a playlist yet. Use the playlist create command. (Beta)');}
   if(action==='delete'){await store.delete(userId);return reply('Your playlist was deleted.');}
   const list=store.require(userId);
   if(action==='remove'){const removed=await store.remove(userId,interaction.options.getInteger('position',true));return reply(`Removed “${removed.title}” from your playlist.`);}

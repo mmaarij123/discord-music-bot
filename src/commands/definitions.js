@@ -21,10 +21,10 @@ export const commands = [
   command('logchannel','[#channelname|channel mention|off]',[string('channel',{required:false,maxLength:100})]),
   command('djchannel','[#channelname|channel mention|off]',[string('channel',{required:false,maxLength:100})]),
   command('prefix','[1–2 characters]',[string('prefix',{required:false,maxLength:2})]),
-  command('playlist','<create|add|save|import|play|show|list|remove|delete>',[],{beta:true,subcommands:[
+  command('playlist','<create|add|save|import|play|show|remove|delete>',[],{beta:true,subcommands:[
     command('create'),command('add','<song/link>',[string('query',{rest:true,maxLength:500})]),
     command('save'),command('import','<Spotify playlist URL>',[string('url',{maxLength:500})]),
-    command('play'),command('show','[page]',[integer('page',1,100,false)]),command('list'),
+    command('play'),command('show','[page]',[integer('page',1,100,false)]),
     command('remove','<position>',[integer('position',1,1000)]),command('delete')
   ]}),
   command('clearcache','',[],{ownerOnly:true}),

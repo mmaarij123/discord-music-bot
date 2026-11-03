@@ -9,7 +9,7 @@
   {
     "title": "**Playlist • Beta**",
     "betaOnly": true,
-    "description": "`Playlist create` Create your personal playlist.\n`Playlist add <song/link>` Add a song to your playlist.\n`Playlist save` Save the currently playing song.\n`Playlist import <Spotify playlist link>` Import accessible songs from a Spotify playlist.\n`Playlist play` Add your saved songs to the queue.\n`Playlist show [page]` View the songs in your playlist.\n`Playlist list` Check your playlist and song count.\n`Playlist remove <position>` Remove a saved song.\n`Playlist delete` Delete your playlist."
+    "description": "`Playlist create` Create your personal playlist.\n`Playlist add <song/link>` Add a song to your playlist.\n`Playlist save` Save the currently playing song.\n`Playlist import <Spotify playlist link>` Import accessible songs from a Spotify playlist.\n`Playlist play` Add your saved songs to the queue.\n`Playlist show [page]` View the songs in your playlist.\n`Playlist remove <position>` Remove a saved song.\n`Playlist delete` Delete your playlist."
   },
   {
     "title": "**Queue Management**",

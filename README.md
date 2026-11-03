@@ -11,7 +11,7 @@ Spotify supplies **metadata only**. All audio comes from a supported public YouT
 - Song/artist searches with weighted matching, official/Topic preferences, duration comparison, and rejection of unwanted covers, live performances, remixes, karaoke, nightcore, slowed and sped-up versions.
 - Spotify track, album, and public playlist metadata through `spotify-url-info`. Public collections can be partial; imports always say so. No full Spotify audio or previews are played.
 - Direct YouTube video links bypass Spotify/text matching, including Discord `<link>` syntax and supported links pasted without https://. One extraction is reused for playback while its short-lived audio cache is valid. Public playlists use bounded imports and lazy per-track extraction.
-- Private-beta personal playlists: one unnamed saved playlist per Discord user across every server; all nine playlist actions are currently restricted to Discord user 1037886658462371860.
+- Private-beta personal playlists: one unnamed saved playlist per Discord user across every server; all eight playlist actions are currently restricted to Discord user 1037886658462371860.
 - FFmpeg streaming, dynamic volume, Opus encoding, pause/resume, deterministic resource disposal, bounded error recovery, idle disconnect, and optional 24/7 connection.
 - Conservative autoplay: another track by a known artist, with recent-track/version filtering. A known matching artist/Topic channel is required. An optional recommendation adapter supports other lawful sources.
 - Discord Components V2 player with an unaccented container, artwork, album, playback status, requester mention, queue count, volume and nested controls. State changes update the player, with edits coalesced at least two seconds apart. Deleted player messages never interrupt audio.
@@ -226,7 +226,7 @@ The default prefix is `>`. Send `>help`, `>play Artist Song`, `>queue`, or `>vol
 
 The earlier slash-command migration was completed and its one-off cleanup script has been removed. Prefix commands need no deployment/registration step. The interaction handler processes music buttons only.
 
-`>help` always replies in the invoking channel or thread, including usage and permission errors. It combines all five sections from the operator's [Discohook design](https://share.discohook.app/go/omgtuvtp) into one Components V2 container, preserving the text and ordering from `src/components/helpPanels.json` and placing four native divider lines between sections. Help and all other command responses have no accent colour. Its first line displays the current server prefix automatically; the settings section includes the prefix command. The beta owner additionally sees the full Playlist section immediately below Playback Controls, with all nine actions and short descriptions; this adds a fifth divider in the same single unaccented container. Other users do not see the beta section. Owner process controls remain omitted. It does not depend on the configured log or DJ channel. Text-only help/queue/mention layouts require channel send permission, without an Embed Links requirement.
+`>help` always replies in the invoking channel or thread, including usage and permission errors. It combines all five sections from the operator's [Discohook design](https://share.discohook.app/go/omgtuvtp) into one Components V2 container, preserving the text and ordering from `src/components/helpPanels.json` and placing four native divider lines between sections. Help and all other command responses have no accent colour. Its first line displays the current server prefix automatically; the settings section includes the prefix command. The beta owner additionally sees the full Playlist section immediately below Playback Controls, with all eight actions and short descriptions; this adds a fifth divider in the same single unaccented container. Other users do not see the beta section. Owner process controls remain omitted. It does not depend on the configured log or DJ channel. Text-only help/queue/mention layouts require channel send permission, without an Embed Links requirement.
 
 Mention the bot by itself in a server channel or thread to receive the [prefix reminder text](https://share.discohook.app/go/kumiba4b), stored in `src/components/mentionPanels.json` and rendered as an unaccented V2 container. It replies in that channel, without using log/DJ settings or requiring voice. Extra conversation text, reply notification pings, bot/webhook messages and direct messages do not trigger it. Mention responses share the command cooldown and never ping the requesting user. The reminder always displays that server’s current prefix, so users can discover a changed prefix by mentioning the bot.
 
@@ -309,7 +309,7 @@ The prefix, both destinations and the DJ player message ID are stored independen
 
 ### Personal playlist beta
 
-Only Discord user **1037886658462371860** can use any playlist action, including viewing/listing. Administrator and Manage Server permissions do not bypass the beta gate. There is no public enable switch in this release. The beta owner sees all playlist commands in `help` immediately below Playback Controls. They remain hidden from everyone else’s help while access is restricted.
+Only Discord user **1037886658462371860** can use any playlist action, including viewing. Administrator and Manage Server permissions do not bypass the beta gate. There is no public enable switch in this release. The beta owner sees all playlist commands in `help` immediately below Playback Controls. They remain hidden from everyone else’s help while access is restricted.
 
 Each user has **one unnamed playlist globally for this bot instance**, independent of server queues. You cannot create a second playlist or supply a name. After deleting it, you may create a new empty one. Use your server’s current prefix instead of `>` if it has changed.
 
@@ -321,7 +321,6 @@ Each user has **one unnamed playlist globally for this bot instance**, independe
 | `>playlist import <Spotify playlist URL>` | Import accessible public metadata; report added, duplicate, invalid returned entries and capacity omissions. |
 | `>playlist play` | Add saved songs to this server’s normal queue, preserving current playback. Requires normal voice access. |
 | `>playlist show [page]` | Show ten saved songs per page with stable one-based positions. |
-| `>playlist list` | Show whether you have a playlist and its track count. |
 | `>playlist remove <position>` | Remove one saved song. |
 | `>playlist delete` | Delete your saved playlist. |
 

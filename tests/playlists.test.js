@@ -31,10 +31,11 @@ function harness(t,{player,discovery}={}){
   return {store,run,replies,manager,guild,channel,member};
 }
 
-test('playlist subcommands take no names and validate action-specific arguments',()=>{
-  for(const input of ['create','save','play','show','show 2','list','remove 1','delete',`import ${URL}`,'add Artist Long Song Name'])assert.equal(parsePrefix(`>playlist ${input}`).commandName,'playlist');
+test('playlist subcommands validate arguments and reject removed list without storage access',async()=>{
+  for(const input of ['create','save','play','show','show 2','remove 1','delete',`import ${URL}`,'add Artist Long Song Name'])assert.equal(parsePrefix(`>playlist ${input}`).commandName,'playlist');
   assert.equal(parsePrefix('!!playlist add Artist Long Song','!!').values.query,'Artist Long Song');
-  for(const input of ['create myname','play myname','save myname','delete myname','remove 0','remove 1 2','show 0','import','add','rename newname',''])assert.throws(()=>parsePrefix(`>playlist ${input}`));
+  for(const input of ['create myname','play myname','save myname','delete myname','remove 0','remove 1 2','show 0','import','add','rename newname','list',''])assert.throws(()=>parsePrefix(`>playlist ${input}`));
+  await assert.rejects(execute({inGuild:()=>true,user:{id:OWNER},options:{getString:()=> 'list'}},{get playlists(){assert.fail('Removed list touched storage');}},'playlist'),/Unknown playlist action/);
 });
 
 test('one unnamed playlist per user survives restart and user ownership remains isolated',async t=>{
@@ -106,19 +107,18 @@ test('imports serialize by user across guilds and dispose cancels signal-ignorin
   await store.dispose();await assert.rejects(pending,{name:'AbortError'});assert.equal(store.pending.size,0);
 });
 
-test('all nine playlist actions deny non-owner users before touching storage, discovery or voice',async()=>{
-  for(const action of ['create','add Song','save',`import ${URL}`,'play','show','list','remove 1','delete']){
+test('all eight playlist actions deny non-owner users before touching storage, discovery or voice',async()=>{
+  for(const action of ['create','add Song','save',`import ${URL}`,'play','show','remove 1','delete']){
     const message={guildId:'guild',guild:{id:'guild'},channel:{},author:{id:OTHER},inGuild:()=>true};
     const manager={get:()=>assert.fail('Unauthorized playback access'),get playlists(){assert.fail('Unauthorized storage access');}};
     await assert.rejects(execute(messageContext(message,parsePrefix(`>playlist ${action}`)),manager,'playlist'),{code:'OWNER_ONLY'});
   }
 });
 
-test('owner can create/add/list/show/remove/delete without voice and replies remain boxed locally',async t=>{
+test('owner can create/add/show/remove/delete without voice and replies remain boxed locally',async t=>{
   const f=harness(t);f.manager.get=()=>assert.fail('Storage command touched voice');
   assert.match(await f.run('>playlist create'),/playlist is ready/);
   assert.match(await f.run('>playlist add Artist Song'),/Saved 1 track/);
-  assert.match(await f.run('>playlist list'),/one playlist with 1 saved tracks/);
   assert.match(await f.run('>playlist show'),/Song/);
   assert.match(await f.run('>playlist remove 1'),/Removed/);
   assert.match(await f.run('>playlist delete'),/deleted/);

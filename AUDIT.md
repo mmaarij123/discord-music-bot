@@ -78,3 +78,7 @@ Added globally user-scoped, unnamed, single-playlist storage with an exact-owner
 ## Owner-only playlist help
 
 Help now inserts the complete nine-action Playlist • Beta section directly below Playback Controls for the exact beta owner. Non-owners keep the public layout without beta commands; command authorization itself is unchanged. The help remains one colourless Components V2 container with native dividers and a server-specific prefix. All 346 tests, 84-file static analysis and syntax checks passed. The bot restarted ready in three guilds with unchanged private-file hashes. No live command/audio probe was sent for this presentation change.
+
+## Playlist list removed
+
+Removed playlist list from the parser, dispatch, help and active documentation. Eight playlist subcommands remain. Dispatch now rejects removed/unknown playlist actions before storage access. All 346 tests, the 84-file static scan and syntax checks passed; the updated bot restarted ready in three guilds with unchanged private-file hashes. Earlier nine-action references are historical.
