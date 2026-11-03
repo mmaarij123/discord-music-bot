@@ -66,3 +66,7 @@ The latest presentation update removes all remaining container colour assignment
 ## Single help container
 
 Help now renders all five original sections inside one unaccented V2 container, separated by four native dividers. Existing text/order, command visibility and reply routing are preserved. All 317 tests passed with updated layout assertions. This change does not alter player/log rendering, dependency versions or audio behavior; earlier references to five separate help containers are historical.
+
+## Per-server prefixes
+
+Added a persistent server-specific prefix (1–2 visible ASCII characters, default `>`), with Administrator-only changes and public status lookup. Server lookup is evaluated on every message and live session so one server cannot change another server’s prefix. Help/mentions and error guidance use the current prefix. Version-4 settings load versions 1–3 and preserve saved player IDs. Shared validation rejects invisible/control characters, whitespace and backticks. Atomic-write failures retain the previous in-memory setting. All 327 tests, 81-file static analysis and syntax checks passed; 46/46 runtime modules are reachable. No live commands were sent; the already-offline bot was left offline. See VALIDATION.md for the executed checks.

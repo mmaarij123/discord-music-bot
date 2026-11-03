@@ -3,13 +3,14 @@ import { execute } from '../commands/execute.js';
 import { UserError, publicError } from '../utils/errors.js';
 import { createCooldown } from '../utils/cooldown.js';
 import { commandMessage } from '../components/messages.js';
+import { guildPrefix } from '../config/prefix.js';
 export function interactionHandler(manager,logger,{cooldown=createCooldown()}={}) {
   return async interaction=>{
     if(!interaction.isButton()||!interaction.customId.startsWith('music:'))return;
     try {
       await interaction.deferReply({flags:MessageFlags.Ephemeral});
       if(!interaction.inGuild())throw new UserError('Use music commands inside a server.');
-      const prefix=manager.config?.prefix ?? '>';
+      const prefix=guildPrefix(manager,interaction.guildId);
       cooldown(interaction.guildId,interaction.user.id);
       const [,nonce,action]=interaction.customId.split(':');
       const presenter=manager.presenters.get(interaction.guildId);

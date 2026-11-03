@@ -6,7 +6,7 @@ Spotify supplies **metadata only**. All audio comes from a supported public YouT
 
 ## What works
 
-- All 20 prefix commands (default `>`), including three controls restricted to the configured bot owner, plus five functional player buttons.
+- All 21 prefix commands (default `>`), including three controls restricted to the configured bot owner, plus five functional player buttons.
 - Independent bounded queues and history per server; concurrent skips advance once; adding tracks leaves current playback running.
 - Song/artist searches with weighted matching, official/Topic preferences, duration comparison, and rejection of unwanted covers, live performances, remixes, karaoke, nightcore, slowed and sped-up versions.
 - Spotify track, album, and public playlist metadata through `spotify-url-info`. Public collections can be partial; imports always say so. No full Spotify audio or previews are played.
@@ -166,7 +166,7 @@ Copy `.env.example` to `.env`. Never commit `.env`, tokens, private media, or pr
 | Variable | Default | Meaning |
 |---|---|---|
 | DISCORD_TOKEN | empty | Required normal bot token. Never share it. |
-| PREFIX | > | Text command prefix, 1–5 characters without whitespace; restart after changing. |
+| PREFIX | > | Default text prefix, 1–2 visible ASCII characters without spaces or backticks. Server overrides use the prefix command; restart only after editing this environment option. |
 | SPOTIFY_CLIENT_ID | empty | Optional Spotify developer application Client ID; pair with its Client Secret for official text metadata search. Use your Spotify application credentials, not your Discord application ID. |
 | SPOTIFY_CLIENT_SECRET | empty | Optional Spotify application secret. Store only in .env; never paste it into chat or commit it. |
 | SPOTIFY_MARKET | empty | Optional two-letter catalog country filter, such as PK for Pakistan. Leave empty for no explicit market filter; use the appropriate market for your app. |
@@ -220,13 +220,13 @@ This supports **one account**, with no automatic multi-account rotation. Cookie-
 npm start
 ```
 
-The default prefix is `>`. Send `>help`, `>play Artist Song`, `>queue`, or `>volume 70` in a server text channel. Set `PREFIX` in `.env` to change it, then restart. No slash registration and no server/guild IDs are required. Keep Public Bot enabled so administrators can invite the bot to other servers. Every server gets independent queues automatically.
+The default prefix is `>`. Send `>help`, `>play Artist Song`, `>queue`, or `>volume 70` in a server text channel. Server administrators can use `>prefix !` or `>prefix ab` to set a server-specific prefix immediately, without a restart. After changing it, use the new prefix, for example `!play Song` and `!prefix >` to restore `>`. Send the current prefix followed by `prefix` to view it. Only **Administrator** permission allows changes; Manage Server alone or bot-owner status does not. Prefixes must be 1–2 visible ASCII characters (English letters, numbers or symbols), with no spaces or backticks. `PREFIX` in `.env` remains the default for servers without an override. No slash registration and no server/guild IDs are required. Keep Public Bot enabled so administrators can invite the bot to other servers. Every server gets independent queues automatically.
 
 The earlier slash-command migration was completed and its one-off cleanup script has been removed. Prefix commands need no deployment/registration step. The interaction handler processes music buttons only.
 
-`>help` always replies in the invoking channel or thread, including usage and permission errors. It combines all five sections from the operator's [Discohook design](https://share.discohook.app/go/omgtuvtp) into one Components V2 container, preserving the text and ordering from `src/components/helpPanels.json` and placing four native divider lines between sections. Help and all other command responses have no accent colour. The shared design displays the literal default prefix `>`; update that template separately if you change `PREFIX`. No extra help or owner sections are appended. It does not depend on the configured log or DJ channel. Text-only help/queue/mention layouts require channel send permission, without an Embed Links requirement.
+`>help` always replies in the invoking channel or thread, including usage and permission errors. It combines all five sections from the operator's [Discohook design](https://share.discohook.app/go/omgtuvtp) into one Components V2 container, preserving the text and ordering from `src/components/helpPanels.json` and placing four native divider lines between sections. Help and all other command responses have no accent colour. Its first line displays the current server prefix automatically; the settings section includes the prefix command. No extra help or owner sections are appended. It does not depend on the configured log or DJ channel. Text-only help/queue/mention layouts require channel send permission, without an Embed Links requirement.
 
-Mention the bot by itself in a server channel or thread to receive the [prefix reminder text](https://share.discohook.app/go/kumiba4b), stored in `src/components/mentionPanels.json` and rendered as an unaccented V2 container. It replies in that channel, without using log/DJ settings or requiring voice. Extra conversation text, reply notification pings, bot/webhook messages and direct messages do not trigger it. Mention responses share the command cooldown and never ping the requesting user. This supplied text also displays the literal default prefix `>`.
+Mention the bot by itself in a server channel or thread to receive the [prefix reminder text](https://share.discohook.app/go/kumiba4b), stored in `src/components/mentionPanels.json` and rendered as an unaccented V2 container. It replies in that channel, without using log/DJ settings or requiring voice. Extra conversation text, reply notification pings, bot/webhook messages and direct messages do not trigger it. Mention responses share the command cooldown and never ping the requesting user. The reminder always displays that server’s current prefix, so users can discover a changed prefix by mentioning the bot.
 
 The player, help, mention and queue interfaces use native Containers, Text Displays and optional Section/Thumbnail artwork, with MessageFlags.IsComponentsV2. Player buttons are nested inside the same container and retain voice/host authorization. Existing player messages upgrade in place: legacy content/embeds are cleared while their message IDs stay the same. Every command response uses an unaccented V2 box: search progress, queue confirmations, settings/status, help/queue/nowplaying, owner controls, errors and private button acknowledgements. Progress edits one message from the first response. No colour value is set for any box, including the automatic DJ player, help and mention reminder; the original text is preserved and previous custom palettes are intentionally removed. Actual playback/recovery/disconnect logs remain plain text in their configured log destination. Components V2 is supported by the installed discord.js 14.27.0; no additional UI dependency is needed. See the official [Discord components overview](https://docs.discord.com/developers/components/overview) and [discord.js ContainerBuilder API](https://discord.js.org/docs/packages/discord.js/14.27.0/ContainerBuilder:Class).
 
@@ -256,12 +256,13 @@ When started, logs should include `ready`. Join a voice channel and use `>play l
 | >autoplay on/off | Manage Server: enable/disable conservative recommendations. Default off. |
 | >logchannel [channel/off] | Manage Server: select the playback-log channel, show its setting, or reset it. |
 | >djchannel [channel/off] | Manage Server: select the player channel independently, show its setting, or reset it. |
+| >prefix [characters] | Show the current server prefix; Administrator only to change it to 1–2 characters. No voice connection needed. |
 | >clearcache | Bot owner only: clear all built-in metadata/search/audio-link caches across servers without stopping playback or clearing queues. |
 | >shutdown | Bot owner only: gracefully stop audio, leave voice in all servers and shut down the application. |
 | >restart | Bot owner only: cleanly stop the worker and launch a fresh process; all in-memory queues reset. |
 | >help | Current command names and short descriptions, always in the invoking channel/thread. |
 
-Buttons: Pause/Resume, Skip, Stop, Loop, Shuffle. They use the same authorization and queue methods as prefix commands. Old session controls expire. Read-only queue, nowplaying and help do not require voice membership. Playback and settings controls do. Volume/control changes are available to listeners in the session channel; restrict channel access for stricter listener control. Discord application-command permissions do not apply to text prefix commands.
+Buttons: Pause/Resume, Skip, Stop, Loop, Shuffle. They use the same authorization and queue methods as prefix commands. Old session controls expire. Read-only queue, nowplaying and help do not require voice membership. Playback controls do; log/DJ/prefix configuration does not require voice. Volume/control changes are available to listeners in the session channel; restrict channel access for stricter listener control. Discord application-command permissions do not apply to text prefix commands.
 
 Only Discord user ID **1037886658462371860** may use `clearcache`, `shutdown` and `restart`. This exact ID is fixed in `src/config/owner.js`; server ownership, Administrator and Manage Server never grant access. These server-only owner controls require no voice membership or existing session and acknowledge in the invoking channel, independently from log/DJ settings. They are omitted from the shared help design for all users. Cache clearing preserves audio, queues, saved settings and authentication; in-flight metadata requests can populate fresh entries afterwards. Shutdown/restart acknowledgements must succeed before the process action is requested, and concurrent requests are rejected.
 
@@ -301,7 +302,7 @@ The configured DJ channel has one permanent player message: song/playlist transi
 
 Changing the log destination moves notices only. Changing the DJ destination invalidates old controls and selects a player in the new channel while leaving audio playing. With a DJ destination set, `>nowplaying` replies locally with that channel rather than posting another player. Configuration errors explain how to repair/reset the destination, and player controls still enforce voice/session-host permissions.
 
-Both destinations and the DJ player message ID are stored independently per server in versioned `data/guild-settings.json` with serialized atomic writes and survive restarts; ordinary queues/history/voice settings remain in memory. The data directory is private runtime state and excluded from Git and release ZIPs. Keep a private backup if you move hosts. To recover from a deleted destination or removed channel permissions, fix them or run the matching `>logchannel off` / `>djchannel off` in a channel where the bot can reply. Version 1/2 channel settings load and migrate safely to version 3. No additional music API keys or external database are required.
+The prefix, both destinations and the DJ player message ID are stored independently per server in versioned `data/guild-settings.json` with serialized atomic writes and survive restarts; ordinary queues/history/voice settings remain in memory. The data directory is private runtime state and excluded from Git and release ZIPs. Keep a private backup if you move hosts. To recover from a deleted destination or removed channel permissions, fix them or run the matching `>logchannel off` / `>djchannel off` in a channel where the bot can reply. Version 1/2/3 settings load and migrate safely to version 4 on the next setting change, preserving existing channel and player IDs. No additional music API keys or external database are required.
 
 ## 8. Authorized local and direct-stream fallback
 
@@ -464,8 +465,9 @@ Music Bot/
     runtime/                    Owner process control and child supervision
     config/owner.js             Exact owner ID and protected command names
     config/config.js            Validated environment configuration
-    config/GuildSettings.js     Atomic channel preferences and DJ message IDs
-    commands/definitions.js     All 20 prefix definitions
+    config/GuildSettings.js     Atomic server prefixes, channels and DJ message IDs
+    config/prefix.js            Shared prefix validation and per-server lookup
+    commands/definitions.js     All 21 prefix definitions
     commands/execute.js         Shared prefix/button business logic
     commands/parsePrefix.js     Typed argument parsing and usage
     commands/messageContext.js  Single-message reply/progress adapter

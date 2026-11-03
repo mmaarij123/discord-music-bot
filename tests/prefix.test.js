@@ -33,7 +33,7 @@ test('play preserves full search text and public URLs',()=>{
   assert.equal(parsePrefix('> play https://open.spotify.com/track/1234567890123456789012').values.query,'https://open.spotify.com/track/1234567890123456789012');
 });
 test('supports every prefix command with typed arguments',()=>{
-  const samples=['play Song','pause','resume','skip','stop','queue 2','nowplaying','volume 70','loop queue','shuffle','remove 2','join','leave','autoplay off','logchannel','djchannel','clearcache','shutdown','restart','help'];
+  const samples=['play Song','pause','resume','skip','stop','queue 2','nowplaying','volume 70','loop queue','shuffle','remove 2','join','leave','autoplay off','logchannel','djchannel','prefix !','clearcache','shutdown','restart','help'];
   for(const sample of samples)assert.ok(parsePrefix(`>${sample}`));
   assert.equal(parsePrefix('>volume 0').values.level,0);assert.equal(parsePrefix('>queue').values.page,undefined);
   assert.equal(parsePrefix('>autoplay true').values.enabled,true);assert.equal(parsePrefix('>autoplay false').values.enabled,false);

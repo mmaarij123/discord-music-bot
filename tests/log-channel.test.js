@@ -150,7 +150,7 @@ test('custom-prefix uppercase help stays in the invoking thread with thread perm
   f.source.permissions.has=values=>![values].flat().includes(PermissionFlagsBits.SendMessages);
   await f.run('!!HELP');assert.equal(f.source.messages.length,1);assert.equal(f.output.messages.length,0);
   const panels=f.source.messages[0].components.map(component=>component.toJSON());
-  assert.equal(panels[0].components[0].content,'**Your Prefix is **`>`');
+  assert.equal(panels[0].components[0].content,'**Your Prefix is **`!!`');
   assert.ok(componentText(f.source.messages[0]).includes('`Play`'));assert.equal(panels.length,1);
 });
 test('malformed commands and validation errors stay in the invoking channel',async t=>{
@@ -194,7 +194,7 @@ test('default binding preserves the original session output without a configured
 });
 test('saved JSON contains only channel preferences and no runtime player data',async t=>{
   const file=path.join(await folder(t),'settings.json'),settings=new GuildSettings(file);await settings.setLogChannel(GUILD,OUTPUT);
-  assert.deepEqual(JSON.parse(await readFile(file,'utf8')),{version:3,guilds:{[GUILD]:{logChannelId:OUTPUT}}});
+  assert.deepEqual(JSON.parse(await readFile(file,'utf8')),{version:4,guilds:{[GUILD]:{logChannelId:OUTPUT}}});
 });
 test('production manager factory reloads saved routing after a restart',async t=>{
   const f=setup(t),config={...loadConfig({}),settingsFile:path.join(await folder(t),'settings.json')};
@@ -206,7 +206,7 @@ test('legacy log settings load without inventing a DJ channel and migrate safely
   const file=path.join(await folder(t),'settings.json');await writeFile(file,JSON.stringify({version:1,guilds:{[GUILD]:{logChannelId:OUTPUT}}}));
   const settings=await GuildSettings.open(file);assert.equal(settings.getLogChannel(GUILD),OUTPUT);assert.equal(settings.getDjChannel(GUILD),null);
   await settings.setDjChannel(GUILD,SECOND);const loaded=await GuildSettings.open(file);
-  assert.equal(loaded.getLogChannel(GUILD),OUTPUT);assert.equal(loaded.getDjChannel(GUILD),SECOND);assert.equal(JSON.parse(await readFile(file,'utf8')).version,3);
+  assert.equal(loaded.getLogChannel(GUILD),OUTPUT);assert.equal(loaded.getDjChannel(GUILD),SECOND);assert.equal(JSON.parse(await readFile(file,'utf8')).version,4);
 });
 test('concurrent log and DJ updates preserve both destinations and reset independently',async t=>{
   const file=path.join(await folder(t),'settings.json'),settings=new GuildSettings(file);

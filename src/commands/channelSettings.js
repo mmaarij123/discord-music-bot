@@ -1,10 +1,11 @@
 import { PermissionFlagsBits } from 'discord.js';
 import { UserError } from '../utils/errors.js';
 import { findLogChannel } from '../utils/channels.js';
+import { guildPrefix } from '../config/prefix.js';
 
 export async function channelSettings(interaction,manager,reply,kind){
   const dj=kind==='dj',command=dj?'djchannel':'logchannel',label=dj?'DJ player':'Music log';
-  const prefix=interaction.commandPrefix??manager.config?.prefix??'>';
+  const prefix=interaction.commandPrefix??guildPrefix(manager,interaction.guildId);
   const member=await interaction.guild.members.fetch(interaction.user.id);
   if(!member.permissions.has(PermissionFlagsBits.ManageGuild))throw new UserError(`Manage Server permission is required to configure the ${dj?'DJ':'log'} channel.`);
   const selection=interaction.options.getString('channel');

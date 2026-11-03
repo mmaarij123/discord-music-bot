@@ -16,6 +16,7 @@ import { PlayerMessageStore } from '../components/PlayerMessageStore.js';
 import { GuildSettings } from '../config/GuildSettings.js';
 import { requireLogChannel } from '../utils/channels.js';
 import { startCacheCleanup } from '../utils/cache.js';
+import { guildPrefix } from '../config/prefix.js';
 async function adapter(file,method) {
   if (!file) return null;
   const module=await import(pathToFileURL(path.resolve(root,file)).href);
@@ -80,7 +81,9 @@ export class MusicManager {
         if(!this.imports.has(stale.guild.id)&&!stale.idleHolds&&!stale.voice.channelId&&!stale.current&&!stale.queue.length)this.release(stale);
       }
       if (this.players.size>=this.config.maxPlayers) throw new UserError('The bot has reached its configured server session limit. Try again later.');
-      player=new GuildPlayer(guild,this.config,{audio:this.audio,autoplay:this.autoplay,logger:this.logger,onRelease:p=>this.release(p)});
+      const config=Object.create(this.config);
+      Object.defineProperty(config,'prefix',{get:()=>guildPrefix(this,guild.id)});
+      player=new GuildPlayer(guild,config,{audio:this.audio,autoplay:this.autoplay,logger:this.logger,onRelease:p=>this.release(p)});
       this.players.set(guild.id,player); this.presenters.set(guild.id,new PlayerPresenter(player,this.logger,{messageStore:this.messageStore}));
     }
     return player;
@@ -105,7 +108,7 @@ export class MusicManager {
     return removed;
   }
   async import(guildId,fn) {
-    if (this.imports.has(guildId)) throw new UserError(`A discovery/import request is already running in this server. Wait or use ${this.config.prefix ?? '>'}stop to cancel it.`);
+    if (this.imports.has(guildId)) throw new UserError(`A discovery/import request is already running in this server. Wait or use ${guildPrefix(this,guildId)}stop to cancel it.`);
     if (this.closing) throw new UserError('The bot is shutting down.');
     if (this.imports.size>=this.config.maxPlayers*2) throw new UserError('The discovery service is busy. Try again shortly.');
     const controller=new AbortController(); this.imports.set(guildId,controller);

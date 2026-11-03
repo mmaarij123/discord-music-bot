@@ -16,6 +16,6 @@
   },
   {
     "title": "**Channel Configuration**",
-    "description": "`LogChannel` Set a dedicated channel for music activity logs and playback updates.\n`DJChannel` Set a dedicated channel for the interactive music player and its controls."
+    "description": "`LogChannel` Set a dedicated channel for music activity logs and playback updates.\n`DJChannel` Set a dedicated channel for the interactive music player and its controls.\n`Prefix` View this server’s prefix. Server admins can change it to 1 or 2 characters."
   }
 ]

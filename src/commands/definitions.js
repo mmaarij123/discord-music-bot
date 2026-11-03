@@ -20,6 +20,7 @@ export const commands = [
   command('autoplay', '<on|off>', [boolean]),
   command('logchannel','[#channelname|channel mention|off]',[string('channel',{required:false,maxLength:100})]),
   command('djchannel','[#channelname|channel mention|off]',[string('channel',{required:false,maxLength:100})]),
+  command('prefix','[1–2 characters]',[string('prefix',{required:false,maxLength:2})]),
   command('clearcache','',[],{ownerOnly:true}),
   command('shutdown','',[],{ownerOnly:true}),
   command('restart','',[],{ownerOnly:true}),

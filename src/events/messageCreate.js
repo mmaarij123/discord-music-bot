@@ -6,11 +6,12 @@ import { messageContext } from '../commands/messageContext.js';
 import { execute } from '../commands/execute.js';
 import { publicError } from '../utils/errors.js';
 import { createCooldown } from '../utils/cooldown.js';
+import { guildPrefix, prefixPanels } from '../config/prefix.js';
 
 export function messageHandler(manager, logger, { cooldown = createCooldown() } = {}) {
-  const prefix = manager.config?.prefix ?? '>';
   return async message => {
     if (!message.inGuild() || message.author.bot || message.webhookId) return;
+    const prefix = guildPrefix(manager,message.guildId);
     const botId=message.client?.user?.id??message.guild.members.me?.id;
     const mentioned=Boolean(botId&&[`<@${botId}>`,`<@!${botId}>`].includes(message.content?.trim()));
     if(!mentioned&&!message.content?.startsWith(prefix))return;
@@ -27,7 +28,7 @@ export function messageHandler(manager, logger, { cooldown = createCooldown() } 
       if(mentioned){
         action='mention';
         cooldown(message.guildId,message.author.id);
-        await message.reply({...panelsMessage(mentionPanels),failIfNotExists:false});
+        await message.reply({...panelsMessage(prefixPanels(mentionPanels,prefix)),failIfNotExists:false});
         return;
       }
       const head=message.content.slice(prefix.length).trim().split(/\s+/,1)[0]?.toLowerCase();

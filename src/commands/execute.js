@@ -8,6 +8,7 @@ import { integer, classifyInput } from '../utils/validators.js';
 import { performance } from 'node:perf_hooks';
 import { channelSettings } from './channelSettings.js';
 import { ownerCommands, requireOwner } from '../config/owner.js';
+import { guildPrefix, prefixPanels } from '../config/prefix.js';
 const readOnly=new Set(['help','queue','nowplaying','logchannel','djchannel']);
 const songLabel=value=>`\`${String(value).replace(/`/g,'ˋ').replace(/[\r\n]/g,' ').slice(0,500)}\``;
 export async function voiceAccess(interaction,player) {
@@ -31,7 +32,7 @@ function textAccess(interaction,channel=interaction.channel){
 }
 export async function execute(interaction,manager,action=interaction.commandName) {
   if (!interaction.inGuild()) throw new UserError('Music commands are available in servers only.');
-  const prefix=interaction.commandPrefix ?? manager.config?.prefix ?? '>';
+  const prefix=interaction.commandPrefix ?? guildPrefix(manager,interaction.guildId);
   if(!commandMap.has(action))throw new UserError(`Unknown music command. Use ${prefix}help.`);
   const reply=content=>interaction.editReply(commandMessage(content));
   if(ownerCommands.has(action)){
@@ -43,12 +44,21 @@ export async function execute(interaction,manager,action=interaction.commandName
     if(!manager.lifecycle)throw new UserError('Process controls are unavailable in this runtime. Use the supplied startup wrapper.');
     return manager.lifecycle.request(action,()=>reply(action==='shutdown'?'Shutting down the bot in all servers.':'Restarting the bot. Voice connections and in-memory queues will reset.'));
   }
+  if(action==='prefix'){
+    const selected=interaction.options.getString('prefix');
+    if(!selected)return reply(`Your prefix is \`${guildPrefix(manager,interaction.guildId)}\`. Server admins can use \`${prefix}prefix !\` to change it.`);
+    const member=await interaction.guild.members.fetch(interaction.user.id);
+    if(!member.permissions.has(PermissionFlagsBits.Administrator))throw new UserError('Only server administrators can change the prefix.','ADMIN_ONLY');
+    await manager.settings.setPrefix(interaction.guildId,selected);
+    manager.presenters?.get(interaction.guildId)?.schedule();
+    return reply(`Server prefix set to \`${selected}\`. Use \`${selected}help\` to see commands.`);
+  }
   let player=manager.get(interaction.guild), access;
   if (!readOnly.has(action)&&!['stop','leave'].includes(action)) access=await voiceAccess(interaction,player);
   const option=interaction.options;
   if(['logchannel','djchannel'].includes(action))return channelSettings(interaction,manager,reply,action==='djchannel'?'dj':'log');
   if (action==='help') {
-    return reply(panelsMessage(helpPanels,{combine:true}));
+    return reply(panelsMessage(prefixPanels(helpPanels,prefix),{combine:true}));
   }
   if (action==='play') {
     const query=option.getString('query',true);

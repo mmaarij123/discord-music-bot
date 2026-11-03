@@ -29,7 +29,7 @@ try{
   manager.lifecycle=new ProcessLifecycle({shutdown,canRestart:typeof process.send==='function'&&['1','pm2'].includes(process.env.MUSIC_BOT_SUPERVISED)});
   client=new Client({intents:[GatewayIntentBits.Guilds,GatewayIntentBits.GuildVoiceStates,GatewayIntentBits.GuildMessages,GatewayIntentBits.MessageContent],allowedMentions:{parse:[]}});
   client.once(Events.ClientReady,ready=>{
-    ready.user.setActivity(`${config.prefix}help • Music`,{type:ActivityType.Listening});
+    ready.user.setActivity('Mention me for help • Music',{type:ActivityType.Listening});
     logger.info('ready',{userId:ready.user.id,guildCount:ready.guilds.cache.size,commandMode:'prefix',prefix:config.prefix});
   });
   const cooldown=createCooldown();

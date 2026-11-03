@@ -2,6 +2,7 @@ import 'dotenv/config';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { UserError } from '../utils/errors.js';
+import { validPrefix } from './prefix.js';
 export const root = fileURLToPath(new URL('../../', import.meta.url));
 export function loadConfig(env = process.env) {
   const number = (key, fallback, min, max) => {
@@ -37,7 +38,7 @@ export function loadConfig(env = process.env) {
     adapters: { spotify: env.SPOTIFY_SEARCH_ADAPTER, recommendations: env.RECOMMENDATION_ADAPTER }
   };
   if (!['debug','info','warn','error'].includes(config.logLevel)) throw new UserError('LOG_LEVEL must be debug, info, warn, or error.');
-  if (!config.prefix.length || config.prefix.length > 5 || /\s|[\x00-\x1f]/.test(config.prefix)) throw new UserError('PREFIX must contain 1–5 characters without spaces or control characters.');
+  if (!validPrefix(config.prefix)) throw new UserError('PREFIX must contain 1 or 2 visible English letters, numbers, or symbols without spaces or backticks.');
   if(config.spotify.market&&!/^[A-Z]{2}$/.test(config.spotify.market))throw new UserError('SPOTIFY_MARKET must be a two-letter country code or empty.');
   if(config.youtubeCookiesFile){
     const relative=path.relative(config.cookiesRoot,config.youtubeCookiesFile);
