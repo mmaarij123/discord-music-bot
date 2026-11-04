@@ -31,18 +31,30 @@ for(const action of ownerCommands) {
   });
 }
 
-test('manual cache clear removes all provider entries while preserving two guild players and their audio',async t=>{
+test('manual cache clear removes played entries after playback advances and protects upcoming tracks',async t=>{
   const caches=Array.from({length:4},()=>new TTLCache(900000));
-  for(const cache of caches){cache.set('one',1);cache.set('two',2);}
+  const old={...track('Old'),source:'youtube',youtubeUrl:'https://www.youtube.com/watch?v=abcdefghijk'};
+  const upcoming={...track('Next A'),source:'youtube',youtubeUrl:'https://www.youtube.com/watch?v=lmnopqrstuv'};
+  for(const cache of caches){
+    cache.set('played',1,[old.youtubeUrl]);
+    cache.set('upcoming',2,[upcoming.youtubeUrl]);
+  }
   const a=fixture(),b=fixture({id:'second'});
-  await a.player.enqueue([track('A'),track('Next A')],a.channel);
-  await b.player.enqueue([track('B'),track('Next B')],b.channel);
   const manager=new MusicManager(loadConfig({}),logger,{caches,audio:{dispose(){}}});
   manager.players.set('guild',a.player);manager.players.set('second',b.player);t.after(()=>manager.destroy());
+  a.player.onPlayed=item=>manager.markTrackPlayed(item);
+  await a.player.enqueue([old,track('A'),upcoming],a.channel);
+  await b.player.enqueue([track('B'),track('Next B')],b.channel);
+  a.fakePlayer.finish();
+  await settle();
+  assert.equal(a.player.current.title,'A');
   const i=context();await execute(i,manager,'clearcache');
-  assert.match(componentText(i.replies[0]),/Cleared 8/);
-  for(const cache of caches)assert.equal(cache.items.size,0);
-  for(const f of [a,b]){assert.equal(f.player.state,'playing');assert.equal(f.player.queue.length,1);assert.equal(f.handles[0].disposed,false);}
+  assert.match(componentText(i.replies[0]),/Cleared 4/);
+  for(const cache of caches){
+    assert.equal(cache.get('played'),undefined);
+    assert.equal(cache.get('upcoming'),2);
+  }
+  for(const f of [a,b]){assert.equal(f.player.state,'playing');assert.equal(f.player.queue.length,1);assert.equal(f.handles.at(-1).disposed,false);}
   await execute(i,manager,'clearcache');assert.match(componentText(i.replies[1]),/Cleared 0/);
 });
 

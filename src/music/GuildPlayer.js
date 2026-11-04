@@ -8,8 +8,8 @@ import { VoiceSession } from './VoiceSession.js';
 import { playbackBehaviors, prematureEnd, mayRetry } from './playbackPolicy.js';
 import { SourcePrefetcher } from './SourcePrefetcher.js';
 export class GuildPlayer extends EventEmitter {
-  constructor(guild,config,{audio,autoplay,logger,audioPlayer,voiceFactory,onRelease=()=>{}}) {
-    super(); Object.assign(this,{guild,config,audio,autoplay,logger,onRelease});
+  constructor(guild,config,{audio,autoplay,logger,audioPlayer,voiceFactory,onRelease=()=>{},onPlayed=()=>{}}) {
+    super(); Object.assign(this,{guild,config,audio,autoplay,logger,onRelease,onPlayed});
     this.queue=new QueueManager(config.maxQueue); this.lock=new Mutex();
     this.player=audioPlayer ?? createAudioPlayer({behaviors:playbackBehaviors(config)});
     this.voice=voiceFactory ? voiceFactory(()=>this.connectionLost()) : new VoiceSession(guild,this.player,()=>this.connectionLost(),logger);
@@ -112,7 +112,9 @@ export class GuildPlayer extends EventEmitter {
       return;
     }
     this.consecutiveFailures=0;
-    const ended=this.current;this.releaseAudio({keepPrefetch:true});this.current=null;
+    const ended=this.current;
+    this.onPlayed(ended);
+    this.releaseAudio({keepPrefetch:true});this.current=null;
     if(this.queue.loop==='track')await this.startNext(ended,false);
     else{this.queue.complete(ended);await this.startNext(undefined,true,ended);}
   }
@@ -186,7 +188,9 @@ export class GuildPlayer extends EventEmitter {
       if (this.closed || expected!==this.generation) return false;
       if (!this.current && !this.queue.length && !wasActive) throw new UserError('There is no track to skip.');
       this.generation++;this.consecutiveFailures=0;
-      const previous=this.current; this.releaseAudio({keepPrefetch:true}); this.queue.remember(previous); this.current=null;
+      const previous=this.current;
+      if(previous&&this.progress>0)this.onPlayed(previous);
+      this.releaseAudio({keepPrefetch:true}); this.queue.remember(previous); this.current=null;
       await this.startNext(); return true;
     });
   }

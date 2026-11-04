@@ -3,6 +3,7 @@ import { spotifyUrl } from '../utils/validators.js';
 import { UserError } from '../utils/errors.js';
 import { TTLCache } from '../utils/cache.js';
 import { withAbort } from '../utils/async.js';
+import { cacheTrackKeys } from './TrackMatcher.js';
 export function normalizeSpotify(raw, context = {}) {
   const item = raw?.track ?? raw;
   if (!item || item.is_local) return null;
@@ -62,7 +63,7 @@ export class SpotifyResolver {
         if (total && total > tracks.length) notices.push(`${total} tracks reported; only ${tracks.length} imported.`);
         if (visible > this.config.maxPlaylist) notices.push(`Import capped at ${this.config.maxPlaylist} tracks.`);
         if (visible > tracks.length && visible <= this.config.maxPlaylist) notices.push('Unavailable entries were omitted.');
-        return this.cache.set(parsed.url,{ tracks, notices });
+        return this.cache.set(parsed.url,{ tracks, notices },tracks.flatMap(cacheTrackKeys));
       } catch (error) {
         if (signal?.aborted) throw signal.reason;
         if (error instanceof UserError) throw error;

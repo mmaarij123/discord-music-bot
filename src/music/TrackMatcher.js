@@ -20,6 +20,14 @@ export function trackIdentity(track) {
   if(artist)title=title.replace(artist,'');
   return `${artist}|${title.replace(/\s+/g,' ').trim()}`;
 }
+export function cacheTrackKeys(track) {
+  if (!track || ['local', 'stream'].includes(track.source)) return [];
+  const keys = [];
+  if (typeof track.youtubeUrl === 'string' && track.youtubeUrl) keys.push(track.youtubeUrl);
+  if (typeof track.sourceUrl === 'string' && track.sourceUrl.startsWith('https://open.spotify.com/track/')) keys.push(track.sourceUrl);
+  if (track.artist && track.title) keys.push(`song:${trackIdentity(track)}`);
+  return keys;
+}
 export function scoreTrack(target, candidate) {
   const title = normalize(candidate.title), wanted = normalize(`${target.title} ${target.artist ?? ''}`);
   const haystack = `${candidate.title} ${candidate.artist ?? ''} ${candidate.channel ?? ''}`;

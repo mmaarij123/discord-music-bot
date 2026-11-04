@@ -1,7 +1,8 @@
 import { UserError } from '../utils/errors.js';
 import { withAbort } from '../utils/async.js';
 import { TTLCache } from '../utils/cache.js';
-import { scoreTrack } from './TrackMatcher.js';
+import { cacheTrackKeys, scoreTrack } from './TrackMatcher.js';
+import { normalizeSpotify } from './SpotifyResolver.js';
 
 const TOKEN_URL = 'https://accounts.spotify.com/api/token';
 const SEARCH_URL = 'https://api.spotify.com/v1/search';
@@ -111,7 +112,7 @@ export class SpotifyApi {
       .map(track=>({track,...scoreTrack({title:value},{title:track.name,artist:track.artists.map(artist=>artist?.name).filter(Boolean).join(', ')})}))
       .filter(candidate=>!candidate.rejected&&candidate.score>=70).sort((a,b)=>b.score-a.score);
     const result=ranked[0]?.track ?? null;
-    this.cache.set(key,result);
+    this.cache.set(key,result,cacheTrackKeys(normalizeSpotify(result)));
     return result;
   }
 }

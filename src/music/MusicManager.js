@@ -18,6 +18,7 @@ import { requireLogChannel } from '../utils/channels.js';
 import { startCacheCleanup } from '../utils/cache.js';
 import { guildPrefix } from '../config/prefix.js';
 import { PlaylistStore } from './PlaylistStore.js';
+import { cacheTrackKeys } from './TrackMatcher.js';
 async function adapter(file,method) {
   if (!file) return null;
   const module=await import(pathToFileURL(path.resolve(root,file)).href);
@@ -35,7 +36,17 @@ export class MusicManager {
     const playlists=await PlaylistStore.open(config.playlistsFile,config.maxSavedTracks);
     return new MusicManager(config,logger,{discovery:new DiscoveryService(spotify,youtube,local,config),audio:new AudioManager(config,youtube,local),autoplay:new AutoplayManager(youtube,recommendations),settings,playlists,caches:[youtube.cache,youtube.sourceCache,spotify.cache,official?.cache].filter(Boolean)});
   }
-  constructor(config,logger,services) { Object.assign(this,{config,logger,...services});this.settings=services.settings??new GuildSettings();this.messageStore=new PlayerMessageStore(this.settings);this.players=new Map(); this.presenters=new Map(); this.imports=new Map();this.cleanups=new Set(); this.closing=false; this.stopCacheCleanup=startCacheCleanup(services.caches??[]); }
+  constructor(config, logger, services) {
+    Object.assign(this, { config, logger, ...services });
+    this.settings = services.settings ?? new GuildSettings();
+    this.messageStore = new PlayerMessageStore(this.settings);
+    this.players = new Map();
+    this.presenters = new Map();
+    this.imports = new Map();
+    this.cleanups = new Set();
+    this.closing = false;
+    this.stopCacheCleanup = this.caches?.length ? startCacheCleanup(() => this.clearCaches()) : () => {};
+  }
   async outputChannel(guild,fallback){
     return this.destinationChannel(guild,fallback,'log');
   }
@@ -90,7 +101,10 @@ export class MusicManager {
       if (this.players.size>=this.config.maxPlayers) throw new UserError('The bot has reached its configured server session limit. Try again later.');
       const config=Object.create(this.config);
       Object.defineProperty(config,'prefix',{get:()=>guildPrefix(this,guild.id)});
-      player=new GuildPlayer(guild,config,{audio:this.audio,autoplay:this.autoplay,logger:this.logger,onRelease:p=>this.release(p)});
+      player=new GuildPlayer(guild,config,{
+        audio:this.audio,autoplay:this.autoplay,logger:this.logger,onRelease:p=>this.release(p),
+        onPlayed:track=>this.markTrackPlayed(track)
+      });
       this.players.set(guild.id,player); this.presenters.set(guild.id,new PlayerPresenter(player,this.logger,{messageStore:this.messageStore}));
     }
     return player;
@@ -109,9 +123,22 @@ export class MusicManager {
     this.cleanups.add(cleanup);
   }
   cancelImport(guildId) { this.imports.get(guildId)?.abort(); }
+  markTrackPlayed(track) {
+    const keys = cacheTrackKeys(track);
+    if (!keys.length) return;
+    for (const cache of this.caches ?? []) cache.markPlayed(keys);
+  }
   clearCaches() {
-    let removed=0;
-    for(const cache of this.caches??[])removed+=cache.clear();
+    if (!this.caches?.length) return 0;
+    const protectedKeys = new Set();
+    for (const player of this.players.values()) {
+      for (const key of cacheTrackKeys(player.current)) protectedKeys.add(key);
+      for (const track of player.queue.tracks) {
+        for (const key of cacheTrackKeys(track)) protectedKeys.add(key);
+      }
+    }
+    let removed = 0;
+    for (const cache of this.caches) removed += cache.clearPlayed(protectedKeys);
     return removed;
   }
   async import(guildId,fn) {
@@ -131,6 +158,6 @@ export class MusicManager {
     await Promise.all([...this.cleanups]);
     this.audio.dispose(); this.players.clear(); this.presenters.clear();
     this.messageStore.views.clear();
-    this.clearCaches();
+    for(const cache of this.caches??[])cache.clear();
   }
 }

@@ -182,7 +182,7 @@ Copy `.env.example` to `.env`. Never commit `.env`, tokens, private media, or pr
 | FFMPEG_PATH | ffmpeg | Trusted executable name on PATH or absolute path. |
 | YTDLP_PATH | yt-dlp | Trusted executable name on PATH or absolute path. |
 | YOUTUBE_COOKIES_FILE | empty | Optional local Netscape YouTube cookie export, e.g. ./secrets/youtube.cookies.txt. Must stay inside the project secrets folder. Blank keeps anonymous extraction. Restart after enabling/replacing an export to clear source/search caches. |
-| SEARCH_CACHE_SECONDS | 900 | Successful search/Spotify metadata TTL; 1–86400. Caches hold at most 250 keys each and are also fully cleared every five minutes. |
+| SEARCH_CACHE_SECONDS | 900 | Successful search and Spotify metadata TTL, 1–86400 seconds. Each cache holds up to 250 entries. |
 | AUDIO_SOURCE_CACHE_SECONDS | 300 | Short-lived successful YouTube source metadata cache; 0–300. Contains no song files. Near-expiry signed URLs are not reused; 0 disables caching/warmup. |
 | YOUTUBE_FAST_EXTRACTION | false | Optional manifest-skipping optimization. Full extraction is the reliability default; candidate formats are availability-checked in either mode. |
 | SPOTIFY_DISCOVERY_TIMEOUT_MS | 2000 | Optional Spotify metadata budget during startup, 250–10000 ms. Spotify and YouTube discovery run concurrently; a slow optional catalog lookup falls back to validated YouTube metadata. |
@@ -260,7 +260,7 @@ When started, logs should include `ready`. Join a voice channel and use `>play l
 | >djchannel [channel/off] | Manage Server: select the player channel independently, show its setting, or reset it. |
 | >prefix [characters] | Show the current server prefix; Administrator only to change it to 1–2 characters. No voice connection needed. |
 | >playlist action | Private beta: one unnamed personal playlist; owner ID 1037886658462371860 only. See the playlist commands below. |
-| >clearcache | Bot owner only: clear all built-in metadata/search/audio-link caches across servers without stopping playback or clearing queues. |
+| >clearcache | Bot owner only. Remove cache entries for played songs that no server is currently playing or has queued. |
 | >shutdown | Bot owner only: gracefully stop audio, leave voice in all servers and shut down the application. |
 | >restart | Bot owner only: cleanly stop the worker and launch a fresh process; all in-memory queues reset. |
 | >help | Current command names and short descriptions, always in the invoking channel/thread. |
@@ -285,7 +285,7 @@ Short media-buffer underruns are tolerated for up to AUDIO_STALL_TIMEOUT_SECONDS
 
 Startup avoids duplicate direct-video extraction: the same validated source metadata supplies discovery and immediate playback. Spotify metadata and the first YouTube candidate search run concurrently, with artist/title/duration scoring retained and a canonical-query fallback when needed. Recent source metadata is cached briefly, identical concurrent metadata requests share work, and cancelling the last waiting caller cancels its subprocess. Playback interruption recovery always requests fresh source metadata; signed URLs denied by the provider are invalidated.
 
-Every five minutes while running, one background timer clears all YouTube search/source and Spotify public/API metadata caches, including entries that have not yet expired. Active audio streams, queues, cookies, Spotify authentication and saved guild settings are preserved. In-flight requests can populate fresh entries after cleanup; the next uncached search needs a new provider request. No song files are stored in these caches. Shutdown stops the timer and clears remaining entries.
+Every two minutes and thirty seconds, the bot removes YouTube and Spotify cache entries associated with played tracks. The owner’s `clearcache` command runs the same cleanup immediately. Entries shared with a current or queued track in any server are retained, including prefetched sources and shared playlist metadata. Cache capacity and normal expiration still apply, including signed YouTube link expiry. Shutdown stops the timer and releases the caches.
 
 Voice connection preparation now runs alongside discovery; source resolution begins before the final permission check, and delivering the search reply does not delay ready audio. Permissions are rechecked before queue insertion. Cancellation aborts pending voice preparation, and a failed discovery releases a newly created idle connection. Idle leave is suspended while a play request is preparing. The `play_request_ready` log records elapsed command preparation time (not a guarantee of when a listener hears audio).
 

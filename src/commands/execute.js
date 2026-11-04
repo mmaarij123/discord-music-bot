@@ -95,7 +95,7 @@ export async function execute(interaction,manager,action=interaction.commandName
     requireOwner(interaction.user?.id);
     if(action==='clearcache'){
       const removed=manager.clearCaches();
-      return reply(`Cleared ${removed} cached music entries. Playback and queues are unchanged.`);
+      return reply(`Cleared ${removed} cache entries for played songs.`);
     }
     if(!manager.lifecycle)throw new UserError('Process controls are unavailable in this runtime. Use the supplied startup wrapper.');
     return manager.lifecycle.request(action,()=>reply(action==='shutdown'?'Shutting down the bot in all servers.':'Restarting the bot. Voice connections and in-memory queues will reset.'));

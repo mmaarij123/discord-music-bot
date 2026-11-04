@@ -1,7 +1,7 @@
 import { runTool } from '../utils/process.js';
 import { youtubeUrl, httpsUrl } from '../utils/validators.js';
 import { TTLCache } from '../utils/cache.js';
-import { bestMatch } from './TrackMatcher.js';
+import { bestMatch, cacheTrackKeys } from './TrackMatcher.js';
 import { UserError } from '../utils/errors.js';
 import { SharedRequests } from '../utils/sharedRequests.js';
 import { withYouTubeCookies } from '../utils/youtubeCookies.js';
@@ -17,6 +17,9 @@ export function normalizeYouTube(data) {
     source: 'youtube', sourceUrl: `https://www.youtube.com/watch?v=${id}`, youtubeUrl: `https://www.youtube.com/watch?v=${id}`,
     verified: data.channel_is_verified === true, live: data.is_live === true || ['is_live','is_upcoming'].includes(data.live_status) };
 }
+const searchText = query => query.trim().replace(/\s+/g, ' ');
+const searchKey = query => `search:${searchText(query).toLowerCase()}`;
+
 export class YouTubeResolver {
   constructor(config, semaphore) {
     this.config=config;this.semaphore=semaphore;this.cache=new TTLCache(config.cacheMs);
@@ -32,17 +35,20 @@ export class YouTubeResolver {
   }
   async search(query, signal) {
     signal?.throwIfAborted();
-    const text=query.trim().replace(/\s+/g,' '),key=`search:${text.toLowerCase()}`,cached=this.cache.get(key);
+    const text=searchText(query),key=searchKey(query),cached=this.cache.get(key);
     if (cached) return cached;
     return this.requests.run(key,async sharedSignal=>{
       const { data } = await this.json(['--flat-playlist','--dump-single-json','--playlist-end','8','--',`ytsearch8:${text}`],sharedSignal);
       const results = (data.entries ?? []).map(normalizeYouTube).filter(t => t && !t.live && (!t.duration || t.duration <= this.config.maxTrack));
       if (!results.length) throw new UserError('No matching track found.','NO_RESULTS');
-      return this.cache.set(key,results);
+      return this.cache.set(key,results,results.flatMap(cacheTrackKeys));
     },signal);
   }
   async match(track, signal) {
-    return bestMatch(track,await this.search(`${track.artist ?? ''} ${track.title}`,signal));
+    const query = `${track.artist ?? ''} ${track.title}`;
+    const match = bestMatch(track,await this.search(query,signal));
+    this.cache.tag(searchKey(query),cacheTrackKeys(track));
+    return match;
   }
   invalidate(track){
     if(track.youtubeUrl)this.sourceCache.delete(`audio:${youtubeUrl(track.youtubeUrl).id}`);
@@ -70,9 +76,13 @@ export class YouTubeResolver {
     const key=`audio:${parsed.id}`;
     if(fresh)this.sourceCache.delete(key);
     const cached=this.sourceCache.get(key);
-    if(cached&&cached.expiresAt>Date.now())return {...cached,fromCache:true};
+    const trackKeys=cacheTrackKeys(track);
+    if(cached&&cached.expiresAt>Date.now()){
+      this.sourceCache.tag(key,trackKeys);
+      return {...cached,fromCache:true};
+    }
     if(cached)this.sourceCache.delete(key);
-    return this.requests.run(key,async sharedSignal=>{
+    const source=await this.requests.run(key,async sharedSignal=>{
       const args=['--no-playlist','--check-formats','--dump-single-json','--format','bestaudio/best','--',parsed.url];
       let result,fast=this.config.youtubeFastExtraction===true;
       try{
@@ -95,8 +105,10 @@ export class YouTubeResolver {
       const expiry=Number(url.searchParams.get('expire'));
       const expiresAt=Math.min(Date.now()+ttl,Number.isFinite(expiry)&&expiry>0?expiry*1000-30000:Infinity);
       const source={kind:'remote',input:url.href,headers:data.http_headers??{},duration:match?.duration,match,expiresAt,fromCache:false};
-      if(ttl>0&&expiresAt>Date.now())this.sourceCache.set(key,source);
+      if(ttl>0&&expiresAt>Date.now())this.sourceCache.set(key,source,[...trackKeys,...cacheTrackKeys(match),parsed.url]);
       return source;
     },signal);
+    this.sourceCache.tag(key,trackKeys);
+    return source;
   }
 }
