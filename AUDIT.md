@@ -82,3 +82,16 @@ Help now inserts the complete nine-action Playlist • Beta section directly bel
 ## Playlist list removed
 
 Removed playlist list from the parser, dispatch, help and active documentation. Eight playlist subcommands remain. Dispatch now rejects removed/unknown playlist actions before storage access. All 346 tests, the 84-file static scan and syntax checks passed; the updated bot restarted ready in three guilds with unchanged private-file hashes. Earlier nine-action references are historical.
+
+## Full audit on 4 November 2026
+
+Reviewed the runtime, Discord commands and components, saved state, media providers, subprocesses, diagnostics and launchers.
+
+- Playback now distinguishes a provider failure from cancellation by the player. Cancelled preparation clears the idle state, the voice handshake receives the caller's abort signal, and the buffering timer is set before the audio player can report playback. Autoplay can move on when a candidate has no available match.
+- Deleted vote messages release the poll so listeners can open another vote. Saved DJ message IDs must point to a player message owned by this bot. Slow channel lookups cannot restore outdated DJ or log settings.
+- Moderator actions fetch current member permissions. An import cancelled while waiting for storage cannot append tracks later. Cookie import replaces the environment file atomically.
+- Malformed provider fields are handled during normalization. Media subprocesses receive an environment filtered for Discord and Spotify credentials. Discord cleanup still runs if player cleanup throws, and the Windows stop script handles a process whose command line disappears during inspection.
+
+All 356 tests, the 86-file static scan, syntax checks, Windows launcher checks, local paced playback and permitted source playback passed. The bot was offline during this audit. See [VALIDATION.md](VALIDATION.md) for the executed checks.
+
+The fresh npm scan still reports seven moderate affected packages through one minimatch advisory in the optional native Opus dependency chain. npm reports no compatible automatic fix for this tree. [Upstream advisory](https://github.com/advisories/GHSA-g3hv-75wg-m249)

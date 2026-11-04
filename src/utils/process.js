@@ -2,8 +2,10 @@ import { spawn } from 'node:child_process';
 import path from 'node:path';
 import { StringDecoder } from 'node:string_decoder';
 import { UserError } from './errors.js';
+const botCredentials = new Set(['DISCORD_TOKEN', 'SPOTIFY_CLIENT_ID', 'SPOTIFY_CLIENT_SECRET']);
 export function spawnTool(file,args,stdio=['ignore','pipe','pipe']){
-  const child=spawn(file,args,{shell:false,windowsHide:true,detached:process.platform!=='win32',stdio});
+  const env=Object.fromEntries(Object.entries(process.env).filter(([name])=>!botCredentials.has(name.toUpperCase())));
+  const child=spawn(file,args,{shell:false,windowsHide:true,detached:process.platform!=='win32',stdio,env});
   child.musicProcessGroup=process.platform!=='win32';
   return child;
 }

@@ -8,7 +8,7 @@ export class LocalMediaResolver {
     let manifest;
     try { manifest = JSON.parse(await readFile(this.config.manifest,'utf8')); }
     catch { throw new UserError('The authorized media library is not configured. Ask the operator to create media.json.'); }
-    const section = kind === 'local' ? manifest.local : manifest.streams;
+    const section = kind === 'local' ? manifest?.local : manifest?.streams;
     const entry = Object.hasOwn(section ?? {}, id) ? section[id] : undefined;
     if (typeof entry?.title!=='string'||!entry.title.trim()) throw new UserError('That media ID is not in the operator’s authorized library with a valid title.');
     const duration=Number(entry.duration);

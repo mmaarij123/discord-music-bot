@@ -13,12 +13,20 @@ export class AutoplayManager {
       candidates = await this.youtube.search(`${previous.artist} official audio`,signal);
     }
     for (const raw of (candidates ?? []).slice(0,8)) {
+      signal?.throwIfAborted();
       const candidate={...raw};
+      if (typeof candidate.title!=='string'||!candidate.title.trim()) continue;
       const channel=normalize(candidate.channel).replace(/\b(topic|official)\b/g,'').trim();
       if(!candidate.artist && !this.adapter && channel===normalize(previous.artist)) candidate.artist=previous.artist;
-      if (!candidate.title || !candidate.artist || candidate.live || unrequestedVersion(previous,candidate) || seen.has(trackIdentity(candidate)) || seenUrls.has(candidate.youtubeUrl ?? candidate.sourceUrl)) continue;
+      if (typeof candidate.artist!=='string'||!candidate.artist.trim()||candidate.live || unrequestedVersion(previous,candidate) || seen.has(trackIdentity(candidate)) || seenUrls.has(candidate.youtubeUrl ?? candidate.sourceUrl)) continue;
       if (!this.adapter && normalize(candidate.artist) !== normalize(previous.artist)) continue;
-      const match = await this.youtube.match(candidate,signal);
+      let match;
+      try { match=await this.youtube.match(candidate,signal); }
+      catch(error) {
+        signal?.throwIfAborted();
+        if (['NO_RESULTS','NO_MATCH','UNAVAILABLE','RESTRICTED','REGION','FORMAT'].includes(error?.code)) continue;
+        throw error;
+      }
       if (seenUrls.has(match.youtubeUrl)) continue;
       return {...candidate,youtubeUrl:match.youtubeUrl,requestedBy:{name:'Autoplay'}};
     }

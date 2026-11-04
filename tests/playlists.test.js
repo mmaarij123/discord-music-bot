@@ -93,6 +93,21 @@ test('deleted and recreated playlists reject stale import results',async()=>{
   assert.equal(store.get(OWNER).tracks.length,0);
 });
 
+test('a cancelled import waiting for the write lock cannot add tracks later',async()=>{
+  const store=new PlaylistStore();
+  await store.create(OWNER);
+  let unlock;
+  const pending=store.lock.run(()=>new Promise(resolve=>{unlock=resolve;}));
+  await settle();
+  const controller=new AbortController();
+  const adding=store.add(OWNER,[song()],store.require(OWNER).id,{signal:controller.signal});
+  controller.abort();
+  unlock();
+  await pending;
+  await assert.rejects(adding,{name:'AbortError'});
+  assert.equal(store.get(OWNER).tracks.length,0);
+});
+
 test('failed writes retain the last saved state and malformed storage fails safely',async t=>{
   const location=await file(t);await writeFile(location,'not JSON');
   await assert.rejects(PlaylistStore.open(location),{code:'PLAYLIST_STORAGE'});

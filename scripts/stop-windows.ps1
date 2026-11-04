@@ -16,7 +16,7 @@ try {
         # taskkill /IM node.exe: other applications may be using Node too.
         $current = Get-CimInstance Win32_Process -Filter "ProcessId=$($bot.ProcessId)"
         if (-not $current) { continue }
-        if ($current.CreationDate -ne $bot.CreationDate -or $current.Name -ne 'node.exe' -or -not ($current.CommandLine.Replace('/', '\') -match $pattern)) {
+        if ($current.CreationDate -ne $bot.CreationDate -or $current.Name -ne 'node.exe' -or -not $current.CommandLine -or -not ($current.CommandLine.Replace('/', '\') -match $pattern)) {
             throw 'The process identity changed. Run the stop launcher again.'
         }
         $killer = Start-Process -FilePath (Join-Path $env:SystemRoot 'System32\taskkill.exe') -ArgumentList @('/PID', [string]$bot.ProcessId, '/T', '/F') -WindowStyle Hidden -Wait -PassThru

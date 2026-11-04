@@ -8,14 +8,17 @@ import { runTool } from './utils/process.js';
 import { messageHandler } from './events/messageCreate.js';
 import { createCooldown } from './utils/cooldown.js';
 import { ProcessLifecycle } from './runtime/ProcessLifecycle.js';
+import { removeSkipVote } from './commands/skipVote.js';
 let client,manager,shuttingDown=false;
 const logger=createLogger(process.env.LOG_LEVEL);
 async function shutdown(reason,code=0){
   if(shuttingDown)return; shuttingDown=true;
   logger.info('shutdown',{reason});
   const deadline=setTimeout(()=>process.exit(code),10000); deadline.unref();
-  try{await manager?.destroy();await client?.destroy();}
+  try{await manager?.destroy();}
   catch(error){logger.error('shutdown_cleanup_failed',{error});}
+  try{await client?.destroy();}
+  catch(error){logger.error('discord_cleanup_failed',{error});}
   finally{process.exitCode=code;if(process.connected)process.disconnect();}
 }
 try{
@@ -35,6 +38,10 @@ try{
   const cooldown=createCooldown();
   client.on(Events.MessageCreate,messageHandler(manager,logger,{cooldown}));
   client.on(Events.InteractionCreate,interactionHandler(manager,logger,{cooldown}));
+  client.on(Events.MessageDelete,message=>removeSkipVote(manager.players.get(message.guildId),message.id));
+  client.on(Events.MessageBulkDelete,messages=>{
+    for(const message of messages.values())removeSkipVote(manager.players.get(message.guildId),message.id);
+  });
   client.on(Events.VoiceStateUpdate,voiceStateHandler(manager,client,logger));
   client.on(Events.GuildDelete,guild=>{manager.cancelImport(guild.id);const player=manager.players.get(guild.id);if(player)manager.release(player);});
   client.on(Events.Error,error=>logger.error('discord_error',{error}));

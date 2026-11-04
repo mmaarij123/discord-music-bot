@@ -88,7 +88,7 @@ export class AudioManager {
       resource.volume.setVolume(volume/100); handle.resource=resource;
       started=true;
       return handle;
-    } catch (error) { handle.dispose(); if (error.name === 'TimeoutError') throw new UserError('Audio startup timed out.'); throw error; }
+    } catch (error) { handle.dispose(); if (error?.name === 'TimeoutError') throw new UserError('Audio startup timed out.'); throw error; }
     finally { readyController.abort(); }
   }
   dispose() { for (const handle of this.handles) handle.dispose(); }

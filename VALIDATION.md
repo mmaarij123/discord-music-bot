@@ -389,3 +389,11 @@ All **346 automated tests passed**, zero failures/skips. Existing help assertion
 Removed the playlist list subcommand from definitions/usage, dispatch, owner help and current README. Eight playlist actions remain. The action handler validates against the registered subcommands before accessing storage, so removed/unknown actions cannot fall through into add behavior. Saved playlist data and beta ownership rules are unchanged; playlist show still displays saved songs and the track count. Historical nine-action entries above describe previous releases.
 
 All **346 automated tests passed**, zero failures/skips. Existing tests now reject list through both parsing and direct dispatch, check the eight remaining beta actions and verify the help command list. The **84-file static scan** passed with zero errors/warnings and all JavaScript syntax checks passed. The updated bot restarted and reached real gateway ready in three guilds with one supervisor/worker and empty stderr. Private authentication/settings/playlist file hashes matched before/after startup. No live Discord command or voice probe was sent for this command removal.
+
+## Full audit validation on 4 November 2026
+
+- Node 24.22.2 ran 356 tests with zero failures or skips. Six added regressions cover an independent provider abort, autoplay fallback, subprocess credential isolation, a deleted vote, a cancelled playlist write and stale channel routing. The DJ persistence test also covers unrelated bot messages.
+- ESLint checked 86 JavaScript files with zero findings. All syntax checks and both Windows launcher checks passed.
+- Local paced FFmpeg and Opus playback passed pause, interrupted-track recovery, full second-track completion, queue advancement and subsequent playback.
+- A permitted direct YouTube source extracted and decoded into ten Opus packets. Public metadata checks returned one Spotify track, 50 accessible playlist entries and a close YouTube search match.
+- The dependency scan reported seven moderate findings in one upstream chain, with zero high or critical findings. Discord commands and voting were exercised with mocks. The local bot was offline.

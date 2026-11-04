@@ -36,13 +36,23 @@ function matchesTrack(vote, player) {
 function updateMessage(vote, player) {
   return vote.edits.run(async () => {
     if (vote.message) await vote.message.edit(voteMessage(vote));
-  }).catch(error => player.logger.warn('skip_vote_edit_failed', { guildId: player.guild.id, error }));
+  }).catch(error => {
+    if (error.code === 10008) removeSkipVote(player, vote.message.id);
+    else player.logger.warn('skip_vote_edit_failed', { guildId: player.guild.id, error });
+  });
 }
 
 function closeVote(vote, player, result) {
   vote.result = result;
   clearTimeout(vote.timer);
   player.off('change', vote.onChange);
+}
+
+export function removeSkipVote(player, messageId) {
+  const vote = votes.get(player);
+  if (!vote?.message || vote.message.id !== messageId) return;
+  closeVote(vote, player, 'Vote message deleted.');
+  votes.delete(player);
 }
 
 export async function requestSkip(interaction, player, voiceChannel, track, generation) {

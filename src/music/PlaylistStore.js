@@ -48,9 +48,10 @@ export class PlaylistStore {
   }
   get(userId){const list=this.values.get(userId);return list?structuredClone(list):null;}
   require(userId){const list=this.get(userId);if(!list)throw new UserError('You do not have a playlist. Use the playlist create command first.');return list;}
-  async change(userId,fn){
+  async change(userId,fn,{signal}={}){
     if(!validId(userId))throw new UserError('Invalid playlist owner.');
     return this.lock.run(async()=>{
+      signal?.throwIfAborted();
       if(this.closed)throw new UserError('Playlist storage is shutting down.');
       const next=new Map(this.values),list=this.get(userId);
       const {record,result}=fn(list);
@@ -61,8 +62,14 @@ export class PlaylistStore {
         try{
           const text=JSON.stringify({version:1,users:Object.fromEntries(next)},null,2)+'\n';
           if(Buffer.byteLength(text)>MAX_BYTES)throw Error();
-          await mkdir(directory,{recursive:true,mode:0o700});await writeFile(temporary,text,{mode:0o600,flag:'wx'});await rename(temporary,this.file);
-        }catch{throw new UserError('Your playlist could not be saved. Check free space and write access to the data folder.','PLAYLIST_STORAGE');}
+          await mkdir(directory,{recursive:true,mode:0o700});
+          await writeFile(temporary,text,{mode:0o600,flag:'wx'});
+          signal?.throwIfAborted();
+          await rename(temporary,this.file);
+        }catch{
+          signal?.throwIfAborted();
+          throw new UserError('Your playlist could not be saved. Check free space and write access to the data folder.','PLAYLIST_STORAGE');
+        }
         finally{await rm(temporary,{force:true}).catch(()=>{});}
       }
       this.values=next;return result;
@@ -72,7 +79,7 @@ export class PlaylistStore {
     if(list)throw new UserError('You already have a playlist. Each user can have only one.');
     return {record:{id:randomUUID(),createdAt:new Date().toISOString(),tracks:[]}};
   });}
-  add(userId,tracks,expectedId){return this.change(userId,list=>{
+  add(userId,tracks,expectedId,{signal}={}){return this.change(userId,list=>{
     if(!list||list.id!==expectedId)throw new UserError('Your playlist changed or was deleted during this request. Try again.');
     const known=new Set(list.tracks.flatMap(identities));let added=0,duplicates=0,omitted=0,unavailable=0;
     for(const raw of tracks){
@@ -84,7 +91,7 @@ export class PlaylistStore {
       list.tracks.push(track);added++;
     }
     return {record:list,result:{added,duplicates,omitted,unavailable,total:list.tracks.length}};
-  });}
+  },{signal});}
   remove(userId,position){return this.change(userId,list=>{
     if(!list)throw new UserError('You do not have a playlist.');integer(position,1,list.tracks.length,'Position');
     const [removed]=list.tracks.splice(position-1,1);return {record:list,result:removed};

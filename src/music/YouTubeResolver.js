@@ -8,12 +8,12 @@ import { withYouTubeCookies } from '../utils/youtubeCookies.js';
 export function normalizeYouTube(data) {
   if(!data)return null;
   const id = data.id;
-  if (!/^[\w-]{11}$/.test(id ?? '') || typeof data.title!=='string'||!data.title.trim()) return null;
+  if (typeof id!=='string'||!/^[\w-]{11}$/.test(id) || typeof data.title!=='string'||!data.title.trim()) return null;
   const title=typeof data.track==='string'&&data.track.trim()?data.track:data.title;
   const duration=Number(data.duration);
   return { id, title:title.trim(), artist:typeof data.artist==='string'?data.artist:undefined,
     channel:typeof data.channel==='string'?data.channel:typeof data.uploader==='string'?data.uploader:undefined,
-    duration:Number.isFinite(duration)&&duration>0?duration:undefined, artwork: data.thumbnail ?? data.thumbnails?.at(-1)?.url,
+    duration:Number.isFinite(duration)&&duration>0?duration:undefined, artwork: data.thumbnail ?? (Array.isArray(data.thumbnails)?data.thumbnails.at(-1)?.url:undefined),
     source: 'youtube', sourceUrl: `https://www.youtube.com/watch?v=${id}`, youtubeUrl: `https://www.youtube.com/watch?v=${id}`,
     verified: data.channel_is_verified === true, live: data.is_live === true || ['is_live','is_upcoming'].includes(data.live_status) };
 }
@@ -31,6 +31,7 @@ export class YouTubeResolver {
     },signal);
   }
   async search(query, signal) {
+    signal?.throwIfAborted();
     const text=query.trim().replace(/\s+/g,' '),key=`search:${text.toLowerCase()}`,cached=this.cache.get(key);
     if (cached) return cached;
     return this.requests.run(key,async sharedSignal=>{
@@ -47,6 +48,7 @@ export class YouTubeResolver {
     if(track.youtubeUrl)this.sourceCache.delete(`audio:${youtubeUrl(track.youtubeUrl).id}`);
   }
   async resolveInput(input, signal) {
+    signal?.throwIfAborted();
     const parsed = youtubeUrl(input);
     if(parsed.type==='video'){
       const source=await this.audio({youtubeUrl:parsed.url},signal);
@@ -62,6 +64,7 @@ export class YouTubeResolver {
     return { tracks, notices };
   }
   async audio(track, signal, {fresh=false}={}) {
+    signal?.throwIfAborted();
     const video = track.youtubeUrl ? { youtubeUrl: track.youtubeUrl } : await this.match(track,signal);
     const parsed = youtubeUrl(video.youtubeUrl);
     const key=`audio:${parsed.id}`;
@@ -84,13 +87,14 @@ export class YouTubeResolver {
         result=await this.json(args,sharedSignal);
       }
       const {data}=result;
-      if (data.is_live || (data.age_limit ?? 0) >= 18 || data.has_drm || (data.duration ?? 0)>this.config.maxTrack || !data.url) throw new UserError('This video is restricted, live, too long, or has no permitted audio format.');
+      const match=normalizeYouTube(data);
+      if (data.is_live || match?.live || (data.age_limit ?? 0) >= 18 || data.has_drm || (data.duration ?? 0)>this.config.maxTrack || !data.url) throw new UserError('This video is restricted, live, too long, or has no permitted audio format.');
       const url = httpsUrl(data.url);
       if (!(url.hostname.endsWith('.googlevideo.com') || url.hostname === 'googlevideo.com')) throw new UserError('The extractor did not return a supported YouTube audio CDN.');
       const ttl=this.config.audioSourceCacheMs??60000;
       const expiry=Number(url.searchParams.get('expire'));
       const expiresAt=Math.min(Date.now()+ttl,Number.isFinite(expiry)&&expiry>0?expiry*1000-30000:Infinity);
-      const source={kind:'remote',input:url.href,headers:data.http_headers??{},duration:data.duration,match:normalizeYouTube(data),expiresAt,fromCache:false};
+      const source={kind:'remote',input:url.href,headers:data.http_headers??{},duration:match?.duration,match,expiresAt,fromCache:false};
       if(ttl>0&&expiresAt>Date.now())this.sourceCache.set(key,source);
       return source;
     },signal);

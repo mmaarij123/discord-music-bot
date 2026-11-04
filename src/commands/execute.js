@@ -103,7 +103,7 @@ export async function execute(interaction,manager,action=interaction.commandName
   if(action==='prefix'){
     const selected=interaction.options.getString('prefix');
     if(!selected)return reply(`Your prefix is \`${guildPrefix(manager,interaction.guildId)}\`. Server admins can use \`${prefix}prefix !\` to change it.`);
-    const member=await interaction.guild.members.fetch(interaction.user.id);
+    const member=await interaction.guild.members.fetch({user:interaction.user.id,force:true});
     if(!member.permissions.has(PermissionFlagsBits.Administrator))throw new UserError('Only server administrators can change the prefix.','ADMIN_ONLY');
     await manager.settings.setPrefix(interaction.guildId,selected);
     manager.presenters?.get(interaction.guildId)?.schedule();
@@ -146,7 +146,7 @@ export async function execute(interaction,manager,action=interaction.commandName
   }
   if(action==='stop'||action==='leave') {
     if(player&&player.ownerId!==interaction.user.id){
-      const member=await interaction.guild.members.fetch(interaction.user.id);
+      const member=await interaction.guild.members.fetch({user:interaction.user.id,force:true});
       if(!member.permissions.has(PermissionFlagsBits.ManageGuild))throw new UserError('Only the session host or a Manage Server moderator can stop or disconnect this session. The host can stop from outside voice.');
     }
     manager.cancelImport(interaction.guildId);
@@ -154,7 +154,7 @@ export async function execute(interaction,manager,action=interaction.commandName
     return reply('Stopped playback, cleared the queue, cancelled pending discovery, and left voice.');
   }
   if(action==='autoplay'){
-    admin(access.member);
+    admin(await interaction.guild.members.fetch({user:interaction.user.id,force:true}));
     player=manager.get(interaction.guild,true);
     await player.join(access.channel);
     const enabled=option.getBoolean('enabled',true);

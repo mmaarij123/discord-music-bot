@@ -38,6 +38,26 @@ function setup(t){
   return {source,output,other,member,guild,channels,manager,message,run};
 }
 
+test('a slow presenter lookup cannot restore older DJ or log destinations',async t=>{
+  const f=setup(t);
+  f.manager.get(f.guild,true);
+  await f.manager.setDjChannel(f.guild,f.source,f.source);
+  await f.manager.setLogChannel(f.guild,f.source,f.source);
+  let release, started;
+  const resolving=new Promise(resolve=>{started=resolve;});
+  const pending=new Promise(resolve=>{release=resolve;});
+  f.manager.outputChannel=()=>{started();return pending;};
+  const binding=f.manager.bindPresenter(f.guild,f.source);
+  await resolving;
+  try{
+    await f.manager.setDjChannel(f.guild,f.other,f.source);
+    await f.manager.setLogChannel(f.guild,f.output,f.source);
+  }finally{release(f.source);await binding;}
+  const presenter=f.manager.presenters.get(GUILD);
+  assert.equal(presenter.channel,f.other);
+  assert.equal(presenter.noticeTarget,f.output);
+});
+
 test('manual bot removal sends one log-channel notice even during immediate session release',async t=>{
   const f=setup(t),music=fixture({id:GUILD,config:{persistent:true}});
   t.after(()=>music.player.destroy());

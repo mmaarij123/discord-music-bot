@@ -1,5 +1,6 @@
 import { UserError } from '../utils/errors.js';
 export function normalize(text = '') {
+  if (typeof text !== 'string') return '';
   return text.normalize('NFKD').replace(/\p{M}/gu,'').toLowerCase().replace(/[^\p{L}\p{N}\s]/gu,' ').replace(/\s+/g,' ').trim();
 }
 const decorations = /\b(official|audio|video|lyrics?|visualizer|hd|hq|4k|music)\b/g;

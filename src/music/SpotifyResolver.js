@@ -9,7 +9,7 @@ export function normalizeSpotify(raw, context = {}) {
   const title = item.name ?? item.title;
   const artist = Array.isArray(item.artists) ? item.artists.map(a => typeof a === 'string' ? a : a?.name).filter(a=>typeof a==='string'&&a.trim()).join(', ') : item.subtitle ?? item.artist;
   if (typeof title!=='string'||!title.trim()||typeof artist!=='string'||!artist.trim()) return null;
-  const uri = item.uri ?? '';
+  const uri = typeof item.uri==='string' ? item.uri : '';
   const id = item.id ?? uri.match(/spotify:track:([\w]{22})/)?.[1];
   const milliseconds = item.duration_ms ?? item.duration ?? item.durationMilliseconds;
   return {
@@ -26,6 +26,7 @@ export class SpotifyResolver {
     this.cache = new TTLCache(config.cacheMs);
   }
   async search(query, signal) {
+    signal?.throwIfAborted();
     if (!this.searchAdapter) return { track: null, notice: 'Public Spotify text search is unavailable; using YouTube metadata.' };
     try {
       const raw = await this.semaphore.run(() => {
@@ -40,6 +41,7 @@ export class SpotifyResolver {
     }
   }
   async resolve(input, signal) {
+    signal?.throwIfAborted();
     const parsed = spotifyUrl(input), cached = this.cache.get(parsed.url);
     if (cached) return cached;
     return this.semaphore.run(async () => {

@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { ButtonStyle, ChannelType, MessageFlags } from 'discord.js';
 import { interactionHandler } from '../src/events/interactionCreate.js';
 import { messageHandler } from '../src/events/messageCreate.js';
+import { removeSkipVote } from '../src/commands/skipVote.js';
 import { componentText, fixture, flattenComponents, logger, settle, track } from './helpers.js';
 
 async function setup(t) {
@@ -120,4 +121,15 @@ test('the requester can still skip during voting and old buttons cannot skip the
   assert.match(componentText(f.edits.at(-1)), /Track changed/);
   assert.match(await f.click(2, yes), /has ended/);
   assert.equal(f.player.current.title, 'Song B');
+});
+
+test('deleting a poll allows a replacement and invalidates its old buttons',async t=>{
+  const f=await setup(t);
+  await f.skip(1);
+  const old=f.buttons()[0].custom_id;
+  removeSkipVote(f.player,'vote-message');
+  await f.skip(2);
+  assert.equal(f.posts.length,2);
+  assert.match(await f.click(1,old),/has ended/);
+  assert.equal(f.player.current.title,'Song A');
 });

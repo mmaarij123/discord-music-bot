@@ -27,7 +27,7 @@ export class PlayerMessageStore {
         await this.settings.setDjMessage(guild.id,channel.id,null);
       }
       if(message){
-        if(message.author?.id!==botId||message.webhookId)throw new UserError('The saved DJ message is not owned by this bot. Reset the DJ channel setting.','DJ_MESSAGE');
+        if(message.author?.id!==botId||message.webhookId||!isPlayerMessage(message))throw new UserError('The saved DJ message is not a player message from this bot. Turn off the DJ channel setting and set it again.','DJ_MESSAGE');
         return message;
       }
     }

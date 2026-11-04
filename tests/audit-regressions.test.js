@@ -11,6 +11,7 @@ import { runTool } from '../src/utils/process.js';
 import { execute } from '../src/commands/execute.js';
 import { ChannelType } from 'discord.js';
 import { withAbort } from '../src/utils/async.js';
+import { AutoplayManager } from '../src/music/AutoplayManager.js';
 
 function joinContext(){
   const channel={id:'voice',type:ChannelType.GuildVoice,full:false,permissionsFor:()=>({has:()=>true})};
@@ -156,4 +157,44 @@ test('tool cancellation preserves even a falsy abort reason',async()=>{
   const running=runTool(process.execPath,['-e','setTimeout(()=>{},30000)'],{signal:controller.signal});
   const checked=running.then(()=>assert.fail('Cancelled tool unexpectedly succeeded'),reason=>assert.equal(reason,0));
   controller.abort(0);await checked;
+});
+
+test('a provider AbortError without a cancelled player advances to the next song',async t=>{
+  const f=fixture();
+  t.after(()=>f.player.destroy());
+  const prepare=f.player.audio.prepare;
+  f.player.audio.prepare=(item,options)=>{
+    if(item.title==='A')throw new DOMException('Provider cancelled independently','AbortError');
+    return prepare(item,options);
+  };
+  await f.player.enqueue(['A','B'].map(track),f.channel);
+  assert.equal(f.player.current.title,'B');
+  assert.equal(f.player.state,'playing');
+});
+
+test('autoplay tries another candidate after an unavailable match',async()=>{
+  const autoplay=new AutoplayManager({
+    search:async()=>[{title:'Missing',channel:'Artist - Topic'}, {title:'Available',channel:'Artist - Topic'}],
+    match:async candidate=>{
+      if(candidate.title==='Missing')throw new UserError('No match','NO_MATCH');
+      return {youtubeUrl:'https://www.youtube.com/watch?v=abcdefghijk'};
+    }
+  });
+  const result=await autoplay.next({title:'Finished',artist:'Artist',source:'youtube'},[]);
+  assert.equal(result.title,'Available');
+});
+
+test('media subprocesses cannot inherit bot or Spotify credentials',async t=>{
+  const keys=['DISCORD_TOKEN','SPOTIFY_CLIENT_ID','SPOTIFY_CLIENT_SECRET'];
+  const original=Object.fromEntries(keys.map(key=>[key,process.env[key]]));
+  t.after(()=>{
+    for(const key of keys){
+      if(original[key]===undefined)delete process.env[key];
+      else process.env[key]=original[key];
+    }
+  });
+  for(const key of keys)process.env[key]='audit-test-value';
+  const script="process.stdout.write(JSON.stringify(process.argv.slice(1).filter(key=>Object.hasOwn(process.env,key))))";
+  const result=await runTool(process.execPath,['-e',script,...keys]);
+  assert.deepEqual(JSON.parse(result.stdout),[]);
 });

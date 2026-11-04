@@ -43,7 +43,7 @@ export async function playlistCommand(interaction,manager,reply,play){
   return store.import(userId,async signal=>{
     await reply(action==='import'?'Importing accessible Spotify playlist metadata…':'Finding the song for your playlist…');
     const result=await manager.discovery.resolve(input,signal);signal.throwIfAborted();
-    const counts=await store.add(userId,result.tracks,list.id);
+    const counts=await store.add(userId,result.tracks,list.id,{signal});
     return reply([summary(counts),...(result.notices??[]).map(notice=>`Metadata: ${notice}`)].join('\n').slice(0,3900));
   });
 }

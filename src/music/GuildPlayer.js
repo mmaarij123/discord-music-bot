@@ -57,7 +57,7 @@ export class GuildPlayer extends EventEmitter {
     return this.lock.run(async()=>{
       signal?.throwIfAborted();
       if (this.closed) throw new UserError(`This session was released. Run ${this.config.prefix ?? '>'}play again.`);
-      await this.voice.join(channel);
+      await this.voice.join(channel,{signal});
       signal?.throwIfAborted();
       if(this.closed)throw new UserError('This session was disconnected. Start a new play request.');
       const result=this.queue.add(tracks);
@@ -84,14 +84,23 @@ export class GuildPlayer extends EventEmitter {
   }
   activate(handle,generation,{offset=0,paused=false}={}){
     this.handle=handle;this.offset=offset;
-    if(handle.duration)this.current.duration=handle.duration;
+    if(Number.isFinite(handle.duration)&&handle.duration>0)this.current.duration=handle.duration;
     if(handle.match?.artist&&!this.current.artist)this.current.artist=handle.match.artist;
     if(handle.match?.youtubeUrl)this.current.youtubeUrl=handle.match.youtubeUrl;
     this.pauseOnStartGeneration=paused?generation:null;
-    this.state='buffering';this.player.play(handle.resource);
+    this.state='buffering';
     this.startTimer=setTimeout(()=>{
       if(this.generation===generation&&this.state==='buffering')this.safe(()=>this.lock.run(()=>this.failed(generation,new UserError('Audio buffering timed out.','AUDIO_STALLED'))));
     },this.config.processMs);this.startTimer.unref();
+    this.player.play(handle.resource);
+    this.changed();
+  }
+  settleIdle() {
+    this.controller=null;
+    this.current=null;
+    this.state='idle';
+    this.schedulePrefetch();
+    this.scheduleIdle();
     this.changed();
   }
   async finished(generation,handle){
@@ -118,7 +127,7 @@ export class GuildPlayer extends EventEmitter {
         next=await withAbort(this.autoplay.next(previous,[...this.queue.history,previous].filter(Boolean),signal),signal);
       }
       catch (error) { if (!this.controller.signal.aborted) this.notify(`Autoplay stopped: ${publicError(error)}`); }
-      if (this.controller.signal.aborted) { this.current=null; this.state='idle'; return; }
+      if (this.controller.signal.aborted) { this.settleIdle(); return; }
       if (!next) this.notify('No suitable related track was available. Autoplay stopped.');
     }
     let failures=this.consecutiveFailures;
@@ -128,19 +137,20 @@ export class GuildPlayer extends EventEmitter {
       const generation=this.generation, controller=new AbortController(); this.controller=controller; this.changed();
       try {
         const handle=await this.audio.prepare(next,{signal:controller.signal,volume:this.volume,onError:error=>this.safe(()=>this.lock.run(()=>this.failed(generation,error)))});
-        if (controller.signal.aborted || this.closed) { handle.dispose(); return; }
+        if (controller.signal.aborted || this.closed) { handle.dispose(); this.settleIdle(); return; }
         this.activate(handle,generation);
         this.logger.info('audio_started',{guildId:this.guild.id,generation,duration:next.duration,trackTitle:next.title,videoId:handle.match?.id});return;
       } catch (error) {
+        const cancelled=controller.signal.aborted||this.closed;
         this.releaseAudio();
-        if (controller.signal.aborted && error?.name==='AbortError') { this.current=null; this.state='idle'; return; }
+        if (cancelled) { this.settleIdle(); return; }
         this.notify(`Could not play “${next.title}”: ${publicError(error)}`);
         this.logger.warn('track_failed',{guildId:this.guild.id,trackTitle:next.title,error}); failures++;this.consecutiveFailures=failures;
         next=this.queue.take();
       }
     }
     if (next) { this.queue.tracks.unshift(next); this.notify(`Playback paused after five consecutive source failures. Try ${this.config.prefix ?? '>'}skip or add an authorized local source.`); }
-    this.current=null; this.state='idle'; this.schedulePrefetch();this.scheduleIdle(); this.changed();
+    this.settleIdle();
   }
   async failed(generation,error) {
     if (generation!==this.generation || !this.handle || !this.current) return;
@@ -155,11 +165,11 @@ export class GuildPlayer extends EventEmitter {
       this.notify('The audio source was interrupted. Reconnecting and resuming this track…');
       try{
         const handle=await this.audio.prepare(track,{signal:controller.signal,offset:position,volume:this.volume,refreshSource:true,onError:failure=>this.safe(()=>this.lock.run(()=>this.failed(attemptGeneration,failure)))});
-        if(controller.signal.aborted||this.closed){handle.dispose();return;}
+        if(controller.signal.aborted||this.closed){handle.dispose();this.settleIdle();return;}
         this.activate(handle,attemptGeneration,{offset:position,paused});return;
       }catch(failure){
         const cancelled=controller.signal.aborted;this.releaseAudio();
-        if(cancelled){this.current=null;this.state='idle';return;}
+        if(cancelled){this.settleIdle();return;}
         error=failure;this.logger.warn('audio_retry_failed',{guildId:this.guild.id,error});
       }
     }

@@ -7,6 +7,7 @@ import { GuildSettings } from '../src/config/GuildSettings.js';
 import { loadConfig } from '../src/config/config.js';
 import { PlayerMessageStore } from '../src/components/PlayerMessageStore.js';
 import { PlayerPresenter } from '../src/components/PlayerPresenter.js';
+import { PLAYER_HEADING } from '../src/components/playerView.js';
 import { MusicManager } from '../src/music/MusicManager.js';
 import { requireLogChannel } from '../src/utils/channels.js';
 import { PermissionFlagsBits,MessageFlags,MessageFlagsBitField } from 'discord.js';
@@ -86,7 +87,7 @@ test('saved message IDs survive a restart without searching or creating another 
   const file=await settingsFile(t),settings=new GuildSettings(file),channel=room();
   await settings.setDjChannel(GUILD,CHANNEL);
   let store=new PlayerMessageStore(settings),owner=store.claim(GUILD);
-  const first=await store.render(guild,channel,{embeds:[{title:'First'}]},owner);
+  const first=await store.render(guild,channel,{embeds:[{title:'First',author:{name:PLAYER_HEADING}}]},owner);
   const reloaded=await GuildSettings.open(file);store=new PlayerMessageStore(reloaded);owner=store.claim(GUILD);
   const restored=await store.render(guild,channel,{embeds:[{title:'Restored'}]},owner);
   assert.equal(restored.id,first.id);assert.equal(channel.sent.length,1);
@@ -168,10 +169,13 @@ test('DJ persistence requires Read Message History while an ordinary log channel
   await assert.rejects(requireLogChannel(guild,channel,{history:true}),/Read Message History/);
 });
 
-test('a saved message owned by another user is rejected without editing it or sending a duplicate',async t=>{
-  const {channel,store,settings}=await setup(t),foreign=channel.seed({embeds:[{title:'User message'}]},'555555555555555555');
-  await settings.setDjMessage(GUILD,CHANNEL,foreign.id);
-  await assert.rejects(store.render(guild,channel,{},store.claim(GUILD)),{code:'DJ_MESSAGE'});
+test('a saved non-player message is rejected even when it was sent by this bot',async t=>{
+  const {channel,store,settings}=await setup(t);
+  for(const author of ['555555555555555555',BOT]){
+    const unrelated=channel.seed({embeds:[{title:'Unrelated message'}]},author);
+    await settings.setDjMessage(GUILD,CHANNEL,unrelated.id);
+    await assert.rejects(store.render(guild,channel,{},store.claim(GUILD)),{code:'DJ_MESSAGE'});
+  }
   assert.equal(channel.edits.length,0);assert.equal(channel.sent.length,0);
 });
 

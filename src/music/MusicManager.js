@@ -50,13 +50,18 @@ export class MusicManager {
     return requireLogChannel(guild,channel,{history:kind==='dj'});
   }
   async bindPresenter(guild,fallback){
-    const channel=await this.djChannel(guild,fallback),presenter=this.presenters.get(guild.id);
+    const presenter=this.presenters.get(guild.id);
+    const djId=this.settings.getDjChannel(guild.id);
+    const logId=this.settings.getLogChannel(guild.id);
+    const channel=await this.djChannel(guild,fallback);
     if(!presenter)return;
     let notices=null;
     try{notices=await this.outputChannel(guild,fallback);}
     catch(error){this.logger.warn('notice_channel_unavailable',{guildId:guild.id,error});}
-    presenter.setNoticeChannel(notices);
-    if(this.settings.getDjChannel(guild.id)&&presenter.channel&&presenter.channel.id!==channel.id)await presenter.relocate(channel);
+    if(this.presenters.get(guild.id)!==presenter||presenter.disposed)return;
+    if(this.settings.getLogChannel(guild.id)===logId)presenter.setNoticeChannel(notices);
+    if(this.settings.getDjChannel(guild.id)!==djId)return;
+    if(djId&&presenter.channel&&presenter.channel.id!==channel.id)await presenter.relocate(channel);
     else presenter.bind(channel);
   }
   async setLogChannel(guild,channel,fallback){
