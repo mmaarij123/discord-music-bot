@@ -115,7 +115,8 @@ test('V2 mentions respect text/thread send permissions and work without Embed Li
 test('mentions share the bounded user cooldown and reply failures are contained',async()=>{
   const m=message('<@123456789012345678>');m.client={user:{id:'123456789012345678'}};
   const handler=messageHandler({},logger);
-  await handler(m);await handler(m);
+  await handler(m);await handler(m);await handler(m);
+  assert.equal(m.replies.length,2);
   assert.equal(m.replies[0].components.length,1);assert.match(componentText(m.replies[1]),/Please wait/);
   m.reply=async()=>{throw Error('Reply unavailable');};
   await assert.doesNotReject(messageHandler({},logger,{cooldown:()=>{}})(m));
@@ -159,5 +160,49 @@ test('button handler ignores slash and unrelated interactions',async()=>{
   }
 });
 test('cooldown scopes users and guilds independently',()=>{
-  const cooldown=createCooldown();cooldown('a','u');assert.throws(()=>cooldown('a','u'),/wait/);assert.doesNotThrow(()=>cooldown('b','u'));assert.doesNotThrow(()=>cooldown('a','v'));
+  let time=0;
+  const cooldown=createCooldown({now:()=>time});
+  assert.equal(cooldown('a','u'),'allow');
+  assert.equal(cooldown('a','u'),'warn');
+  assert.equal(cooldown('b','u'),'allow');
+  assert.equal(cooldown('a','v'),'allow');
+  time=2999;
+  assert.equal(cooldown('a','u'),'silent');
+  time=3000;
+  assert.equal(cooldown('a','u'),'allow');
+});
+
+test('rapid help repeats send one help box and one warning until the original three seconds elapse',async()=>{
+  let time=0;
+  const m=message('>help');
+  const handler=messageHandler({get:()=>undefined},logger,{cooldown:createCooldown({now:()=>time})});
+  for(let index=0;index<3;index++)await handler(m);
+  assert.equal(m.replies.length,2);
+  assert.match(componentText(m.replies[0]),/Playback Controls/);
+  assert.match(componentText(m.replies[1]),/wait 3 seconds/);
+  time=3000;
+  await handler(m);
+  assert.equal(m.replies.length,3);
+  assert.match(componentText(m.replies[2]),/Playback Controls/);
+});
+
+test('commands and music buttons share one warning and then acknowledge clicks silently',async()=>{
+  const cooldown=createCooldown(),m=message('>help');
+  await messageHandler({get:()=>undefined},logger,{cooldown})(m);
+  let acknowledgements=0;
+  const replies=[];
+  const handleButton=interactionHandler({get:()=>assert.fail('Rate-limited vote ran')},logger,{cooldown});
+  const button={
+    isButton:()=>true,customId:'music:nonce:skip',guildId:m.guildId,user:m.author,
+    deferReply:()=>assert.fail('Rate-limited button ran'),
+    deferUpdate:async()=>{acknowledgements++;},
+    reply:async payload=>{replies.push(payload);}
+  };
+  await handleButton(button);
+  await handleButton({...button,customId:'music-vote:poll:yes'});
+  await handleButton(button);
+  assert.equal(acknowledgements,2);
+  assert.equal(replies.length,1);
+  assert.equal(replies[0].flags,MessageFlags.IsComponentsV2|MessageFlags.Ephemeral);
+  assert.match(componentText(replies[0]),/wait 3 seconds/);
 });
