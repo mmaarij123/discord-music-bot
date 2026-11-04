@@ -168,11 +168,12 @@ export class GuildPlayer extends EventEmitter {
     // One advance per resource; failed tracks are never repeated automatically.
     await this.startNext();
   }
-  skip() {
-    const expected=this.generation, wasActive=Boolean(this.current);
+  skip(expected=this.generation) {
+    if (this.closed || expected!==this.generation) return Promise.resolve(false);
+    const wasActive=Boolean(this.current);
     this.controller?.abort();
     return this.lock.run(async()=>{
-      if (expected!==this.generation) return false;
+      if (this.closed || expected!==this.generation) return false;
       if (!this.current && !this.queue.length && !wasActive) throw new UserError('There is no track to skip.');
       this.generation++;this.consecutiveFailures=0;
       const previous=this.current; this.releaseAudio({keepPrefetch:true}); this.queue.remember(previous); this.current=null;

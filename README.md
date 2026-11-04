@@ -245,7 +245,7 @@ When started, logs should include `ready`. Join a voice channel and use `>play l
 | >play query | Song/artist, Spotify track/playlist/album URL, YouTube video/playlist URL, local:id, stream:id. Playlist progress updates are coalesced; final import count and limitations are explicit. |
 | >pause | Pause current audio. |
 | >resume | Resume paused audio. |
-| >skip | Advance once; explicit skips ignore track repeat. |
+| >skip | Skip your own request immediately, or start a majority vote for another song. |
 | >stop | Host/moderator only; stop audio, clear the queue, cancel discovery and leave voice, even in 24/7 mode. Works outside voice. |
 | >queue page | Upcoming tracks, ten per page, one-based positions. |
 | >nowplaying | Snapshot of the current compact player. |
@@ -266,6 +266,8 @@ When started, logs should include `ready`. Join a voice channel and use `>play l
 | >help | Current command names and short descriptions, always in the invoking channel/thread. |
 
 Buttons: Pause/Resume, Skip, Stop, Loop, Shuffle. They use the same authorization and queue methods as prefix commands. Old session controls expire. Read-only queue, nowplaying and help do not require voice membership. Playback controls do; log/DJ/prefix configuration does not require voice. Volume/control changes are available to listeners in the session channel; restrict channel access for stricter listener control. Discord application-command permissions do not apply to text prefix commands.
+
+Either Skip control opens one 60-second vote per song when used by someone other than the requester. The vote appears in the channel where Skip was used and mentions up to 100 voice listeners. The threshold is a strict majority of the human listeners present when the vote starts, so five listeners need three Yes votes. Each eligible listener gets one vote while connected to the same voice channel. The buttons close when the vote resolves, expires or the track changes. [Discord Text Display mentions](https://docs.discord.com/developers/components/reference#text-display)
 
 Only Discord user ID **1037886658462371860** may use `clearcache`, `shutdown` and `restart`. This exact ID is fixed in `src/config/owner.js`; server ownership, Administrator and Manage Server never grant access. These server-only owner controls require no voice membership or existing session and acknowledge in the invoking channel, independently from log/DJ settings. They are omitted from the shared help design for all users. Cache clearing preserves audio, queues, saved settings and authentication; in-flight metadata requests can populate fresh entries afterwards. Shutdown/restart acknowledgements must succeed before the process action is requested, and concurrent requests are rejected.
 

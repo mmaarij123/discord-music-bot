@@ -10,6 +10,7 @@ import { channelSettings } from './channelSettings.js';
 import { OWNER_USER_ID, ownerCommands, requireOwner } from '../config/owner.js';
 import { guildPrefix, prefixPanels } from '../config/prefix.js';
 import { playlistCommand } from './playlist.js';
+import { requestSkip } from './skipVote.js';
 const readOnly=new Set(['help','queue','nowplaying','logchannel','djchannel']);
 const songLabel=value=>`\`${String(value).replace(/`/g,'ˋ').replace(/[\r\n]/g,' ').slice(0,500)}\``;
 export async function voiceAccess(interaction,player) {
@@ -110,6 +111,14 @@ export async function execute(interaction,manager,action=interaction.commandName
   }
   if(action==='playlist')return playlistCommand(interaction,manager,reply,tracks=>playRequest(interaction,manager,reply,async()=>({tracks,notices:[]}),{label:'your playlist',progress:'Preparing your saved playlist…'}));
   let player=manager.get(interaction.guild), access;
+  if(action==='skip'){
+    player=requirePlayer(player,prefix);
+    const track=player.current, generation=player.generation;
+    const {channel}=await voiceAccess(interaction,player);
+    const status=await requestSkip(interaction,player,channel,track,generation);
+    if(status)return reply(status);
+    return;
+  }
   if (!readOnly.has(action)&&!['stop','leave','play'].includes(action)) access=await voiceAccess(interaction,player);
   const option=interaction.options;
   if(['logchannel','djchannel'].includes(action))return channelSettings(interaction,manager,reply,action==='djchannel'?'dj':'log');
@@ -156,7 +165,6 @@ export async function execute(interaction,manager,action=interaction.commandName
   switch(action){
     case 'pause': await player.pause(); return reply('Paused.');
     case 'resume': await player.resume(); return reply('Resumed.');
-    case 'skip': return reply(await player.skip()?'Skipped.':'A skip was already handled.');
     case 'volume': await player.setVolume(option.getInteger('level',true)); return reply(`Volume set to ${player.volume}%.`);
     case 'loop': {
       const mode=interaction.isButton() ? ['off','track','queue'][(['off','track','queue'].indexOf(player.queue.loop)+1)%3] : option.getString('mode',true);

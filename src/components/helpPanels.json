@@ -4,7 +4,7 @@
   },
   {
     "title": "**Playback Controls**",
-    "description": "`Play` Search for a song and start playing, or add it to the queue.\n`Pause` Temporarily pause the currently playing song.\n`Resume` Continue playback from where you left off.\n`Skip` Skip the current song and play the next one.\n`Stop` Stop playback, clear the queue, and disconnect from voice.\n`NowPlaying` View the current song and its playback details.\n`AutoPlay` Automatically discover and play related songs when the queue ends."
+    "description": "`Play` Search for a song and start playing, or add it to the queue.\n`Pause` Temporarily pause the currently playing song.\n`Resume` Continue playback from where you left off.\n`Skip` Skip a song you requested or start a vote to skip another song.\n`Stop` Stop playback, clear the queue, and disconnect from voice.\n`NowPlaying` View the current song and its playback details.\n`AutoPlay` Automatically discover and play related songs when the queue ends."
   },
   {
     "title": "**Playlist • Beta**",

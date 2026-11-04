@@ -4,12 +4,19 @@ import { UserError, publicError } from '../utils/errors.js';
 import { createCooldown } from '../utils/cooldown.js';
 import { commandMessage } from '../components/messages.js';
 import { guildPrefix } from '../config/prefix.js';
+import { castSkipVote, skipVotePrefix } from '../commands/skipVote.js';
 export function interactionHandler(manager,logger,{cooldown=createCooldown()}={}) {
   return async interaction=>{
-    if(!interaction.isButton()||!interaction.customId.startsWith('music:'))return;
+    if(!interaction.isButton())return;
+    const isVote=interaction.customId.startsWith(skipVotePrefix);
+    if(!isVote&&!interaction.customId.startsWith('music:'))return;
     try {
       await interaction.deferReply({flags:MessageFlags.Ephemeral});
       if(!interaction.inGuild())throw new UserError('Use music commands inside a server.');
+      if(isVote){
+        const status=await castSkipVote(interaction,manager.get(interaction.guild));
+        return await interaction.editReply(commandMessage(status));
+      }
       const prefix=guildPrefix(manager,interaction.guildId);
       cooldown(interaction.guildId,interaction.user.id);
       const [,nonce,action]=interaction.customId.split(':');
