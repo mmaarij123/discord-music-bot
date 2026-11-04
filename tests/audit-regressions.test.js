@@ -87,12 +87,30 @@ test('a completed track resets the consecutive failure budget',async t=>{
 });
 test('logger redacts nested credentials and source URLs',t=>{
   let output='';t.mock.method(process.stdout,'write',value=>{output+=value;return true;});
-  createLogger().info('audit_probe',{cookie:'private-cookie',nested:{clientSecret:'private-secret',authorization:'private-auth',headers:{Cookie:'private-header'},items:[{password:'private-password',message:'source https://example.test/signed?secret=private-url'}]},count:1});
+  createLogger('info',{pretty:false}).info('audit_probe',{cookie:'private-cookie',nested:{clientSecret:'private-secret',authorization:'private-auth',headers:{Cookie:'private-header'},items:[{password:'private-password',message:'source https://example.test/signed?secret=private-url'}]},count:1});
   const entry=JSON.parse(output);assert.equal(entry.count,1);assert.equal(entry.nested.items[0].message,'source [url]');assert.ok(!output.includes('private-'));
 });
 test('logger bounds circular object traversal instead of crashing playback',t=>{
   let output='';t.mock.method(process.stdout,'write',value=>{output+=value;return true;});
   const value={};value.self=value;assert.doesNotThrow(()=>createLogger().warn('cycle',{value}));assert.ok(output.includes('[truncated]'));
+});
+
+test('terminal logs summarize playback, suppress duplicate startup chatter and sanitize track text',t=>{
+  let output='';
+  t.mock.method(process.stdout,'write',value=>{output+=value;return true;});
+  const terminal=createLogger('info',{pretty:true});
+  terminal.info('ready',{guildCount:3,prefix:'>'});
+  terminal.info('audio_started',{trackTitle:'Aarzu\n\u001b[31m https://example.test/signed?key=private-url'});
+  terminal.info('play_request_ready',{elapsedMs:1500,queuedDuringPlayback:false});
+  terminal.info('play_request_ready',{elapsedMs:1500,queuedDuringPlayback:true});
+  terminal.error('bot_process_exited',{exitCode:1});
+  const lines=output.trimEnd().split('\n');
+  assert.equal(lines.length,4);
+  assert.match(lines[0],/^\[\d\d:\d\d:\d\d\] INFO\s+Bot ready · 3 servers · prefix ">"$/);
+  assert.match(lines[1],/Now playing “Aarzu/);
+  assert.match(lines[2],/Song added to queue in 1\.5s/);
+  assert.match(lines[3],/ERROR Bot worker exited · exit code 1/);
+  assert.ok(!output.includes('\u001b')&&!output.includes('private-url'));
 });
 
 test('shutdown waits for released-session notices and then drops cached Discord message references',async()=>{

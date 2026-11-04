@@ -18,12 +18,12 @@ test('PM2 directly supervises the worker and respects intentional shutdown exit 
 
 function harness(t){
   t.mock.timers.enable({apis:['setTimeout']});
-  const children=[],exits=[],kills=[];
-  const supervisor=new Supervisor({entry:'bot.js',logger,onExit:code=>exits.push(code),killChild:child=>{kills.push(child);child.emit('close',1);},forkChild:(_file,_args,options)=>{
+  const children=[],exits=[],kills=[],errors=[];
+  const supervisor=new Supervisor({entry:'bot.js',logger:{...logger,error:(event,fields)=>errors.push({event,...fields})},onExit:code=>exits.push(code),killChild:child=>{kills.push(child);child.emit('close',1);},forkChild:(_file,_args,options)=>{
     assert.equal(options.env.MUSIC_BOT_SUPERVISED,'1');assert.deepEqual(options.execArgv,[]);
     const child=new EventEmitter();child.connected=true;child.messages=[];child.send=(message,callback)=>{child.messages.push(message);callback(null);};children.push(child);return child;
   }});
-  supervisor.start();return {supervisor,children,exits,kills};
+  supervisor.start();return {supervisor,children,exits,kills,errors};
 }
 
 test('explicit restart starts one replacement child after the previous child closes',t=>{
@@ -33,8 +33,9 @@ test('explicit restart starts one replacement child after the previous child clo
 });
 
 for(const code of [0,1,null])test(`exit ${code} never causes an automatic restart loop`,t=>{
-  const f=harness(t);f.children[0].emit('close',code);t.mock.timers.tick(5000);
+  const f=harness(t),signal=code===null?'SIGTERM':null;f.children[0].emit('close',code,signal);t.mock.timers.tick(5000);
   assert.equal(f.children.length,1);assert.deepEqual(f.exits,[code===0?0:1]);
+  assert.deepEqual(f.errors,code===0?[]:[{event:'bot_process_exited',exitCode:1,signal}]);
 });
 
 test('stopping during a restart delay cancels the replacement child',t=>{

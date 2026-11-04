@@ -11,10 +11,44 @@ function safeValue(value,depth=0){
   if(Array.isArray(value))return value.slice(0,50).map(item=>safeValue(item,depth+1));
   return Object.fromEntries(Object.entries(value).filter(([key])=>!/token|secret|password|headers|url|cookie|authorization/i.test(key)).slice(0,50).map(([key,item])=>[key,safeValue(item,depth+1)]));
 }
-export function createLogger(level = 'info') {
+function consoleMessage(event, fields) {
+  switch (event) {
+    case 'ready':
+      return `Bot ready · ${fields.guildCount} ${fields.guildCount === 1 ? 'server' : 'servers'} · prefix "${fields.prefix}"`;
+    case 'audio_started':
+      return `Now playing “${fields.trackTitle}”`;
+    case 'audio_ended':
+      return `Audio ended · ${Math.round(fields.playedSeconds)}s played`;
+    case 'play_request_ready':
+      return `${fields.queuedDuringPlayback ? 'Song added to queue' : 'Play request ready'} in ${(fields.elapsedMs / 1000).toFixed(1)}s`;
+    case 'audio_retry':
+      return `Reconnecting audio at ${fields.positionSeconds}s · attempt ${fields.attempt}`;
+    case 'voice_removed':
+      return 'Disconnected from voice';
+    case 'shutdown':
+      return `Stopping bot · ${fields.reason.replaceAll('_', ' ')}`;
+    case 'bot_process_exited':
+      return `Bot worker exited · ${fields.signal ?? `exit code ${fields.exitCode}`}`;
+    default: {
+      const label = event[0].toUpperCase() + event.slice(1).replaceAll('_', ' ');
+      const detail = fields.error?.message ?? fields.message;
+      return [label, fields.trackTitle && `“${fields.trackTitle}”`, detail].filter(Boolean).join(' · ');
+    }
+  }
+}
+
+export function createLogger(level = 'info', { pretty = Boolean(process.stdout.isTTY) } = {}) {
   return Object.fromEntries(Object.entries(levels).map(([name, rank]) => [name, (event, fields = {}) => {
     if (rank < (levels[level] ?? 20)) return;
-    const safe=safeValue(fields);
-    process.stdout.write(`${JSON.stringify({ time: new Date().toISOString(), level: name, event, ...safe })}\n`);
+    const safe = safeValue(fields);
+    const time = new Date();
+    if (pretty) {
+      // The playing line already confirms a request that starts immediately.
+      if (event === 'play_request_ready' && !safe.queuedDuringPlayback && level !== 'debug') return;
+      const message = consoleMessage(event, safe).replace(/[\p{Cc}\p{Zl}\p{Zp}]+/gu, ' ');
+      process.stdout.write(`[${time.toTimeString().slice(0, 8)}] ${name.toUpperCase().padEnd(5)} ${message}\n`);
+      return;
+    }
+    process.stdout.write(`${JSON.stringify({ time: time.toISOString(), level: name, event, ...safe })}\n`);
   }]));
 }

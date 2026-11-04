@@ -15,7 +15,7 @@ Spotify supplies **metadata only**. All audio comes from a supported public YouT
 - FFmpeg streaming, dynamic volume, Opus encoding, pause/resume, deterministic resource disposal, bounded error recovery, idle disconnect, and optional 24/7 connection.
 - Conservative autoplay: another track by a known artist, with recent-track/version filtering. A known matching artist/Topic channel is required. An optional recommendation adapter supports other lawful sources.
 - Discord Components V2 player with an unaccented container, artwork, album, playback status, requester mention, queue count, volume and nested controls. State changes update the player, with edits coalesced at least two seconds apart. Deleted player messages never interrupt audio.
-- JSON logging with token/URL redaction, configuration validation, safe subprocess argument arrays, same-voice-channel authorization, and Manage Server checks for settings.
+- Readable terminal logs and structured JSON for redirected output, token and URL redaction, configuration validation, safe subprocess argument arrays, same-voice-channel authorization, and Manage Server checks for settings.
 - Direct video links show `Preparing YouTube audio…` while validating/extracting the exact video; provider and voice-handshake time still apply. A single text-search reply uses ``Searching of `song name` `` and then changes to ``Added `resolved song title` in the queue``. Metadata fallback details stay in debug diagnostics rather than cluttering chat. Failed searches finish with a concise not-found message; partial playlist and queue-limit notices remain visible.
 
 **Explicit limitations:** Public Spotify text search has no supported built-in API-free endpoint. Plain-text input uses YouTube metadata unless you configure optional official Spotify credentials or a trusted Spotify search adapter; fallback details are available in debug diagnostics. Public metadata may change or be inaccessible by region. YouTube delivery may fail on some networks/VPS IP ranges. The bot reports such failures and can continue with your authorized library. 24/7 keeps a connection while the application runs; it cannot provide uptime while your host is offline. Queues, history and playback settings reset on restart/session release; saved playlists and independent prefix/log/DJ channel preferences persist separately on disk.
@@ -178,7 +178,7 @@ Copy `.env.example` to `.env`. Never commit `.env`, tokens, private media, or pr
 | IDLE_TIMEOUT_SECONDS | 300 | Delay before leaving after playback ends with 24/7 off; 10–86400. |
 | AUTOPLAY_ENABLED | false | Initial autoplay setting for each new guild session. |
 | ENABLE_247_MODE | false | Operator-only initial persistent connection setting; no Discord toggle command. Joins only when commanded. |
-| LOG_LEVEL | info | debug, info, warn, or error. Logs are JSON on stdout. |
+| LOG_LEVEL | info | debug, info, warn, or error. Interactive terminals show readable messages. Redirected stdout emits JSON. |
 | FFMPEG_PATH | ffmpeg | Trusted executable name on PATH or absolute path. |
 | YTDLP_PATH | yt-dlp | Trusted executable name on PATH or absolute path. |
 | YOUTUBE_COOKIES_FILE | empty | Optional local Netscape YouTube cookie export, e.g. ./secrets/youtube.cookies.txt. Must stay inside the project secrets folder. Blank keeps anonymous extraction. Restart after enabling/replacing an export to clear source/search caches. |

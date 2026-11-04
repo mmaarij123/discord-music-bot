@@ -13,13 +13,17 @@ export class Supervisor {
       const child = this.forkChild(this.entry, [], { stdio: ['inherit', 'inherit', 'inherit', 'ipc'], execArgv: [], windowsHide: true, env: { ...process.env, MUSIC_BOT_SUPERVISED: '1' } });
       this.child = child;
       child.once('error', error => this.logger.error('bot_process_failed', { error }));
-      child.once('close', code => {
+      child.once('close', (code, signal) => {
         if (this.child !== child) return;
         this.child = null; clearTimeout(this.stopTimer);
         if (!this.stopping && code === RESTART_EXIT_CODE) {
           this.logger.info('bot_process_restarting');
           this.restartTimer = setTimeout(() => { this.restartTimer = null; this.start(); }, this.restartDelayMs);
-        } else this.finish(this.stopping ? 0 : Number.isInteger(code) ? code : 1);
+        } else {
+          const exitCode = this.stopping ? 0 : Number.isInteger(code) ? code : 1;
+          if (exitCode !== 0) this.logger.error('bot_process_exited', { exitCode, signal });
+          this.finish(exitCode);
+        }
       });
     } catch (error) { this.logger.error('bot_process_failed', { error }); this.finish(1); }
   }
