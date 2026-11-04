@@ -88,12 +88,12 @@ test('help shows all playlist actions below Playback Controls only to the beta o
     assert.equal(help[0].accent_color,undefined);
     if(beta){
       assert.ok(sections[1].content.startsWith('**Playback Controls**'));
-      assert.ok(sections[2].content.startsWith('**Playlist • Beta**'));
+      assert.ok(sections[2].content.startsWith('**Playlist • Beta (Coming Soon)**'));
       assert.ok(sections[3].content.startsWith('**Queue Management**'));
       assert.deepEqual([...sections[2].content.matchAll(/^`Playlist ([a-z]+)[^`]*` /gm)].map(match=>match[1]),['create','add','save','import','play','show','remove','delete']);
       assert.ok(componentText(i.replies[0]).length<=4000);
     }else assert.equal(componentText(i.replies[0]).includes('Playlist'),false);
-    const shared=sections.filter(component=>!component.content.startsWith('**Playlist • Beta**'));
+    const shared=sections.filter(component=>!component.content.startsWith('**Playlist • Beta (Coming Soon)**'));
     if(expected)assert.deepEqual(shared,expected);else expected=shared;
     for(const action of ownerCommands)assert.equal(JSON.stringify(help).includes(action),false);
     assert.equal(help.length,1);
