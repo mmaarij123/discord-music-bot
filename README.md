@@ -1,5 +1,7 @@
 # Music Bot
 
+**Proprietary software. All rights reserved.** Reuse requires prior written permission from Maarij (@mmaarij123). See [LICENSE](LICENSE).
+
 A self-hosted Discord music bot using Node.js ES modules, discord.js, @discordjs/voice, FFmpeg, yt-dlp, and public Spotify metadata. Spotify and YouTube API credentials are not required for the default mode. Optional official Spotify metadata search can use your own Client ID and Client Secret. There are no external databases, dashboards, or audio servers.
 
 Spotify supplies **metadata only**. All audio comes from a supported public YouTube source or your authorized local/direct-stream library. Only play material you have permission to use and follow provider terms. An optional local YouTube cookie export can provide your own account session to yt-dlp. Age-restricted sources, regional restrictions, DRM and paywall bypasses remain unsupported.
